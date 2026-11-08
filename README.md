@@ -61,12 +61,12 @@ the modal open.
 | `container` | `HTMLElement` | `document.body` | Where the root element is mounted |
 | `initialColors` | `{ highContrast, lowContrast }` | `#0F766E`, `#CCFBF1` | Normalized on construction; also the target of Reset |
 | `activeTab` | `'highContrast' \| 'lowContrast'` | `'highContrast'` | Tab shown first |
-| `showAlpha` | `boolean` | `true` | Hide the opacity slider when `false` |
+| `showAlpha` | `boolean` | `true` | Opacity slider. When `false` the slider is hidden and alpha is forced to `1`, so an 8-digit HEX cannot leave a translucent color behind |
 | `showContrastSuggestions` | `boolean` | `false` | Show the collapsible contrast panel under the presets |
 | `theme` | `'light' \| 'dark'` | `'light'` | Written to `data-theme` on the root; the dark theme only swaps tokens |
-| `presets` | `object` | built-in palettes | Adds custom categories to the shipped palettes; a name that already exists is ignored |
+| `presets` | `object` | built-in palettes | Per mode, the shipped palettes with your categories merged in: a name that already exists (`Cool`, `Blue`, …) **replaces** that palette, a new name is added after the shipped ones |
 | `classNames` | `string` | `''` | Extra classes on the root element |
-| `labels` | `object` | English | Override `title`, `close`, `reset`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `textPresets`, `panelPresets`, `textHint`, `panelHint`, and `tabs.highContrast` / `tabs.lowContrast` (`{ title, hint }`) |
+| `labels` | `object` | English | Override `title`, `close`, `reset`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `svHint`, `textPresets`, `panelPresets`, `textHint`, `panelHint`, and `tabs.highContrast` / `tabs.lowContrast` (`{ title, hint }`) |
 
 ## API
 
@@ -107,8 +107,10 @@ new ColorPicker({
 });
 ```
 
-Categories are additive: a custom name that already exists (`Cool`, `Blue`, …) is
-ignored, so a config typo cannot replace a shipped palette.
+Categories replace by name: a category the config names takes the place of the
+shipped palette of that name (`Cool`, `Blue`, …) and keeps its position in the
+row; a new name is appended after the shipped ones. The shipped tables are never
+mutated, so two instances with different `presets` do not affect each other.
 
 ## Contrast suggestions
 
