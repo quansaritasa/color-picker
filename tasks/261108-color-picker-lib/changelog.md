@@ -109,3 +109,51 @@ The picker is now a working component: a modal shell built node-by-node in `src/
 - Contrast suggestions — iteration 4 (4.1-4.2).
 - Dark theme, responsive bottom-sheet and the full a11y pass — iteration 4 (4.3). At 390 px the two-column editor grid overflows the modal horizontally today (it scrolls inside `.picker`); the single-column mobile rule is 4.3's work, not a regression to chase now.
 - Custom-preset instance on the demo page — iteration 4 (4.4).
+
+---
+
+## Iteration 3 — 2026-11-08 15:28 +07
+**Trigger:** user request
+**Status:** Implemented
+**Delivery:** Skill
+**Plan reference:** Iteration 3 — preset panel, selection sync, preset styles
+
+### Summary
+Both preset sections now render: category pills over a 7-column swatch grid per mode, the current color marked with an accent outline and a luminance-picked `✓`, and one `selectColor()` writer that keeps editor, HEX field, preview, checkmark and per-tab memory in step. The hidden `.presets` band from iteration 2 is gone.
+
+### Added
+**[1] - Added `src/presets-panel.js` — the panel renderer (141 lines).**
+  - Purpose: the two preset sections are pure presentation over `presets.js`; keeping them out of the class is what keeps both files readable.
+  - Details: `createPresetPanel({ refs, presets, onSelect })` → `{ render(activeTab, colors), destroy() }`. Pills come from `Object.keys(presets[tab])`, active pill `is-active` + `aria-pressed` (`reference/modern-color-picker.html:88-89`); swatches are `button.cp-swatch` with `title`, `aria-label` (`"<category> #HEX"`) and `data-hex`; `is-selected` carries the outline and the `✓`, whose ink is `#172033` on light swatches and `#FFFFFF` on dark ones via the reference's luma test (`:301`).
+  - Details: the grid is rebuilt only when the tab's category list or active category changes — a color change just repaints `is-selected`/`--cp-check-color`. The plan allowed a full re-render per frame "if it stutters"; repainting is the same amount of code and does not stutter at all.
+  - Details: duplicate hex inside one category (spec §4 `#0F766E` in Cool and Green) marks both swatches, which is the accepted risk in the plan — same color, truthful marks.
+
+**[2] - Added `selectColor(hex, { source, tab })` to `src/color-picker.js` — the single writer to `colors`.** 
+  - Purpose: spec §7 and quality item #4 require swatch, HEX, preview and tab memory to never disagree; one write path makes that structural instead of four kept in sync by hand.
+  - Details: normalizes first (invalid input is a no-op), switches `activeTab` when the swatch belongs to the idle tab (reference `:303`), pushes the editor unless the editor is the source (no HSV re-entry mid-drag), re-renders the panel, and emits `onChange` only when the value actually changed — so a drag frame that lands on the same hex stays silent, exactly as before.
+  - Details: `refresh()` (editor + panel from `this.colors`) is now the only way `open`/`cancel`/`reset`/`setColors`/`setActiveTab` repaint, so Cancel and Reset restore the right checkmarks with no extra code.
+
+**[3] - Added the preset styles to `color-picker.css` (+106 lines, now 513).**
+  - Details: `.preset-section` + `.is-emphasis` (inactive at `opacity: .62`, per spec §3.D), divider between the two sections, `.cp-category` pill with active state, `.swatches` 7-column grid, `.cp-swatch` `aspect-ratio: 1` / `border-radius: 9px` / hover lift, `.is-selected` `outline: 2px` + `offset: 2px` with the `✓` in `::after` coloured by `--cp-check-color`. No decorative shadow or gradient, per spec §10; the existing `prefers-reduced-motion` block already covers the two new transitions.
+
+**[4] - Added 24 preset checks to `test/smoke.html` (36 → 60).**
+  - Details: section count and visibility, pill count against the preset object, swatch count against the first category (7 for High, 6 for Low), `is-emphasis` on the active section only, exactly one mark per section, `data-hex`/`aria-pressed`/`--cp-check-color` on the mark, swatch click writing color + HEX field + one `onChange`, pill click swapping the grid without touching the color, a color outside the shown category marking nothing, cross-tab click switching tabs and leaving the other color alone, per-tab memory restored on return, and Reset restoring both checkmarks.
+
+### Changed
+**[1] - `src/template.js` no longer hides `.presets`, and each section carries `data-mode="high|low"`.**
+  - Reason: iteration 2 hid the empty band; with swatches in place it renders as designed. `data-mode` replaces positional `nth-child` lookups for the panel and the smoke harness.
+  - Impact: 149 → 148 lines; `.presets[hidden]` CSS is kept, and the panel hides a section itself when a mode has no categories.
+
+**[2] - Split `src/color-picker.js` (235 lines) into `src/options.js` + `src/tablist.js`.**
+  - Reason: the repo rule is a hard 200-line limit per code file (`~/.devflow/AGENTS.md:7`); `selectColor`/`refresh` pushed the class file to 235. Trimming comments would not have been an honest fix.
+  - Impact: `options.js` (35 lines) owns `TABS`, `DEFAULTS` and `resolveColors`; `tablist.js` (21 lines) owns `syncTabs(refs, activeTab)` and `tabAfterKey(event, activeTab, tabs)`. `color-picker.js` is 197 lines, public API and behaviour unchanged. A missing `normalizeHex` import from that split was caught by the smoke harness (21 FAILs) and fixed before the run was called green.
+
+### Verification
+- `node --test` → 12/12 pass.
+- `test/smoke.html` in headless Chrome (`--headless=new --dump-dom`) → 60/60 PASS, document title `PASS`.
+- Screenshot at 1280×950 with the modal open: both sections rendered, 6 pills each, 7- and 6-swatch grids, selected swatch outlined with a legible `✓` on both surfaces, inactive section dimmed but readable, no clipping.
+- Plan's verify lines: `wc -l src/presets-panel.js` → 141 (≤ 200); `grep -n selectColor src/color-picker.js src/presets-panel.js` → 3 hits; `grep -c "cp-swatch\|cp-category" color-picker.css` → 6 (≥ 4); `wc -l src/*.js` → 21–197, every module inside the 200-line rule.
+
+### Deferred
+- Nothing from this iteration.
+- Contrast suggestions — iteration 4 (4.1-4.2); dark theme, mobile bottom-sheet and the remaining a11y pass — iteration 4 (4.3); custom-preset demo instance — iteration 4 (4.4).
