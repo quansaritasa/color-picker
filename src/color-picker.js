@@ -8,8 +8,10 @@ import { buildTemplate } from './template.js';
 import { createEditor } from './editor.js';
 import { DEFAULT_PRESETS, mergePresets } from './presets.js';
 import { createPresetPanel } from './presets-panel.js';
+import { createSuggestions } from './suggestions.js';
+import { bindShell } from './bindings.js';
 import { DEFAULTS, TABS, resolveColors } from './options.js';
-import { syncTabs, tabAfterKey } from './tablist.js';
+import { syncTabs } from './tablist.js';
 
 export default class ColorPicker {
   constructor(options = {}) {
@@ -45,33 +47,16 @@ export default class ColorPicker {
       presets: this.presets,
       onSelect: (hex, tab) => this.selectColor(hex, { source: 'preset', tab }),
     });
+    this.suggestions = createSuggestions({
+      mount: this.refs.suggestions,
+      presets: this.presets,
+      enabled: this.options.showContrastSuggestions,
+      onPick: (hex, tab) => this.selectColor(hex, { source: 'suggestion', tab }),
+    });
 
-    this.onDocumentKey = (event) => {
-      if (event.key === 'Escape' && this.isOpen) this.cancel();
-    };
-    document.addEventListener('keydown', this.onDocumentKey);
-    this.bind();
+    bindShell(this);
     syncTabs(this.refs, this.activeTab);
     this.refresh();
-  }
-
-  bind() {
-    this.refs.tabs.forEach((button) => {
-      button.addEventListener('click', () => this.setActiveTab(button.dataset.tab));
-    });
-    this.refs.tabs[0].parentElement.addEventListener('keydown', (event) => this.handleTabKey(event));
-    this.refs.close.addEventListener('click', () => this.cancel());
-    this.refs.cancel.addEventListener('click', () => this.cancel());
-    this.refs.apply.addEventListener('click', () => this.apply());
-    this.refs.reset.addEventListener('click', () => this.reset());
-  }
-
-  handleTabKey(event) {
-    const next = tabAfterKey(event, this.activeTab, TABS);
-    if (!next) return;
-    this.setActiveTab(next);
-    this.refs.tabs[TABS.indexOf(next)].focus();
-    event.preventDefault();
   }
 
   setStatus(message) {
@@ -87,10 +72,16 @@ export default class ColorPicker {
     this.selectColor(formatHex(rgba), { source: 'editor' });
   }
 
-  /** Push editor + panel from `this.colors` without emitting. */
+  /** Push editor + panels from `this.colors` without emitting. */
   refresh() {
     this.editor.setColor(parseHex(this.colors[this.activeTab]));
+    this.renderPanels();
+  }
+
+  /** Repaint the read-only surfaces; the editor is left alone mid-drag. */
+  renderPanels() {
     this.panel.render(this.activeTab, this.colors);
+    this.suggestions.render(this.activeTab, this.colors);
   }
 
   /**
@@ -110,7 +101,7 @@ export default class ColorPicker {
     this.colors[tab] = normalized;
     if (source === 'editor') {
       this.setStatus(normalized);
-      this.panel.render(this.activeTab, this.colors);
+      this.renderPanels();
     } else {
       this.refresh();
       this.setStatus(normalized);
@@ -152,6 +143,7 @@ export default class ColorPicker {
     this.root.classList.remove('hidden');
     this.refresh();
     this.setStatus('');
+    this.focusTrap.activate();
     this.refs.tabs[TABS.indexOf(this.activeTab)].focus();
     this.emit('onOpen');
   }
@@ -160,6 +152,7 @@ export default class ColorPicker {
     if (!this.isOpen) return;
     this.isOpen = false;
     this.root.classList.add('hidden');
+    this.focusTrap.deactivate();
     this.emit('onClose');
   }
 
@@ -188,6 +181,8 @@ export default class ColorPicker {
 
   destroy() {
     document.removeEventListener('keydown', this.onDocumentKey);
+    this.focusTrap.deactivate();
+    this.suggestions.destroy();
     this.panel.destroy();
     this.editor.destroy();
     this.root.remove();

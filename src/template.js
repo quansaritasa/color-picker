@@ -122,8 +122,11 @@ export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
   const footer = el('footer', 'footer');
   footer.append(reset, actions);
 
+  /** Empty band under the presets; `suggestions.js` fills it when enabled. */
+  const suggestions = el('div', 'suggestions');
+
   const picker = el('div', 'picker');
-  picker.append(header, tabs, editor, el('div', 'divider'), presets, status, footer);
+  picker.append(header, tabs, editor, el('div', 'divider'), presets, suggestions, status, footer);
 
   Object.assign(refs, {
     sv,
@@ -140,6 +143,7 @@ export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
     cancel: actions.firstElementChild,
     apply: actions.lastElementChild,
     close,
+    suggestions,
     high: sections.high,
     low: sections.low,
   });
