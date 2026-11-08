@@ -32,12 +32,15 @@
 
   // 1. mount + closed
   check('mounts a hidden root', rootOf(picker).classList.contains('cp-root') && rootOf(picker).classList.contains('hidden'));
+  // Pins the `.cp-root.hidden` rule itself: the class alone would still paint the overlay.
+  check('closed root is display:none', getComputedStyle(rootOf(picker)).display === 'none', getComputedStyle(rootOf(picker)).display);
   check('initial colors normalized', JSON.stringify(picker.getColors()) === JSON.stringify({ highContrast: '#0F766E', lowContrast: '#CCFBF1' }), JSON.stringify(picker.getColors()));
   check('two tabs rendered', picker.root.querySelectorAll('.tab').length === 2);
 
   // 2. open
   picker.open();
   check('open shows the modal', picker.isOpen && !rootOf(picker).classList.contains('hidden'));
+  check('open root is displayed', getComputedStyle(rootOf(picker)).display !== 'none', getComputedStyle(rootOf(picker)).display);
   check('onOpen fired', events.some(([n]) => n === 'open'));
   check('active tab aria-selected', q(picker, '.tab.active').getAttribute('aria-selected') === 'true');
 
@@ -210,6 +213,81 @@
   picker.root.querySelectorAll('.tab')[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
   check('arrow key moves tabs', picker.activeTab === 'lowContrast', picker.activeTab);
   picker.close();
+
+  // 22. contrast suggestions are opt-in
+  check('suggestions band is hidden when the option is off', picker.refs.suggestions.hidden);
+
+  const suggPicker = new ColorPicker({
+    initialColors: { highContrast: '#0F766E', lowContrast: '#CCFBF1' },
+    showContrastSuggestions: true,
+  });
+  suggPicker.open();
+  const band = suggPicker.root.querySelector('.suggestions');
+  const details = band.querySelector('.cp-suggestions');
+  const badge = details.querySelector('.cp-badge');
+  const largeBadge = details.querySelector('.cp-badge-large');
+  const ratioOut = details.querySelector('.cp-sugg-ratio');
+  const shownPartners = () => [...details.querySelectorAll('.cp-partner')].filter((b) => !b.hidden);
+  const ratioOfNode = (b) => parseFloat(b.querySelector('.cp-partner-ratio').textContent);
+
+  check('suggestions band shows when enabled', !band.hidden);
+  check('suggestions start collapsed', details.open === false);
+  check('summary carries the pair ratio', ratioOut.textContent === '4.9:1', ratioOut.textContent);
+  check('summary carries the AA verdict', badge.textContent === 'AA' && badge.dataset.level === 'AA', badge.textContent);
+  check('AA-large badge stays hidden when AA passes', largeBadge.hidden);
+  check('partners are capped at three', shownPartners().length > 0 && shownPartners().length <= 3, String(shownPartners().length));
+  check('every partner clears 4.5:1', shownPartners().every((b) => ratioOfNode(b) >= 4.5), shownPartners().map(ratioOfNode).join(' | '));
+  check('partners are ranked best first',
+    shownPartners().every((b, i, all) => i === 0 || ratioOfNode(all[i - 1]) >= ratioOfNode(b)));
+
+  const pickedPartner = shownPartners()[0].dataset.hex;
+  const highBeforeSuggestion = suggPicker.getColors().highContrast;
+  shownPartners()[0].click();
+  check('a partner applies to the other mode', suggPicker.getColors().lowContrast === pickedPartner, suggPicker.getColors().lowContrast);
+  check('a partner never moves the active color', suggPicker.getColors().highContrast === highBeforeSuggestion, suggPicker.getColors().highContrast);
+
+  suggPicker.setColors({ highContrast: '#7A7A7A', lowContrast: '#FFFFFF' });
+  check('a failing pair shows the fail badge', badge.dataset.level === 'fail', badge.dataset.level);
+  check('the 3:1-4.5:1 band adds the AA-large badge', !largeBadge.hidden);
+  check('a failing pair still lists only readable partners', shownPartners().every((b) => ratioOfNode(b) >= 4.5));
+
+  // 23. dark theme repaints through tokens
+  const dark = new ColorPicker({ theme: 'dark', showContrastSuggestions: true });
+  check('dark theme lands on the root', dark.root.dataset.theme === 'dark');
+  const lightSurface = getComputedStyle(suggPicker.root.querySelector('.picker')).backgroundColor;
+  const darkSurface = getComputedStyle(dark.root.querySelector('.picker')).backgroundColor;
+  check('dark theme repaints the surface', darkSurface !== lightSurface, `${darkSurface} vs ${lightSurface}`);
+  check('dark theme keeps the ink light',
+    getComputedStyle(dark.root).color !== getComputedStyle(suggPicker.root).color,
+    `${getComputedStyle(dark.root).color} vs ${getComputedStyle(suggPicker.root).color}`);
+
+  // 24. focus trap and focus restore
+  const opener = document.getElementById('host');
+  suggPicker.close();
+  opener.focus();
+  suggPicker.open();
+  check('open moves focus into the dialog', suggPicker.root.contains(document.activeElement));
+  const focusables = [...suggPicker.root.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((node) => node.getClientRects().length > 0);
+  const lastFocusable = focusables[focusables.length - 1];
+  lastFocusable.focus();
+  lastFocusable.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+  check('Tab wraps from the last control to the first', document.activeElement === focusables[0], document.activeElement && document.activeElement.className);
+  suggPicker.root.querySelector('.primary-btn').click();
+  check('closing returns focus to the opener', document.activeElement === opener, document.activeElement && document.activeElement.id);
+
+  // 25. Home / End on the tablist
+  suggPicker.open();
+  suggPicker.setActiveTab('lowContrast');
+  const tabButtons = suggPicker.root.querySelectorAll('.tab');
+  tabButtons[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+  check('Home selects the first tab', suggPicker.activeTab === 'highContrast', suggPicker.activeTab);
+  tabButtons[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+  check('End selects the last tab', suggPicker.activeTab === 'lowContrast', suggPicker.activeTab);
+  suggPicker.close();
+
+  dark.destroy();
+  suggPicker.destroy();
 
   second.destroy();
   check('destroy removes the root', document.querySelectorAll('.cp-root').length === 1);
