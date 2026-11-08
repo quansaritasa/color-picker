@@ -25,12 +25,26 @@ export const DEFAULTS = {
 };
 
 /**
+ * One predicate for `showAlpha`, applied once at construction: the class, the
+ * template, the editor and `clampAlpha` all read the same boolean, so a value
+ * like `0` cannot hide the slider while the colour keeps its alpha.
+ */
+export function resolveOptions(options = {}) {
+  return {
+    ...DEFAULTS,
+    ...options,
+    showAlpha: options.showAlpha === undefined ? DEFAULTS.showAlpha : Boolean(options.showAlpha),
+    labels: { ...DEFAULTS.labels, ...(options.labels || {}) },
+  };
+}
+
+/**
  * Alpha is off → the colour must be opaque wherever it enters the class.
  * Applied to every entry path (constructor, `setColors`, preset/suggestion
  * clicks, editor commits), not only the ones that pass through the editor.
  */
 export function clampAlpha(hex, showAlpha) {
-  if (showAlpha !== false || typeof hex !== 'string') return hex;
+  if (showAlpha || typeof hex !== 'string') return hex;
   const rgba = parseHex(hex);
   return rgba ? formatHex({ ...rgba, a: 1 }) : hex;
 }

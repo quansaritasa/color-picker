@@ -10,16 +10,12 @@ import { DEFAULT_PRESETS, mergePresets } from './presets.js';
 import { createPresetPanel } from './presets-panel.js';
 import { createSuggestions } from './suggestions.js';
 import { bindShell } from './bindings.js';
-import { DEFAULTS, TABS, clampAlpha, resolveColors } from './options.js';
+import { DEFAULTS, TABS, clampAlpha, resolveColors, resolveOptions } from './options.js';
 import { syncTabs } from './tablist.js';
 
 export default class ColorPicker {
   constructor(options = {}) {
-    this.options = {
-      ...DEFAULTS,
-      ...options,
-      labels: { ...DEFAULTS.labels, ...(options.labels || {}) },
-    };
+    this.options = resolveOptions(options);
     this.initialColors = resolveColors(options.initialColors, DEFAULTS.initialColors, this.options.showAlpha);
     this.colors = { ...this.initialColors };
     this.snapshot = { ...this.colors };
