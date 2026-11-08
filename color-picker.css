@@ -1,0 +1,407 @@
+/*
+ * color-picker.css — component styles.
+ * Everything is scoped under `.cp-root` so host pages keep their own styling.
+ * Theme tokens are custom properties: override any `--cp-*` on `.cp-root`,
+ * or on a wrapper such as `.cp-root.my-theme`.
+ */
+
+.cp-root {
+  --cp-accent: #2563eb;
+  --cp-accent-soft: #eff6ff;
+  --cp-ink: #172033;
+  --cp-muted: #667085;
+  --cp-line: #e5e9f0;
+  --cp-surface: #ffffff;
+  --cp-canvas: #f4f6fa;
+  --cp-field: #d8dee8;
+  --cp-check: #172033;
+  --cp-radius: 18px;
+  --cp-shadow: 0 24px 70px #1d2a441c, 0 3px 12px #1d2a440a;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #10182873;
+  color: var(--cp-ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.cp-root.hidden {
+  display: none;
+}
+
+.cp-root *,
+.cp-root *::before,
+.cp-root *::after {
+  box-sizing: border-box;
+}
+
+.cp-root button,
+.cp-root input {
+  font: inherit;
+  color: inherit;
+}
+
+.cp-root button {
+  cursor: pointer;
+}
+
+.cp-root .picker {
+  width: min(100%, 940px);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: var(--cp-surface);
+  border: 1px solid #e7eaf0;
+  border-radius: 22px;
+  box-shadow: var(--cp-shadow);
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.cp-root .picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 26px 18px;
+}
+
+.cp-root .heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.cp-root .app-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--cp-accent);
+  font-size: 22px;
+}
+
+.cp-root .picker-header h2 {
+  margin: 0;
+  font-size: 21px;
+  letter-spacing: -0.035em;
+}
+
+.cp-root .close-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #738096;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.cp-root .close-btn:hover {
+  background: #f1f4f8;
+}
+
+/* ── Tabs ───────────────────────────────────────────────── */
+
+.cp-root .tabs {
+  margin: 0 26px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: #f5f7fa;
+  border: 1px solid var(--cp-line);
+  border-radius: 14px;
+}
+
+.cp-root .tab {
+  border: 0;
+  background: transparent;
+  border-radius: 11px;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  color: var(--cp-muted);
+  min-width: 0;
+}
+
+.cp-root .tab.active {
+  background: var(--cp-surface);
+  color: var(--cp-ink);
+  box-shadow: 0 1px 4px #17203312;
+  outline: 1px solid #e7ebf2;
+}
+
+.cp-root .tab-symbol {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e9edf5;
+  color: var(--cp-muted);
+  font-weight: 750;
+  font-size: 16px;
+}
+
+.cp-root .tab.active .tab-symbol {
+  background: var(--cp-accent);
+  color: #fff;
+}
+
+.cp-root .tab strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cp-root .tab small {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  color: #8791a3;
+}
+
+/* ── Editor ─────────────────────────────────────────────── */
+
+.cp-root .editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(210px, 0.9fr);
+  gap: 22px;
+  padding: 22px 26px 20px;
+}
+
+.cp-root .sv-wrap {
+  position: relative;
+  min-height: 205px;
+}
+
+.cp-root .sv {
+  position: absolute;
+  inset: 0;
+  border-radius: 13px;
+  overflow: hidden;
+  cursor: crosshair;
+  background-color: hsl(174 82% 35%);
+  background-image: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent);
+  border: 1px solid var(--cp-field);
+  touch-action: none;
+}
+
+.cp-root .sv-thumb {
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px #0005;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.cp-root .editor-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cp-root .hex-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cp-root .color-preview {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 12px;
+  border: 1px solid #00000012;
+  background-image: repeating-conic-gradient(#d9dee7 0 25%, #fff 0 50%);
+  background-size: 12px 12px;
+}
+
+.cp-root .hex-input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  border: 1px solid var(--cp-field);
+  border-radius: 11px;
+  padding: 0 13px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  outline: none;
+  background: var(--cp-surface);
+}
+
+.cp-root .hex-input:focus {
+  border-color: var(--cp-accent);
+  box-shadow: 0 0 0 3px #2563eb18;
+}
+
+/* ── Sliders ────────────────────────────────────────────── */
+
+.cp-root .range-block {
+  display: grid;
+  gap: 7px;
+}
+
+.cp-root .range-block[hidden] {
+  display: none;
+}
+
+.cp-root .range-label {
+  display: flex;
+  justify-content: space-between;
+  color: #697586;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.cp-root .range-block input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 13px;
+  border-radius: 99px;
+  outline: none;
+  margin: 4px 0;
+  background: #eef1f6;
+}
+
+.cp-root .range-block input[type="range"]:focus-visible {
+  box-shadow: 0 0 0 3px #2563eb33;
+}
+
+.cp-root .hue-range input[type="range"] {
+  background: linear-gradient(90deg, red, #ff0, #0f0, #0ff, #00f, #f0f, red);
+}
+
+.cp-root .alpha-range input[type="range"] {
+  background: linear-gradient(90deg, transparent, #1475ef), repeating-conic-gradient(#d9dee7 0 25%, #fff 0 50%) 0/12px 12px;
+}
+
+.cp-root .range-block input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--cp-accent);
+  box-shadow: 0 1px 5px #17203355;
+}
+
+.cp-root .range-block input[type="range"]::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--cp-accent);
+  box-shadow: 0 1px 5px #17203355;
+}
+
+/* ── Presets (rendered in iteration 3) ──────────────────── */
+
+.cp-root .divider {
+  height: 1px;
+  background: var(--cp-line);
+  margin: 0 26px;
+}
+
+.cp-root .presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 20px 26px 24px;
+}
+
+.cp-root .presets[hidden] {
+  display: none;
+}
+
+.cp-root .presets:empty {
+  display: none;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+
+.cp-root .status {
+  margin: 0 26px 13px;
+  min-height: 14px;
+  color: #8993a4;
+  font-size: 11px;
+}
+
+.cp-root .footer {
+  border-top: 1px solid var(--cp-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 26px 20px;
+}
+
+.cp-root .reset-btn {
+  border: 0;
+  background: transparent;
+  color: #758197;
+  padding: 9px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cp-root .actions {
+  display: flex;
+  gap: 9px;
+}
+
+.cp-root .secondary-btn {
+  background: var(--cp-surface);
+  border: 1px solid #dce2eb;
+  color: #344054;
+  border-radius: 10px;
+  padding: 10px 19px;
+  font-weight: 600;
+}
+
+.cp-root .primary-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 22px;
+  background: var(--cp-accent);
+  color: #fff;
+  font-weight: 650;
+  box-shadow: 0 4px 12px #2563eb25;
+}
+
+/* ── States ─────────────────────────────────────────────── */
+
+.cp-root :focus-visible {
+  outline: 2px solid var(--cp-accent);
+  outline-offset: 2px;
+}
+
+.cp-root .close-btn:focus-visible,
+.cp-root .reset-btn:focus-visible,
+.cp-root .secondary-btn:focus-visible,
+.cp-root .primary-btn:focus-visible,
+.cp-root .tab:focus-visible {
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-root *,
+  .cp-root *::before,
+  .cp-root *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
