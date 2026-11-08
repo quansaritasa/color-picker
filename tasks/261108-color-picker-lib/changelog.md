@@ -238,3 +238,65 @@ The library is now complete against `sop.md`: WCAG 2.1 contrast math, an opt-in 
 - Nothing from this iteration.
 - Deviation worth recording: the plan pinned `#0F766E` on `#CCFBF1` to "4.4–4.6"; the sRGB curve gives **4.857**, and the test pins the computed value. The plan's manual check "pick `#FFFFFF` on High → suggestions list only dark panels" also contradicts spec §6 — partners come from the *opposing* palette, so white text finds nothing in the pale panel set and the panel says so. Spec won on both.
 - The `4.4–4.6` and `= 3` verify lines above were estimates; the numbers recorded here are the measured ones.
+
+## Iteration 5 — 2026-11-08 15:52 +07
+**Trigger:** review pass 1 (verdict `Fail`)
+**Status:** Implemented
+**Delivery:** Skill
+**Plan reference:** Review fix [5] — every finding from `review.md` pass 1 that carried its own `Suggested fix`
+
+### Summary
+The two blocking findings are closed and every Medium/Low one with them: the light theme's secondary text now clears AA on every surface it labels, `options.presets` overrides a named category the way spec §9's own example says it must, the shell is a named modal dialog, Escape belongs to the topmost instance, the SV slider reports a value, the live region no longer chatters during a drag, `showAlpha: false` turns alpha off instead of hiding it, and the dead `--cp-radius`/`--cp-check` tokens are gone. No requirement changed and no plan iteration was written — the findings were the work, so this is logged as iteration 5 and named `Review fix [5]` in the plan's Progress.
+
+### Fixed
+**[1] - Light-theme secondary text was below WCAG AA — `--cp-subtle` `#8791a3` → `#667085`.**
+  - Root cause: the token was picked against the design reference's look, never measured against the surfaces it labels (surface, surface-alt, pill-bg, and the suggestions canvas). It measured **3.18:1** on `--cp-surface` and **2.96:1** on `--cp-surface-alt` — under the 4.5:1 normal-text floor for 6 label styles (10–13px).
+  - Resolution: collapsed onto `--cp-muted`'s value (`#667085`), which every one of those surfaces clears, and kept as a separate token so a theme can still split the two greys. Measured in the rendered light theme (Chrome, computed styles, WCAG formula): `.section-hint` **4.97:1**, `.status` **4.97**, `.tab small` **4.97** (active tab on white; 4.64 on `--cp-surface-alt`), `.cp-sugg-hint` **4.60** (on `--cp-canvas`), `.reset-btn` **4.97**, `.close-btn` **4.97**. `#6B7280` was rejected: it passes on surface/surface-alt/pill-bg but measures **4.47:1** on `--cp-canvas`, where `.cp-sugg-hint` and `.cp-sugg-empty` actually sit.
+  - Same rule, second surface: `.preset-section` was dimmed as a whole with `opacity: 0.62`, which composited the idle section's 10px hint down to **2.44:1** — the fix above would have been defeated one selector away. Emphasis now dims `.swatches` only (0.55); the swatch grid is the only thing in that section with no text in it, so labels sit at their measured 4.97:1 in both sections. Verified on the rendered page.
+
+**[2] - `mergePresets` silently dropped every override of a shipped category.**
+  - Root cause: `if (!(name in merged))` treated the shipped table as authoritative, so the exact configuration `sop.md:421-431` demonstrates (`highContrast: { Cool: ['#111827', '#1F2937'] }`) had no effect and produced no warning.
+  - Resolution: the override now spreads over the defaults, so a named category **replaces** that palette in place and a new name is appended after the shipped ones; every array is copied, so neither the shipped tables nor the caller's config is mutated. Probe on the rendered page: `Cool` renders 2 swatches and the row still reads `Cool,Blue,Hot,Purple,Green,Neutral`.
+  - `test/color.test.js`'s merge test now pins replacement (Cool = the override array, position 0 preserved), survival of the untouched shipped categories, and the copy — it previously asserted the opposite behaviour and would have blocked the fix.
+
+**[3] - The modal shell was an unnamed `div` — assistive tech was never told a dialog opened.**
+  - Resolution: `.picker` is `role="dialog"` + `aria-modal="true"` + `aria-labelledby` pointing at the `<h2>`, whose id is generated per template build (`cp-title-[n]`), because two instances share a page. Probe: `role=dialog modal=true labelledby=cp-title-1`, and that id resolves to the `Choose Color` heading.
+
+**[4] - Escape closed every open instance, not the top one.**
+  - Root cause: each instance registered its own `document` keydown and cancelled itself without asking whether it was on top, so one keystroke also discarded the edits of an instance the user was not looking at.
+  - Resolution: `bindings.js` gained `isTopmostOpen()` — the handler cancels only when no `.cp-root` later in DOM order is open. Smoke drives the real sequence: two open pickers, one Escape → top closes, lower stays open **with its edited colour intact** (`#ABCDEF` kept), second Escape → lower closes.
+
+**[5] - `options.presets` note in the README described the old additive behaviour.**
+  - Resolution: options table and the categories paragraph now say replace-by-name, keep position, new names appended, shipped tables never mutated. `showAlpha` row and the `labels` row (new `svHint`) updated with the same pass.
+
+### Changed
+**[1] - `src/template.js` (152 → 170 lines): dialog semantics, and the SV area is a valid slider.**
+  - Reason: `role="slider"` without `aria-valuenow`/`min`/`max` is invalid ARIA — a screen reader announces the name and stops, while the arrow handler changes two dimensions it cannot read.
+  - Impact: `aria-valuemin="0"`, `aria-valuemax="100"`, `aria-valuenow="87"` on `.sv` (saturation, updated in every `render()`), `aria-valuetext` keeps carrying the hex, and `aria-description` states the drag/arrow mapping. Both strings go through `labels` (`sv`, new `svHint`), so they are translatable like the rest.
+
+**[2] - `src/color-picker.js` (193 → 194 lines): the status region no longer echoes editor drags.**
+  - Reason: `selectColor` wrote the new hex into `aria-live="polite"` for `source === 'editor'`, and the editor emits once per `pointermove` — dozens of polite announcements queued per second, plus the visible status line repeating the user's own colour.
+  - Impact: the editor branch repaints panels only; the live region is left to commit-level messages (invalid HEX, reset, cancel, apply). The editor still owns its own status writes through `onStatus`.
+
+**[3] - `src/editor.js` (154 → 157 lines): `showAlpha: false` means alpha off, not alpha hidden.**
+  - Reason: the opacity control was hidden while the HEX field still accepted 8 digits, so a user could end up with a translucent colour and no way to change it.
+  - Impact: `rgbaFromHsv` and `setColor` pin `a` to 1 when the option is off, so alpha never reaches `colors`/`getColors()`. Smoke: `#FF000080` committed with `showAlpha: false` yields `#FF0000`.
+
+**[4] - `color-picker.css` (797 → 806 lines): `--cp-radius` is wired, `--cp-check` is gone.**
+  - Reason: `--cp-radius` was defined and never read while the README advertised it as a knob (`.picker` hardcoded 22px), and `--cp-check` was dead — the checkmark reads the JS-set `--cp-check-color`.
+  - Impact: `.picker` reads `var(--cp-radius)` and the token defaults to **22px**, the reference value, so nothing moves until a theme sets it. Both theme blocks lost the dead token; `--cp-check-color` usage is untouched.
+
+**[5] - `src/presets.js` (47 lines): merge semantic and its contract comment.**
+  - Reason: the old comment documented the bug as a feature ("a typo cannot damage the shipped palettes").
+  - Impact: replaced by the spec's rule; callers are unaffected — `color-picker.js` passes the result straight to the panel and suggestions, both of which only enumerate categories.
+
+### Verification
+- `node --test` → **22/22 pass** (12 color + 10 contrast), including the rewritten `mergePresets` test.
+- `test/smoke.html` in headless Chrome (`--headless=new --dump-dom`, `--virtual-time-budget=4000`) → **95/95 PASS**, document title `PASS` (was 85). New checks: shell is a modal dialog and is named by its heading, `.sv` carries its range and reports the saturation an arrow key changes, `aria-valuetext` still reads as hex, Escape closes only the topmost instance and leaves the lower one's edits intact, the next Escape closes the lower one, `showAlpha: false` hides the opacity control and drops the alpha of an 8-digit HEX.
+- Rendered measurement probe at 1280×980 (light) and the same page with `theme: 'dark'`: six label styles measured against their own resolved backgrounds via computed styles, listed under [1]; dark theme re-measured at **5.53:1** for the same labels, unchanged.
+- Screenshots inspected: light at 1280 (idle section dimmed by its swatch grid only, pills and labels crisp, 22px corners, header/close intact), dark at 1280 (same), mobile at 500 (bottom sheet, stacked sections, pinned footer, hints legible).
+- Contract sweep: `grep -rn "cp-check\b\|--cp-check" src color-picker.css README.md index.html` → only `--cp-check-color` usages remain; `grep -rn "from '" src/*.js | grep -v "'\./"` → 0 external imports; `wc -l src/*.js` → 21–194, every module inside the 200-line rule; README install list re-checked (`comm -3` against `ls src/*.js` → 0 diff, 12 modules + stylesheet).
+
+### Deferred
+- Nothing outstanding from review pass 1: findings #1–#7 and #9 are fixed, #8 was applied inside the pass, #10 is answered by giving the harness a plan home (2.7 in `plan.md`).
+- Design note for the next pass: emphasis on the presets is now a swatch-grid fade rather than a section fade. That is the only visible change no finding asked for verbatim — it was the same AA rule in a second place, measured at 2.44:1 before the change and 4.97:1 after.
