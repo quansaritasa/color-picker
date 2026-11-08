@@ -300,3 +300,30 @@ The two blocking findings are closed and every Medium/Low one with them: the lig
 ### Deferred
 - Nothing outstanding from review pass 1: findings #1–#7 and #9 are fixed, #8 was applied inside the pass, #10 is answered by giving the harness a plan home (2.7 in `plan.md`).
 - Design note for the next pass: emphasis on the presets is now a swatch-grid fade rather than a section fade. That is the only visible change no finding asked for verbatim — it was the same AA rule in a second place, measured at 1.93:1 before the change (2.43:1 with the corrected token left under the old section opacity) and 4.97:1 after.
+
+## Iteration 6 — 2026-11-08 16:12 +07
+**Trigger:** review pass 2 (verdict `Fail`)
+**Status:** Implemented
+**Delivery:** Skill
+**Plan reference:** Review fix [6] — review pass 2 Quality Check #1 (blocking) and #2 (minor), each carrying its own `Suggested fix`
+
+### Summary
+The alpha contract now holds at the door instead of in the editor: `showAlpha: false` strips alpha in `resolveColors` and in `selectColor`, so the constructor, `setColors()`, `reset()`, preset/suggestion clicks, the editor and `onApply` cannot disagree — `getColors()` always returns the colour the UI renders. The stale validation message is cleared by the next editor commit. No requirement changed and no plan iteration was written; the findings were the work, logged as iteration 6 and named `Review fix [6]` in the plan's Progress.
+
+### Fixed
+**[1] - `showAlpha: false` still handed alpha back through every public writer.**
+  - Root cause: pass 1 pinned `a = 1` in `editor.js` (`rgbaFromHsv`, `setColor`) — the two functions its finding named — while `this.colors` is also written by `resolveColors` (constructor, `setColors`) and by `selectColor` (preset/suggestion clicks). Those paths stored the 8-digit string as given while the editor rendered it clamped, so `setColors({ highContrast: '#00FF0040' })` returned `#00FF0040` from `getColors()` and `onApply` while the HEX field and preview showed `#00FF00`.
+  - Resolution: one clamp, where colours enter the class. `src/options.js` exports `clampAlpha(hex, showAlpha)`, `resolveColors` takes the option as a third argument and applies it to every resolved tab, and `selectColor` — the single writer to `this.colors` — applies it to the normalized input. `reset()` copies `initialColors`, which was resolved and clamped at construction, and `cancel()` copies a snapshot derived from the same clamped values, so both are covered by the same point rather than by a second call.
+  - `src/color-picker.js` stays inside the 200-line rule at **196** lines: the two new call sites are single-line calls, matching `setColors`'s existing one-liner.
+
+**[2] - The editor's own error message outlived the correction.**
+  - Root cause: dropping `setStatus(normalized)` for `source === 'editor'` fixed the live-region churn but also removed the only writer that ever replaced the editor's message; `editor.js` clears it on a *valid* HEX commit and says nothing on a pointer commit.
+  - Resolution: `selectColor`'s editor branch clears the region only when it holds text — `if (this.refs.status.textContent) this.setStatus('')` — so the first pointer/keyboard commit after an invalid HEX removes the message, and the rest of the drag stays silent because the region is then already empty. The churn fix survives: a drag with no stale message writes the live region zero times.
+
+### Verification
+- `node --test` → **22/22 pass**.
+- `test/smoke.html` in headless Chrome (`--headless=new --virtual-time-budget=6000 --dump-dom`) → **103/103 PASS**, document title `PASS` (was 95). New checks: `showAlpha: false` clamps alpha on `setColors()` (`#00FF0040` → `#00FF00`), the rendered HEX agrees with `getColors()`, a preset colour handed to `selectColor` is clamped (`#0000FF33` → `#0000FF`), `initialColors` with alpha is clamped for both tabs, the `onApply` payload carries no alpha, `reset()` restores the clamped initial colour, an invalid HEX raises `Enter a valid HEX value.`, and the next SV drag clears it.
+- Contract sweep: `wc -l src/*.js` → 21–196, every module inside the 200-line rule; `grep -rn "from '" src/*.js | grep -v "'\./"` → 0 external imports; `showAlpha` still defaults to `true`, so the option-off path is the only behaviour that changed.
+
+### Deferred
+- Nothing outstanding from review pass 2: #1 and #2 are fixed and pinned. The three items pass 2 declined to judge (radius/swatch geometry, "reset selected categories", two modals sharing focus) stay judged as recorded in `review.md`.
