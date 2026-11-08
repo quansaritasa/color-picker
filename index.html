@@ -23,12 +23,6 @@
   .demo-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .demo-head h1 { margin: 0; font-size: 20px; letter-spacing: -.03em; }
   .demo-head p { margin: 5px 0 0; color: var(--page-muted); font-size: 13px; }
-  .open-btn {
-    border: 0; border-radius: 11px; background: var(--page-accent); color: #fff;
-    padding: 11px 17px; font: inherit; font-weight: 650; cursor: pointer;
-    box-shadow: 0 4px 12px #2563eb25;
-  }
-  .open-btn.is-dark { background: #0f172a; box-shadow: 0 4px 12px #0f172a33; }
   .preview { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .preview-card { border: 1px solid var(--page-line); background: #fff; border-radius: 14px; padding: 18px; }
   .preview-card small { color: var(--page-muted); display: block; margin-bottom: 10px; }
@@ -42,7 +36,7 @@
   .brand p { margin: 5px 0 0; color: #93a2b8; font-size: 12px; }
   .brand-card { border: 1px solid #22304a; background: #131c2e; border-radius: 12px; padding: 16px; }
   .brand-card small { color: #93a2b8; display: block; margin-bottom: 10px; }
-  .brand-chip { display: inline-flex; padding: 9px 13px; border-radius: 9px; font-weight: 650; }
+  .brand-chip { display: inline-flex; padding: 9px 13px; border-radius: 9px; font-weight: 650; border: 1px solid transparent; }
   .brand .values { color: #93a2b8; margin-top: 12px; }
 
   @media (max-width: 680px) {
@@ -59,7 +53,7 @@
       <h1>Color system preview</h1>
       <p>Explore foreground and background colors together.</p>
     </div>
-    <button class="open-btn" id="openPicker">Choose colors</button>
+    <div id="colorSwatches"></div>
   </div>
 
   <div class="preview">
@@ -81,7 +75,7 @@
         <h2>Brand palette · dark theme</h2>
         <p>A second instance: own container, custom <code>Brand</code> categories, <code>theme: 'dark'</code>.</p>
       </div>
-      <button class="open-btn is-dark" id="openBrand">Choose brand colors</button>
+      <div id="brandSwatches"></div>
     </div>
     <div class="brand-card">
       <small>Brand text on brand panel</small>
@@ -101,26 +95,27 @@
   const values = document.getElementById('values');
 
   const paint = (colors) => {
-    chip.style.color = colors.highContrast;
-    chip.style.background = colors.lowContrast;
-    panel.style.color = colors.highContrast;
-    panel.style.background = colors.lowContrast;
-    values.textContent = `${colors.highContrast} · ${colors.lowContrast}`;
+    chip.style.color = colors.text;
+    chip.style.background = colors.background;
+    panel.style.color = colors.text;
+    panel.style.background = colors.background;
+    values.textContent = `${colors.text} · ${colors.background}`;
   };
 
   const picker = new ColorPicker({
-    initialColors: { highContrast: '#0F766E', lowContrast: '#CCFBF1' },
+    swatches: document.getElementById('colorSwatches'),
+    /* The pair is a choice, not the default: name what you paint. */
+    slots: [
+      { id: 'text', label: 'Text colour', symbol: 'Aa', presetSet: 'text' },
+      { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'panel' },
+    ],
+    initialColors: { text: '#0F766E', background: '#CCFBF1' },
     showContrastSuggestions: true,
+    contrastPair: ['text', 'background'],
     onChange: paint,
-    onCancel: () => paint(picker.getColors()),
-    onApply: (colors) => {
-      paint(colors);
-      document.getElementById('openPicker').focus();
-    },
   });
 
   paint(picker.getColors());
-  document.getElementById('openPicker').addEventListener('click', () => picker.open());
   window.demoPicker = picker;
 
   // Second instance: independent state, custom presets, dark theme.
@@ -128,30 +123,33 @@
   const brandValues = document.getElementById('brandValues');
 
   const paintBrand = (colors) => {
-    brandChip.style.color = colors.highContrast;
-    brandChip.style.background = colors.lowContrast;
-    brandValues.textContent = `${colors.highContrast} · ${colors.lowContrast}`;
+    brandChip.style.color = colors.text;
+    brandChip.style.background = colors.background;
+    brandChip.style.borderColor = colors.accent;
+    brandValues.textContent = `${colors.text} · ${colors.background} · ${colors.accent}`;
   };
 
+  /* Three slots: the id is the name the host paints, the preset set is a hint. */
   const brandPicker = new ColorPicker({
+    swatches: document.getElementById('brandSwatches'),
     container: document.getElementById('brandRoot'),
     theme: 'dark',
     showContrastSuggestions: true,
-    initialColors: { highContrast: '#0B3D2E', lowContrast: '#FDE68A' },
+    contrastPair: ['text', 'background'],
+    slots: [
+      { id: 'text', label: 'Brand text', symbol: 'Aa', presetSet: 'text' },
+      { id: 'background', label: 'Brand panel', symbol: '▰', presetSet: 'panel' },
+      { id: 'accent', label: 'Accent', symbol: '✦', hint: 'Borders and links' },
+    ],
+    initialColors: { text: '#0B3D2E', background: '#FDE68A', accent: '#7C3AED' },
     presets: {
-      highContrast: { Brand: ['#0B3D2E', '#134E4A', '#1E3A5F', '#4C1D95'] },
-      lowContrast: { Brand: ['#FDE68A', '#FEF3C7', '#E0F2FE', '#FCE7F3'] },
+      text: { Brand: ['#0B3D2E', '#134E4A', '#1E3A5F', '#4C1D95'] },
+      panel: { Brand: ['#FDE68A', '#FEF3C7', '#E0F2FE', '#FCE7F3'] },
     },
     onChange: paintBrand,
-    onCancel: () => paintBrand(brandPicker.getColors()),
-    onApply: (colors) => {
-      paintBrand(colors);
-      document.getElementById('openBrand').focus();
-    },
   });
 
   paintBrand(brandPicker.getColors());
-  document.getElementById('openBrand').addEventListener('click', () => brandPicker.open());
   window.brandPicker = brandPicker;
 </script>
 </body>
