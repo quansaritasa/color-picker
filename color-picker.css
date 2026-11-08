@@ -141,6 +141,11 @@
   color: var(--cp-subtle);
   font-size: 25px;
   line-height: 1;
+  /* × is a text glyph and its ink sits ~2px below the em centre in a 36px box,
+     so centre the box and nudge the glyph back up. */
+  display: grid;
+  place-items: center;
+  padding: 0 0 4px;
 }
 
 .cp-root .close-btn:hover {
@@ -655,9 +660,17 @@
   border: 0;
   background: transparent;
   color: var(--cp-subtle);
-  padding: 9px 0;
+  /* 10px of side padding for a bigger hit area; the negative left margin keeps
+     the label on the footer's content column instead of pushing it right. */
+  padding: 9px 10px;
+  margin-left: -10px;
   font-size: 13px;
   font-weight: 600;
+  /* label is "↶  Reset": an arrow glyph plus a word, centred as one line */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.4;   /* keeps the original 36px hit target */
 }
 
 .cp-root .actions {
