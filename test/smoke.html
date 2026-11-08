@@ -286,6 +286,56 @@
   check('End selects the last tab', suggPicker.activeTab === 'lowContrast', suggPicker.activeTab);
   suggPicker.close();
 
+  // 26. dialog semantics and the SV slider's value
+  const a11y = new ColorPicker({ initialColors: { highContrast: '#0F766E', lowContrast: '#CCFBF1' } });
+  a11y.open();
+  const shell = a11y.root.querySelector('.picker');
+  const titleId = shell.getAttribute('aria-labelledby');
+  check('shell is a modal dialog',
+    shell.getAttribute('role') === 'dialog' && shell.getAttribute('aria-modal') === 'true',
+    shell.getAttribute('role'));
+  check('dialog is named by its heading',
+    !!titleId && !!document.getElementById(titleId)
+      && document.getElementById(titleId).textContent === 'Choose Color',
+    titleId);
+  const svArea = a11y.root.querySelector('.sv');
+  const nowBefore = svArea.getAttribute('aria-valuenow');
+  svArea.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+  check('sv slider carries its range',
+    svArea.getAttribute('aria-valuemin') === '0' && svArea.getAttribute('aria-valuemax') === '100');
+  check('sv slider reports the saturation it changes',
+    nowBefore !== null && Number(nowBefore) > Number(svArea.getAttribute('aria-valuenow')),
+    `${nowBefore} -> ${svArea.getAttribute('aria-valuenow')}`);
+  check('sv keeps the hex as its value text',
+    /^#[0-9A-F]{6}$/.test(svArea.getAttribute('aria-valuetext')), svArea.getAttribute('aria-valuetext'));
+  a11y.close();
+  a11y.destroy();
+
+  // 27. escape belongs to the topmost instance only
+  const lower = new ColorPicker({ initialColors: { highContrast: '#0F766E', lowContrast: '#CCFBF1' } });
+  const upper = new ColorPicker({ initialColors: { highContrast: '#991B1B', lowContrast: '#FEE2E2' } });
+  lower.open();
+  lower.setColors({ highContrast: '#ABCDEF' });
+  upper.open();
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  check('escape closes the topmost picker only', !upper.isOpen && lower.isOpen, `${upper.isOpen} | ${lower.isOpen}`);
+  check('escape keeps the lower picker edits', lower.getColors().highContrast === '#ABCDEF', lower.getColors().highContrast);
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  check('the next escape closes the picker below', !lower.isOpen);
+  lower.destroy();
+  upper.destroy();
+
+  // 28. showAlpha: false turns alpha off instead of hiding it
+  const opaque = new ColorPicker({ showAlpha: false });
+  check('showAlpha:false hides the opacity control', opaque.root.querySelector('.alpha-range').hidden);
+  opaque.open();
+  const opaqueHex = opaque.root.querySelector('.hex-input');
+  opaqueHex.value = '#FF000080';
+  opaqueHex.dispatchEvent(new Event('change', { bubbles: true }));
+  check('showAlpha:false drops the alpha of an 8-digit hex',
+    opaque.getColors().highContrast === '#FF0000', opaque.getColors().highContrast);
+  opaque.destroy();
+
   dark.destroy();
   suggPicker.destroy();
 
