@@ -17,6 +17,10 @@ src/tablist.js
 src/template.js
 src/editor.js
 src/presets-panel.js
+src/contrast.js
+src/suggestions.js
+src/focus.js
+src/bindings.js
 src/color-picker.js
 color-picker.css
 ```
