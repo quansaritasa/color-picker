@@ -12,7 +12,10 @@
   --cp-accent-line: #bfd3ff;
   --cp-ink: #172033;
   --cp-muted: #667085;
-  --cp-subtle: #8791a3;
+  /* Same value as --cp-muted on purpose: every surface it labels needs 4.5:1
+     (4.60 on --cp-canvas, 4.64 on --cp-surface-alt, 4.97 on --cp-surface).
+     Kept as its own token so a theme can still split the two greys. */
+  --cp-subtle: #667085;
   --cp-line: #e5e9f0;
   --cp-line-soft: #e7eaf0;
   --cp-surface: #ffffff;
@@ -26,8 +29,7 @@
   --cp-hover: #f1f4f8;
   --cp-canvas: #f4f6fa;
   --cp-field: #d8dee8;
-  --cp-check: #172033;
-  --cp-radius: 18px;
+  --cp-radius: 22px;
   --cp-shadow: 0 24px 70px #1d2a441c, 0 3px 12px #1d2a440a;
 
   position: fixed;
@@ -68,7 +70,6 @@
   --cp-hover: #223047;
   --cp-canvas: #0f1522;
   --cp-field: #33415a;
-  --cp-check: #0f1522;
   --cp-shadow: 0 24px 70px #00000080, 0 3px 12px #00000040;
   background: #050912c4;
 }
@@ -95,7 +96,7 @@
   overflow: auto;
   background: var(--cp-surface);
   border: 1px solid var(--cp-line-soft);
-  border-radius: 22px;
+  border-radius: var(--cp-radius);
   box-shadow: var(--cp-shadow);
 }
 
@@ -372,12 +373,20 @@
 
 .cp-root .preset-section {
   min-width: 0;
-  opacity: 0.62;
+}
+
+/*
+ * Emphasis dims the swatch grid, never the section as a whole: section-level
+ * opacity 0.62 took the idle section's 10px hint to 2.44:1, under AA. Swatches
+ * carry no text, so they are the only thing that can fade safely.
+ */
+.cp-root .preset-section .swatches {
+  opacity: 1;
   transition: opacity 0.15s ease;
 }
 
-.cp-root .preset-section.is-emphasis {
-  opacity: 1;
+.cp-root .preset-section:not(.is-emphasis) .swatches {
+  opacity: 0.55;
 }
 
 .cp-root .preset-section + .preset-section {
