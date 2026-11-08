@@ -12,7 +12,7 @@ import {
   withAlpha,
   channelDelta,
 } from '../src/color.js';
-import { DEFAULT_PRESETS, mergePresets, categoriesOf } from '../src/presets.js';
+import { PRESET_SETS, mergePalette, categoriesOf } from '../src/presets.js';
 
 test('parseHex accepts 3, 4, 6 and 8 digit forms', () => {
   assert.deepEqual(parseHex('#abc'), { r: 0xaa, g: 0xbb, b: 0xcc, a: 1 });
@@ -81,62 +81,69 @@ test('withAlpha clamps to 0-1 and keeps rgb', () => {
   assert.equal(withAlpha(base, 0.5).r, 15);
 });
 
-test('presets are uppercase 6-digit hex in spec shape', () => {
-  const modes = Object.keys(DEFAULT_PRESETS);
-  assert.deepEqual(modes, ['highContrast', 'lowContrast']);
-  for (const mode of modes) {
-    assert.equal(categoriesOf(DEFAULT_PRESETS, mode).length, 6, `${mode} category count`);
-    for (const [name, values] of Object.entries(DEFAULT_PRESETS[mode])) {
-      assert.ok(Array.isArray(values), `${mode}.${name} is an array`);
+test('preset sets are uppercase 6-digit hex in spec shape', () => {
+  const sets = Object.keys(PRESET_SETS);
+  assert.deepEqual(sets, ['text', 'panel']);
+  for (const set of sets) {
+    assert.equal(categoriesOf(PRESET_SETS[set]).length, 6, `${set} category count`);
+    for (const [name, values] of Object.entries(PRESET_SETS[set])) {
+      assert.ok(Array.isArray(values), `${set}.${name} is an array`);
       for (const value of values) {
-        assert.match(value, /^#[0-9A-F]{6}$/, `${mode}.${name} → ${value}`);
+        assert.match(value, /^#[0-9A-F]{6}$/, `${set}.${name} → ${value}`);
       }
     }
   }
 });
 
 test('preset tables match sop.md §4/§5', () => {
-  const hc = DEFAULT_PRESETS.highContrast;
-  assert.deepEqual(hc.Cool, ['#111827', '#1F2937', '#334155', '#475569', '#64748B', '#0F766E', '#115E59']);
-  assert.deepEqual(hc.Blue, ['#1E3A8A', '#1D4ED8', '#2563EB', '#1E40AF', '#0369A1', '#075985', '#0C4A6E']);
-  assert.deepEqual(hc.Hot, ['#991B1B', '#DC2626', '#E11D48', '#BE123C', '#C2410C', '#EA580C', '#9A3412']);
-  assert.deepEqual(hc.Purple, ['#581C87', '#7E22CE', '#9333EA', '#6B21A8', '#6D28D9', '#5B21B6']);
-  assert.deepEqual(hc.Green, ['#14532D', '#166534', '#15803D', '#047857', '#0F766E', '#065F46', '#3F6212']);
-  assert.deepEqual(hc.Neutral, ['#000000', '#262626', '#404040', '#525252', '#737373', '#A3A3A3', '#FFFFFF']);
+  const text = PRESET_SETS.text;
+  assert.deepEqual(text.Cool, ['#111827', '#1F2937', '#334155', '#475569', '#64748B', '#0F766E', '#115E59']);
+  assert.deepEqual(text.Blue, ['#1E3A8A', '#1D4ED8', '#2563EB', '#1E40AF', '#0369A1', '#075985', '#0C4A6E']);
+  assert.deepEqual(text.Hot, ['#991B1B', '#DC2626', '#E11D48', '#BE123C', '#C2410C', '#EA580C', '#9A3412']);
+  assert.deepEqual(text.Purple, ['#581C87', '#7E22CE', '#9333EA', '#6B21A8', '#6D28D9', '#5B21B6']);
+  assert.deepEqual(text.Green, ['#14532D', '#166534', '#15803D', '#047857', '#0F766E', '#065F46', '#3F6212']);
+  assert.deepEqual(text.Neutral, ['#000000', '#262626', '#404040', '#525252', '#737373', '#A3A3A3', '#FFFFFF']);
 
-  const lc = DEFAULT_PRESETS.lowContrast;
-  assert.deepEqual(lc.Cool, ['#F0FDFA', '#CCFBF1', '#99F6E4', '#E6FFFB', '#D1FAE5', '#ECFDF5']);
-  assert.deepEqual(lc.Blue, ['#EFF6FF', '#DBEAFE', '#BFDBFE', '#E0F2FE', '#BAE6FD', '#F0F9FF']);
-  assert.deepEqual(lc.Warm, ['#FFF7ED', '#FFEDD5', '#FED7AA', '#FEF3C7', '#FDE68A', '#FFFBEB']);
-  assert.deepEqual(lc.Neutral, ['#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#FAFAFA', '#F5F5F5']);
-  assert.deepEqual(lc.Pastel, ['#FCE7F3', '#FBCFE8', '#F3E8FF', '#EDE9FE', '#FCE7F3', '#FFE4E6']);
-  assert.deepEqual(lc.Green, ['#F0FDF4', '#DCFCE7', '#BBF7D0', '#D1FAE5', '#ECFCCB', '#F7FEE7']);
+  const panel = PRESET_SETS.panel;
+  assert.deepEqual(panel.Cool, ['#F0FDFA', '#CCFBF1', '#99F6E4', '#E6FFFB', '#D1FAE5', '#ECFDF5']);
+  assert.deepEqual(panel.Blue, ['#EFF6FF', '#DBEAFE', '#BFDBFE', '#E0F2FE', '#BAE6FD', '#F0F9FF']);
+  assert.deepEqual(panel.Warm, ['#FFF7ED', '#FFEDD5', '#FED7AA', '#FEF3C7', '#FDE68A', '#FFFBEB']);
+  assert.deepEqual(panel.Neutral, ['#F9FAFB', '#F3F4F6', '#E5E7EB', '#D1D5DB', '#FAFAFA', '#F5F5F5']);
+  assert.deepEqual(panel.Pastel, ['#FCE7F3', '#FBCFE8', '#F3E8FF', '#EDE9FE', '#FCE7F3', '#FFE4E6']);
+  assert.deepEqual(panel.Green, ['#F0FDF4', '#DCFCE7', '#BBF7D0', '#D1FAE5', '#ECFCCB', '#F7FEE7']);
 });
 
-test('high contrast Neutral carries pure black and pure white', () => {
-  const { Neutral } = DEFAULT_PRESETS.highContrast;
+test('the text set carries pure black and pure white', () => {
+  const { Neutral } = PRESET_SETS.text;
   assert.ok(Neutral.includes('#000000'));
   assert.ok(Neutral.includes('#FFFFFF'));
 });
 
-test('mergePresets replaces a named category and adds new ones', () => {
-  const merged = mergePresets(DEFAULT_PRESETS, {
-    highContrast: { Brand: ['#123456', '#654321'], Cool: ['#FFFFFF'] },
-    lowContrast: { Sand: ['#EFE7DA'] },
+test('mergePalette replaces a named category and adds new ones', () => {
+  const merged = mergePalette(PRESET_SETS.text, {
+    Brand: ['#123456', '#654321'],
+    Cool: ['#FFFFFF'],
   });
   // new categories land after the shipped ones
-  assert.deepEqual(merged.highContrast.Brand, ['#123456', '#654321']);
-  assert.deepEqual(merged.lowContrast.Sand, ['#EFE7DA']);
-  assert.equal(categoriesOf(merged, 'highContrast').length, 7);
+  assert.deepEqual(merged.Brand, ['#123456', '#654321']);
+  assert.equal(categoriesOf(merged).length, 7);
   // spec §9's example: naming a shipped category replaces it, in place
-  assert.deepEqual(merged.highContrast.Cool, ['#FFFFFF']);
-  assert.equal(categoriesOf(merged, 'highContrast')[0], 'Cool');
+  assert.deepEqual(merged.Cool, ['#FFFFFF']);
+  assert.equal(categoriesOf(merged)[0], 'Cool');
   // every other shipped category survives
-  assert.deepEqual(merged.highContrast.Blue, DEFAULT_PRESETS.highContrast.Blue);
-  assert.deepEqual(merged.lowContrast.Cool, DEFAULT_PRESETS.lowContrast.Cool);
+  assert.deepEqual(merged.Blue, PRESET_SETS.text.Blue);
   // the shipped tables are never mutated
-  assert.equal(DEFAULT_PRESETS.highContrast.Cool.length, 7);
-  assert.ok(!('Brand' in DEFAULT_PRESETS.highContrast));
-  merged.highContrast.Blue.push('#000000');
-  assert.equal(DEFAULT_PRESETS.highContrast.Blue.length, 7);
+  assert.equal(PRESET_SETS.text.Cool.length, 7);
+  assert.ok(!('Brand' in PRESET_SETS.text));
+  merged.Blue.push('#000000');
+  assert.equal(PRESET_SETS.text.Blue.length, 7);
+});
+
+test('palette merging keeps shipped categories and adds new ones', () => {
+  const merged = mergePalette(PRESET_SETS.panel, { Brand: ['#7C3AED'] });
+  assert.deepEqual(merged.Brand, ['#7C3AED']);
+  assert.deepEqual(merged.Cool, PRESET_SETS.panel.Cool);
+  assert.equal(categoriesOf(merged).length, 7);
+  // the shipped table is never mutated
+  assert.ok(!('Brand' in PRESET_SETS.panel));
 });
