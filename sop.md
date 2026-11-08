@@ -4,10 +4,17 @@
 
 Build a modern, reusable, framework-independent color picker library using **Vanilla JavaScript, HTML, and CSS**.
 
-The library should provide a professional color picker with two distinct color-selection modes:
+The library edits **named colour slots**. A slot is one colour the host paints somewhere in its own page; the picker does not know or care which element that is.
 
-1. **High Contrast** – for text, icons, labels, and foreground elements.
-2. **Low Contrast** – for panel backgrounds, chip backgrounds, badges, and other subtle UI surfaces.
+**Default: one slot, `color`** — a plain colour picker, no tab row, no pair. A host that paints more than one thing declares what it needs:
+
+1. **`text`** – for text, icons, labels, and foreground elements.
+2. **`background`** – for panel backgrounds, chip backgrounds, badges, and other subtle surfaces.
+3. Any other name it uses (`accent`, `border`, `link`, …) with its own label.
+
+Each slot gets its own preserved colour and its own preset grid inside one shared popup; a popup with two or more slots also gets a tab row so the shared editor knows which slot it writes.
+
+A slot's preset group (`text` or `panel`) is a **hint** for which palette to show first. It never restricts what the user may pick, and it must not be treated as a semantic rule by the implementation.
 
 The design should be clean, modern, compact, and easy to use. Avoid excessive colors, unnecessary decoration, and complicated controls.
 
@@ -38,26 +45,20 @@ Create a floating modal/popover color picker with the following structure:
 
 - Title: "Choose Color"
 - Small color palette icon.
-- Close button in the top-right corner.
+- Reset and close buttons in the top-right corner.
 - Clean typography and subtle separators.
 
-### B. Two Main Tabs
+### B. Slot Tabs
 
-Display two large tabs horizontally.
+With two or more slots, display one large tab per slot, horizontally, in the order the slots were declared.
 
-**Tab 1: High Contrast**
+**A single slot renders no tab row at all** — there is nothing to switch to, and a lone tab is a dead control. Opening such a picker puts keyboard focus on the colour area instead.
 
-- Label: High Contrast
-- Description: For text color
-- Icon: Aa
-- Represents foreground colors.
+Each tab carries:
 
-**Tab 2: Low Contrast**
-
-- Label: Low Contrast
-- Description: For panel background
-- Icon: A filled square
-- Represents background colors.
+- The slot's label (`text` defaults to "Text colour", `background` to "Panel background", any other slot to its id).
+- An optional short description line (`hint`), e.g. "For text color".
+- A small glyph (`symbol`) — "Aa" for text, a filled square for backgrounds, the id's first letter otherwise.
 
 The active tab should have:
 - Clear blue accent indicator.
@@ -65,19 +66,23 @@ The active tab should have:
 - Stronger text weight.
 - Smooth transition.
 
-The inactive tab should remain neutral.
+The inactive tabs should remain neutral.
 
-Switching tabs must preserve the selected color in each mode.
+Switching tabs must preserve the selected color of every slot independently.
+
+The tab row lays out one column per slot. With three or more slots it must remain readable rather than shrinking labels into an ellipsis; on narrow viewports it may wrap.
 
 ### C. Custom Color Editor
 
-Provide a shared color editor with:
+Provide one shared color editor that edits the active slot, with:
 
-1. Large saturation/lightness gradient area.
+1. Large saturation/value gradient area.
 2. Hue slider.
 3. Alpha/transparency slider with checkerboard background.
 4. Color preview swatch.
 5. HEX input field.
+6. Copy button on the right of the HEX field, writing the active slot's value to
+   the clipboard and confirming on the button itself.
 
 The editor should update interactively.
 
@@ -90,22 +95,19 @@ Requirements:
 - Support HEX values with and without alpha.
 - Support RGB/RGBA internally.
 - Maintain accurate color synchronization between all controls.
+- An edit in the editor writes **only** the active slot; every other slot keeps its value.
 
 Use pointer events to support both mouse and touch.
 
 ### D. Preset Color Palettes
 
-Display preset categories and their corresponding color swatches.
+Display preset categories and their corresponding color swatches, **both palette groups at once**, always. A dimmed panel tone is a legitimate text colour, so the panel group must never be hidden just because the editor is showing a text slot.
 
-The preset area should be organized into two independent sections:
-
-- Text Color Presets
-- Panel Color Presets
-
-When the active tab changes, emphasize the corresponding preset section.
-
-Each section has its own categories and color palette.
-Preset category buttons should be compact pills.
+- Two sections, side by side: **Text colour presets** (`Aa`) and **Panel colour presets** (▰), whatever the slot count.
+- The section matching the active slot's `presetSet` is emphasised; the other stays neutral but fully usable.
+- Each section has its own categories and its own memory of the last category chosen.
+- A swatch click writes **the slot the editor is showing** — never a slot the palette "owns". With one slot that is the only colour; with several it is the active tab's.
+- Preset category buttons should be compact pills.
 
 Selected categories should have a subtle blue background and blue border.
 
@@ -118,9 +120,9 @@ Selected swatches should have:
 
 Avoid excessive shadows and gradients on individual swatches.
 
-## 4. High Contrast Presets – Text Colors
+## 4. Preset Group `text` – Foreground Colors
 
-These presets are intended for text, icons, and foreground elements.
+These presets are intended for text, icons, and foreground elements. They are shown for any slot whose `presetSet` is `text`.
 
 Provide the following categories:
 
@@ -181,13 +183,13 @@ Provide the following categories:
 Allow additional categories to be added through configuration.
 
 Important:
-- High Contrast presets should prioritize readability.
+- These presets should prioritize readability.
 - Avoid overly pale colors as text presets.
 - White and light colors may be included as exceptions for use on dark surfaces.
 
-## 5. Low Contrast Presets – Background Colors
+## 5. Preset Group `panel` – Background Colors
 
-These presets are intended for panels, chips, badges, and subtle UI surfaces.
+These presets are intended for panels, chips, badges, and subtle UI surfaces. They are shown for any slot whose `presetSet` is `panel`, and they are also the default group for a slot that names none.
 
 Colors should be soft, light, and visually comfortable.
 
@@ -243,21 +245,23 @@ Colors should be soft, light, and visually comfortable.
 Allow additional categories to be added through configuration.
 
 Important:
-- Low Contrast presets should prioritize subtlety and comfort.
+- These presets should prioritize subtlety and comfort.
 - Avoid highly saturated backgrounds.
 - Background colors should work well with dark text.
-- The library should allow custom presets.
+- The library should allow custom presets per slot.
 
 ## 6. Color Pairing and Contrast Suggestions
 
 Provide an optional feature to suggest compatible foreground/background combinations.
 
-When a user selects a High Contrast color:
-- Identify suitable Low Contrast background colors.
-- Prefer backgrounds that provide good readability.
+Contrast only means something for a declared pair of slots, so the host must name that pair explicitly (`contrastPair: ["text", "background"]`). With no pair declared the feature stays off rather than guessing which two colours the host meant.
 
-When a user selects a Low Contrast color:
-- Suggest suitable High Contrast text colors.
+When the pair is declared:
+- While editing the first slot, suggest colours from the **other** slot's palette.
+- While editing the second slot, suggest colours from the **first** slot's palette.
+- Editing any slot outside the pair shows no suggestions.
+
+Prefer partners that provide good readability against the colour being edited.
 
 Implement WCAG contrast ratio calculations.
 
@@ -268,27 +272,28 @@ Support:
 
 Show a small contrast indicator where appropriate.
 
-Do not automatically change the user's selected color.
+Do not automatically change the user's selected color. Picking a suggested partner sets the *other* slot of the pair.
 
 This feature should be optional and configurable.
 
 ## 7. Interaction and Behavior
 
-### Tab Switching
-- Switch between High Contrast and Low Contrast.
-- Preserve the selected color for each tab independently.
-- Preserve the last selected preset category.
+### Slot Switching
+- Switch between the declared slots.
+- Preserve the selected color for every slot independently.
+- Preserve the last selected preset category per slot.
 - Update the editor and preview accordingly.
 
 ### Preset Selection
 - Clicking a category displays its colors.
-- Clicking a swatch selects that color.
+- Clicking a swatch applies that colour to the slot the editor is showing.
 - Update HEX input and preview immediately.
-- Display a checkmark on the selected swatch.
+- Display a checkmark on every swatch carrying the active colour, in either group.
+- Never write a slot other than the active one.
 
 ### Custom Color Selection
 - Allow users to choose any color using the gradient editor.
-- Update the active color in real time.
+- Update the active slot's color in real time.
 - Preserve alpha transparency.
 - Update the selected swatch state appropriately.
 
@@ -301,13 +306,16 @@ This feature should be optional and configurable.
 - Normalize valid input.
 - Show validation feedback for invalid values.
 - Support keyboard editing.
+- Offer a copy control on the right of the field that writes the active slot's
+  current value to the clipboard, confirms on the button, and announces the
+  result to assistive tech.
 
 ### Footer Actions
 
 Provide three actions:
 
 **Reset**
-- Restore the initial colors.
+- Restore the initial colors of every slot.
 - Reset selected categories if configured.
 - Do not close the picker.
 
@@ -317,13 +325,15 @@ Provide three actions:
 - Close the picker.
 
 **OK**
-- Commit both selected colors.
+- Commit the selected colors of all slots.
 - Trigger the appropriate callback.
 - Close the picker.
 
+A popover has no footer: every edit is painted live, and closing keeps the edits.
+
 ## 8. Public JavaScript API
 
-Design a simple API.
+Design a simple API. A colour's key is its slot id, so the host always knows which target a value belongs to.
 
 Example:
 
@@ -331,15 +341,23 @@ Example:
 const picker = new ColorPicker({
     container: document.body,
 
+    slots: [
+        { id: "text", label: "Body ink", symbol: "Aa", presetSet: "text" },
+        { id: "background", label: "Card", symbol: "▰", presetSet: "panel" },
+        { id: "accent", label: "Accent", symbol: "✦", hint: "Buttons and links" }
+    ],
+
     initialColors: {
-        highContrast: "#0F766E",
-        lowContrast: "#CCFBF1"
+        text: "#0F766E",
+        background: "#CCFBF1",
+        accent: "#7C3AED"
     },
 
-    activeTab: "highContrast",
+    activeSlot: "text",
 
     showAlpha: true,
     showContrastSuggestions: true,
+    contrastPair: ["text", "background"],
 
     onChange: (colors) => {
         console.log("Colors changed:", colors);
@@ -357,6 +375,32 @@ const picker = new ColorPicker({
 picker.open();
 ```
 
+With no `slots` option the picker edits one colour, `color`:
+
+```javascript
+const picker = new ColorPicker({
+    initialColors: { color: "#0F766E" },
+    onChange: (colors) => console.log(colors.color)
+});
+```
+
+The example above declares three slots; two or more also bring the tab row, and any two named in `contrastPair` enable the contrast feature.
+
+### Slot shape
+
+```javascript
+{
+    id: "accent",          // required, unique, /^[A-Za-z][\w-]*$/, the key in colors
+    label: "Accent",       // tab name
+    symbol: "✦",           // glyph in the tab
+    hint: "Buttons and links",  // small line under the tab label
+    presetSet: "text",     // which palette group is emphasised; default "panel"
+    color: "#7C3AED"       // fallback when initialColors has no value for this id
+}
+```
+
+Palettes belong to the two groups, not to a slot: `presets` is keyed by group name at the top level of the options.
+
 ### Required Public Methods
 
 ```javascript
@@ -367,23 +411,21 @@ picker.destroy();
 picker.getColors();
 
 picker.setColors({
-    highContrast: "#0F766E",
-    lowContrast: "#CCFBF1"
+    color: "#0F766E"
 });
 
-picker.setActiveTab("highContrast");
+picker.setActiveSlot("color");
 ```
 
 ### Expected getColors() Result
 
 ```javascript
 {
-    highContrast: "#0F766E",
-    lowContrast: "#CCFBF1"
+    color: "#0F766E"
 }
 ```
 
-The returned values should be normalized HEX strings, including alpha only when appropriate.
+The returned values should be normalized HEX strings, including alpha only when appropriate. The keys are exactly the declared slot ids — no extra keys, and a key no slot declared is dropped.
 
 ### Events
 
@@ -394,7 +436,7 @@ Support:
 - onOpen: Triggered when the picker opens.
 - onClose: Triggered when the picker closes.
 
-Callbacks should receive a copy of the current color state, not a mutable internal reference.
+Callbacks should receive a copy of the current color state, not a mutable internal reference. `onChange` hands back every slot, including the ones the edit did not touch; that is a snapshot, not a claim that they changed.
 
 ## 9. Configuration Options
 
@@ -406,42 +448,53 @@ Example:
 const picker = new ColorPicker({
     container: document.body,
 
+    slots: [
+        { id: "text" },
+        { id: "background" },
+        { id: "accent", presetSet: "panel" }
+    ],
+
     initialColors: {
-        highContrast: "#2563EB",
-        lowContrast: "#DBEAFE"
+        text: "#2563EB",
+        background: "#DBEAFE",
+        accent: "#7C3AED"
     },
 
-    activeTab: "highContrast",
+    activeSlot: "text",
 
     showAlpha: true,
     showContrastSuggestions: true,
+    contrastPair: ["text", "background"],
 
     theme: "light",
 
     presets: {
-        highContrast: {
+        text: {
             Cool: ["#111827", "#1F2937"],
             Blue: ["#1D4ED8", "#2563EB"]
         },
 
-        lowContrast: {
-            Cool: ["#F0FDFA", "#CCFBF1"],
-            Blue: ["#EFF6FF", "#DBEAFE"]
+        panel: {
+            Brand: ["#F0FDFA", "#CCFBF1"]
         }
     }
 });
 ```
 
 Support:
-- Custom preset categories.
-- Custom preset colors.
-- Initial colors.
-- Initial active tab.
+- Any number of named slots, each with its own label, glyph and hint.
+- A preset group hint per slot, defaulting to `panel`.
+- Custom preset categories and colors, keyed by palette group.
+- Initial colors per slot.
+- Initial active slot.
+- A declared contrast pair for suggestions.
 - Light/dark theme.
 - Alpha support.
 - Contrast suggestions.
 - Custom CSS class.
-- Custom labels where practical.
+- Custom labels where practical (chrome strings, tab titles and hints, swatch names).
+
+A category the configuration names **replaces** the shipped category of that name and keeps its position; a new name is appended after the shipped ones. The shipped tables are never mutated.
 
 ## 10. Visual Design Guidelines
 
@@ -459,9 +512,9 @@ The design should follow a modern desktop application aesthetic.
 
 ### Layout
 - Header at the top.
-- Two prominent tabs.
+- Slot tabs below it.
 - Color editor in the middle.
-- Preset palettes below.
+- Preset palettes below, one column per slot.
 - Footer actions at the bottom.
 
 ### Color Swatches
@@ -489,16 +542,17 @@ The design should follow a modern desktop application aesthetic.
 
 Desktop:
 - Centered modal or anchored popover.
-- Two preset sections can appear side by side.
+- Preset sections can appear side by side, one column per slot.
 - Color editor and presets should fit without unnecessary scrolling.
 
 Tablet:
 - Reduce spacing and swatch sizes.
-- Keep both tabs visible.
+- Keep every slot tab visible, wrapping if needed.
 
 Mobile:
 - Use a full-width or bottom-sheet layout.
 - Stack preset sections vertically.
+- Let the tab row wrap rather than clip.
 - Support touch dragging.
 - Keep footer actions accessible.
 
@@ -515,14 +569,32 @@ Mobile:
 
 ## 13. Deliverables
 
-Create the complete working library with the following files:
+Create the complete working library. The implementation is split into ES modules so each file stays small and reviewable:
 
 ```text
 color-picker/
 ├── index.html
-├── color-picker.js
+├── demo.html            (optional full-page demo)
 ├── color-picker.css
-└── README.md
+├── README.md
+└── src/
+    ├── color.js
+    ├── presets.js
+    ├── options.js
+    ├── tablist.js
+    ├── template.js
+    ├── editor.js
+    ├── copy.js
+    ├── presets-panel.js
+    ├── contrast.js
+    ├── suggestions.js
+    ├── focus.js
+    ├── drag.js
+    ├── popover.js
+    ├── swatches.js
+    ├── bindings.js
+    ├── assemble.js
+    └── color-picker.js
 ```
 
 ### index.html
@@ -530,20 +602,19 @@ A complete demonstration page containing:
 - Color picker initialization.
 - Example text color usage.
 - Example panel background usage.
-- Open picker button.
+- A slot beyond the shipped pair (e.g. `accent`).
 - Live preview of selected colors.
-- Demonstrations of both tabs.
 - Demonstration of custom preset configuration.
 
-### color-picker.js
-Contains:
+### src/color-picker.js and the modules beside it
+Together they contain:
 - ColorPicker class.
 - Color parsing and normalization.
 - HEX/RGB/HSL conversion.
 - HSV/HSL gradient calculations.
 - Alpha handling.
 - Contrast ratio calculations.
-- Preset management.
+- Slot resolution and preset management.
 - UI rendering.
 - Event handling.
 - Public API.
@@ -553,7 +624,7 @@ Keep the implementation modular and readable.
 ### color-picker.css
 Contains:
 - Complete component styling.
-- Responsive layout.
+- Responsive layout, including a slot-count-driven grid.
 - Active and inactive states.
 - Hover and focus states.
 - Light/dark themes.
@@ -563,6 +634,7 @@ Contains:
 Include:
 - Installation.
 - Basic usage.
+- Slot configuration.
 - Configuration.
 - Public API.
 - Callback examples.
@@ -575,23 +647,31 @@ The implementation must be fully functional, not just a visual mockup.
 
 Verify the following:
 
-1. Both tabs work independently.
-2. Each tab remembers its selected color.
-3. Preset categories work correctly.
-4. Selecting a swatch updates the HEX input.
-5. HEX input updates the color editor.
-6. Hue slider works correctly.
-7. Saturation/lightness editor supports dragging.
-8. Alpha slider works correctly.
-9. Invalid HEX input is handled safely.
-10. Reset restores initial values.
-11. Cancel restores the pre-edit values.
-12. OK commits the current values.
-13. Multiple instances work independently.
-14. The component works without external dependencies.
-15. Responsive layout works on mobile and desktop.
-16. Contrast calculations are mathematically correct.
+1. Every declared slot gets its own tab when there are two or more; both palette groups are always rendered.
+2. Each slot remembers its selected color.
+3. An editor edit writes only the active slot.
+4. Both palette groups are always on screen; a preset swatch writes the slot the editor is showing, never another.
+5. Preset categories work correctly and are remembered per group.
+6. Selecting a swatch updates the HEX input.
+7. HEX input updates the color editor.
+8. Hue slider works correctly.
+9. Saturation/value editor supports dragging.
+10. Alpha slider works correctly.
+11. Invalid HEX input is handled safely.
+12. Reset restores the initial values of every slot.
+13. Cancel restores the pre-edit values.
+14. OK commits the current values.
+15. A slot with no preset group borrows the panel palette.
+16. Contrast suggestions appear only for the slots named in `contrastPair`, and never move the color being edited.
+17. Multiple instances work independently.
+18. The component works without external dependencies.
+19. Responsive layout works on mobile and desktop, including three or more slots.
+20. Contrast calculations are mathematically correct.
+21. The copy button writes the active slot's value, confirms on itself, and never
+    copies an inactive slot's colour.
+22. A single-slot picker renders no tab row, focuses the colour area on open, and
+    edits its colour like any other slot.
 
 **Important implementation principle:** Keep the library lightweight and straightforward. Do not overengineer it. Prioritize a polished UI, predictable behavior, clean JavaScript architecture, and a simple integration API.
 
-Use the supplied color picker design reference as the primary visual direction, while following the two-tab High Contrast / Low Contrast concept described above.
+Use the supplied color picker design reference as the primary visual direction, adapted to the slot model described above.
