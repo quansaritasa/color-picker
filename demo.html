@@ -83,7 +83,7 @@
       <p>Pick a text color and a panel background — this page repaints as you drag.</p>
     </div>
     <div class="actions">
-      <div id="swatches"></div>
+      <div id="triggers"></div>
       <button class="ghost" id="resetColors">Reset</button>
     </div>
   </div>
@@ -105,7 +105,7 @@
       <span id="ratioText">measuring…</span>
     </div>
     <p class="small">Ratio is measured live with the library's own WCAG code: 4.5:1 for normal text,
-      3:1 for large text, 7:1 for AAA. <span class="hint">Click a swatch to open the picker on that tab.</span></p>
+      3:1 for large text, 7:1 for AAA. <span class="hint">Click a trigger to open the picker on that tab.</span></p>
   </section>
 </main>
 
@@ -137,10 +137,10 @@
   };
 
   const picker = new ColorPicker({
-    swatches: document.getElementById('swatches'),
+    triggers: document.getElementById('triggers'),
     slots: [
       { id: 'text', label: 'Text colour', symbol: 'Aa', presetSet: 'text' },
-      { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'panel' },
+      { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
     ],
     initialColors: { text: '#0F766E', background: '#CCFBF1' },
     showContrastSuggestions: true,

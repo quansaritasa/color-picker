@@ -1,23 +1,23 @@
 /**
- * Swatch triggers: one colour square per slot, mounted in the host's own
- * layout. The square is the control — clicking it opens the picker on that
- * slot, anchored to the square. Reads `picker.colors`, never writes them.
+ * Trigger bar: one colour square per slot, mounted in the host's own layout.
+ * The square is the control — clicking it opens the picker on that slot,
+ * anchored to the square. Reads `picker.colors`, never writes them.
  */
 
-export function createSwatches({ picker, target, slots, labels = {} }) {
+export function createTriggers({ picker, target, slots, labels = {} }) {
   const host = typeof target === 'string' ? document.querySelector(target) : target;
   if (!host) {
-    console.warn('ColorPicker: `swatches` target not found — no swatch controls rendered.');
+    console.warn('ColorPicker: `triggers` target not found — no trigger controls rendered.');
     return null;
   }
-  const names = labels.swatches || {};
+  const names = labels.triggers || {};
   const nameOf = (slot) => names[slot.id] || slot.label;
 
   const bar = document.createElement('div');
-  bar.className = 'cp-swatches';
+  bar.className = 'cp-triggers';
   bar.dataset.theme = picker.options.theme;
   bar.setAttribute('role', 'group');
-  bar.setAttribute('aria-label', labels.swatchesLabel || 'Colours');
+  bar.setAttribute('aria-label', labels.triggersLabel || 'Colours');
 
   const buttons = {};
   for (const slot of slots) {
@@ -59,7 +59,7 @@ export function createSwatches({ picker, target, slots, labels = {} }) {
     render(colors) {
       for (const slot of slots) {
         const { button, chip, hex } = buttons[slot.id];
-        chip.style.setProperty('--cps-fill', colors[slot.id]);
+        chip.style.setProperty('--cpt-fill', colors[slot.id]);
         hex.textContent = colors[slot.id];
         button.setAttribute('aria-label', `Edit ${nameOf(slot)}, currently ${colors[slot.id]}`);
       }

@@ -8,22 +8,27 @@
 /** Ids must be unique per instance: two pickers can share a page. */
 let dialogCount = 0;
 
+/* Shipped strings. `maximize`/`restore` are the two names of the same toggle,
+   so the geometry module reads them from here instead of repeating a default. */
+export const LABELS = {
+  title: 'Choose Color',
+  close: 'Close',
+  reset: 'Reset',
+  cancel: 'Cancel',
+  apply: 'OK',
+  hex: 'Hex color value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  sv: 'Saturation and brightness',
+  svHint: 'Drag, or use the arrow keys: left and right change saturation, up and down change brightness. Hold Shift for larger steps.',
+  slotsLabel: 'Color type',
+  copy: 'Copy HEX',
+  maximize: 'Maximize',
+  restore: 'Restore',
+};
+
 export function buildTemplate({ slots = [], groups = [], showAlpha = true, labels = {} } = {}) {
-  const L = {
-    title: 'Choose Color',
-    close: 'Close',
-    reset: 'Reset',
-    cancel: 'Cancel',
-    apply: 'OK',
-    hex: 'Hex color value',
-    hue: 'Hue',
-    opacity: 'Opacity',
-    sv: 'Saturation and brightness',
-    svHint: 'Drag, or use the arrow keys: left and right change saturation, up and down change brightness. Hold Shift for larger steps.',
-    slotsLabel: 'Color type',
-    copy: 'Copy HEX',
-    ...labels,
-  };
+  const L = { ...LABELS, ...labels };
   const refs = {};
 
   const el = (tag, cls, text) => {
@@ -42,16 +47,34 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
     return attr(node, attrs);
   };
 
+  /* Header glyphs are drawn, not typed: `⤢`/`⤡` sit on different baselines per
+     OS and the resize mark has no glyph at all. */
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const icon = (d, cls) => {
+    const node = document.createElementNS(SVG_NS, 'svg');
+    attr(node, { viewBox: '0 0 16 16', class: cls, 'aria-hidden': 'true' });
+    const path = document.createElementNS(SVG_NS, 'path');
+    attr(path, { d, fill: 'none', stroke: 'currentColor', 'stroke-width': '1.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+    node.append(path);
+    return node;
+  };
+
   const heading = el('div', 'heading');
   const title = el('h2', null, L.title);
   title.id = `cp-title-${++dialogCount}`;
   heading.append(el('div', 'app-icon', '◉'), title);
-  /* Reset and close are both icon buttons in the header: there is no footer
-     strip to hold a labelled action. */
+  /* Reset, maximize and close are all icon buttons in the header: there is no
+     footer strip to hold a labelled action. */
   const reset = button('reset-btn', '↺', { 'aria-label': L.reset, title: L.reset });
+  /* One button, two names: `maximize.js` swaps the icon and the label. */
+  const maximize = button('maximize-btn', undefined, { 'aria-label': L.maximize, title: L.maximize });
+  maximize.append(
+    icon('M10 2.5h3.5V6M13.5 2.5 9.5 6.5M6 13.5H2.5V10M2.5 13.5 6.5 9.5', 'icon-expand'),
+    icon('M13.5 9.5H10V6M10 9.5 13.5 6M2.5 6.5H6V10M6 6.5 2.5 10', 'icon-collapse'),
+  );
   const close = button('close-btn', '×', { 'aria-label': L.close, title: L.close });
   const headerActions = el('div', 'header-actions');
-  headerActions.append(reset, close);
+  headerActions.append(reset, maximize, close);
   const header = el('header', 'picker-header');
   header.append(heading, headerActions);
 
@@ -64,9 +87,13 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
     refs.tabs = slots.map((slot) => {
       const tab = button('tab', undefined, { role: 'tab', 'aria-selected': 'false' });
       tab.dataset.slot = slot.id;
-      const body = el('span');
+      /* The hint is a tooltip, not a line: the visible second line carries the
+         slot's type, so two tabs of one group differ by name and still read as
+         the same kind of colour. */
+      if (slot.hint) tab.title = slot.hint;
+      const body = el('span', 'tab-body');
       body.append(el('strong', null, slot.label));
-      if (slot.hint) body.append(el('small', null, slot.hint));
+      if (slot.type) body.append(el('small', 'tab-type', slot.type));
       tab.append(el('span', 'tab-symbol', slot.symbol), body);
       tabs.append(tab);
       return tab;
@@ -150,11 +177,20 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
     'aria-modal': 'true',
     'aria-labelledby': title.id,
   });
-  picker.append(header, ...(tabs ? [tabs] : []), editor, el('div', 'divider'), presets, suggestions, status, footer);
+  /* The panel itself never scrolls: the body does, so the resize grip stays in
+     the corner of the box instead of travelling with the content. */
+  const body = el('div', 'picker-body');
+  body.append(header, ...(tabs ? [tabs] : []), editor, el('div', 'divider'), presets, suggestions, status, footer);
+  /* Pointer-only affordance — `m` is the keyboard way to change the box. */
+  const grip = attr(el('span', 'resize-grip'), { 'aria-hidden': 'true' });
+  picker.append(body, grip);
 
   Object.assign(refs, {
     panel: picker,
+    body,
     header,
+    grip,
+    maximize,
     sv,
     svThumb,
     preview,

@@ -357,3 +357,257 @@ points at both demo pages.
 - Structural checks on `demo.html`: every `getElementById` target exists in the markup (`0` missing), no unbalanced tag (HTMLParser walk, empty stack), inline module passes `node --check` as ESM, file is 178 lines.
 - Ratio cross-check for the shipped pair: `parseHex('#0F766E')` on `parseHex('#CCFBF1')` → `4.9:1`, `wcagLevel` → `AA`, which is what the initial pill renders.
 - Not verified: the page was not rendered in a browser this session — the headless Chrome invocation was blocked by tool approval. Open `/demo.html` through `python3.12 -m http.server` to check the paint path.
+
+## Iteration 8 — 2026-11-08 20:05 +07
+**Trigger:** user request (direct instruction after iteration 7)
+**Status:** Implemented
+**Delivery:** Manual
+**Plan reference:** none — a slot-shape extension, no plan iteration written
+
+### Summary
+A slot tab now shows two settings the host owns: the slot's **name** (`label`) and its
+**type** — a short second line (`Text` / `Background` by default, from `presetSet`) that a slot
+or `labels.tabs` may override. The free-form `hint` moved from that line to the tab's
+tooltip. Slots may share a `presetSet`, so two panel backgrounds are two tabs that read as
+the same kind of colour; the row was already per slot, not per group.
+
+### Added
+**[1] - `type` on the slot shape (`src/options.js:resolveSlots`).**
+  - Default: `PRESET_GROUPS[presetSet].type` (`Text` / `Background`), so a slot that names no
+    palette borrows the background type the same way it borrows the background palette.
+  - Overrides resolve `slot.type -> labels.tabs[id].type -> shipped -> derived`; nothing
+    validates it against `presetSet`, because the type is display copy, not a palette rule.
+**[2] - `.tab-type` line + `hint` as `title` (`src/template.js`).**
+  - The tab body is a `.tab-body` flex column: name at the top, type at the bottom, so a
+    four-tab row whose labels wrap to different line counts still aligns every type line.
+**[3] - A fourth tab in the `index.html` sheet instance** — `Heading` / `Section bg` /
+  `Card bg` (both `presetSet: 'background'`) / `Accent` (type override), painting `--sheet-card`
+  as well.
+
+### Changed
+**[1] - `color-picker.css`** — `.tab` aligns stretch, `.tab-symbol` centres itself,
+`.tab-body` is the space-between column (+20 lines).
+**[2] - README / sop.md** — slot table `type` row, `hint` is now a tooltip, the
+`labels.tabs` row gains `type`, and the slot paragraph says two slots may share a group.
+**[3] - The preset group `panel` is renamed `background`** (same pass, before commit):
+`PRESET_SETS` / `PRESET_GROUPS` keys, `GROUP_KEYS`, `OTHER_GROUP`, `data-group`, `presets`
+keys, `labels.presets`, every `presetSet: 'panel'`, and the shipped section title/type
+(`Background colour presets` / `Background`). No alias is kept — the branch is unmerged and
+has no npm consumers.
+**[4] - `container` takes a selector too (`src/assemble.js`).** `container: '#root'` resolves once
+with `document.querySelector`; a selector that matches nothing warns by name and mounts on
+`document.body` instead of throwing inside `append`. The demo's three instances now pass
+selector strings for both `container` and `swatches`.
+**[5] - `index.html` gains two usage cards** under the sheet demo: one `<pre>` for the default
+single-colour instance (`{ color }`, no `slots` → no tab row) and one with the exact
+four-slot `new ColorPicker({...})` the page runs, plus a line saying `presetSet` is `'text' | 'background'`
+(default `background`, both groups always rendered). `min-width: 0` on the card keeps the block
+scrolling inside itself instead of widening the 390px page (`docScrollWidth` 375).
+
+### Verification
+- `node --test` → **39/39** (3 new: derived/override resolution, a shared group).
+- `test/smoke.html` in headless Chrome → **193/193 PASS**, title `PASS`. New checks: the
+  second line is the type and not the hint, the hint stays a `title`, two slots of one
+  group get two tabs with the same type, the second tab writes only its own slot, and each
+  keeps its own colour across switches; `container` accepts a selector, accepts an element, and
+  a selector that matches nothing warns and falls back to `body`.
+- Geometry: modal 500px 4 slots `500x476 -> 500x502`; popover 620px 4 slots `620x461`;
+  tab heights `34` (pair) / `61` (4-slot, wrapped label). All four tabs measure
+  `name:6 type:41` from the tab top, so the type line is one row.
+- Contrast of the type line (measured in the rendered themes): light idle `4.6:1`, light
+  active `5.0:1`, dark idle `5.1:1`, dark active `5.5:1`.
+- Screenshots inspected: `index.html` sheet popover 620 (desktop), modal 500, and the
+  390px bottom sheet where the four tabs wrap to two rows.
+
+## Iteration 9 — 2026-11-08 21:34 +07
+**Trigger:** user request — "refactor the demo page, so that in each panel we have: setup sample
+code, then the real demo that can change color on UI"
+**Status:** Implemented
+**Delivery:** Manual
+**Plan reference:** none — a demo-page layout pass, no plan iteration written
+
+### Summary
+`index.html` is now five panels in one column, and every panel has the same two halves in the
+same order: **Setup** — the exact `new ColorPicker({...})` call that panel runs — then
+**Live**, the instance that call builds, trigger bar included, so a colour picked there repaints
+the surface right under the snippet. The old shape (live surfaces at the top, three code-only
+"usage" cards at the bottom, one trigger bar in the page header) is gone: the config was
+separated from the thing it configures.
+
+### Changed
+**[1] - Panel order is setup → live, five times.** `01` default single colour (`color`, no
+tab row), `02` text/panel pair with `contrastPair` + suggestions, `03` dark-theme brand picker
+(3 slots, custom `Brand` category), `04` four-slot product section (two slots sharing
+`presetSet: 'background'`), `05` `fields` instance. Each trigger bar moved out of the page
+header and into its own stage, so a panel can be read and tried without scrolling elsewhere.
+**[2] - `05` gained the demo it never had.** The `fields` block was code-only; it now carries two
+real inputs (`data-slot="ink"` / `"wash"`, so the keys are `colors.ink` / `colors.wash` as the
+README prints them), and an `onChange` paints a preview strip — the fields are the controls, the
+strip is the proof.
+**[3] - The snippet is the running call.** Same option names, same values, same mount selectors;
+`onChange` bodies are the demo's own painters, and each block ends with the initial paint
+(`paintX(picker.getColors())`) rather than hiding it. Probe check: every `triggers: '#id'` /
+`fields: '…'` in a `<pre>` resolves inside that panel's own stage, and the slot ids in the
+snippet are exactly the `data-slot`s on its trigger bar (`1/2/3/4` chips for panels 01–04).
+**[4] - Card layout.** `min-width: 0` on the panel, `max-width: 100%; overflow-x: auto` on the
+`<pre>`, dark code block on a white card, tinted stage under it, `Setup` / `Live` micro-labels.
+**[5] - README / sop.md** — the Development paragraph and §13 `index.html` bullet describe the
+panel-per-shape page instead of "preview cards + usage cards".
+
+### Verification
+- Probe `.local/probe-panel-demo.html` (880px and a 375px iframe, real page in an iframe,
+  synthetic clicks): `PANELS 5`, all five `pre-before-stage`, triggers `1/2/3/4` + 2 fields,
+  parity `host=true slots=true` on 02–05.
+- Drove one real change per instance and compared the painted value against `getColors()`:
+  `#111827` on `oneHeadline`, on `pairPanel` (with `text` byte-identical — one slot moved), on
+  `brandChip`'s border (dark theme), on `--sheet-accent`, and in `inkField` + the preview
+  strip. All matched; no page errors.
+- Layout: desktop `doc 880/880`, every `pre` `782/782` (fits, no scroll at 880); 375px
+  `doc 375/375`, all five `pre` scrolling inside themselves (`pres-scrolling 5/5`).
+- Bottom sheet at 375: opened pair picker `375x658`, `bottom=844` of `innerH 844`, `doc 375/375`.
+- Popover: four-slot picker opens `620x413` at `174,420`, under its `Card bg` chip, on screen.
+- Screenshots inspected: `.local/panels-desktop-tall.png` (all five panels, clean end),
+  `.local/panels-narrow.png` (375), `.local/panels-open.png` (popover open).
+- `node --test` → **40/40**; `test/smoke.html` → **208 PASS, 0 FAIL**, title `PASS`
+  (both unchanged by this pass — no library code touched).
+
+## Iteration 10 — 2026-11-08 22:10 +07
+**Trigger:** user request — "when selected All or Accent, do not change the position of top of
+the popup, increasing or reducing size of panel is okay though"
+**Status:** Implemented
+**Delivery:** Manual
+**Plan reference:** none — a placement fix, no plan iteration written
+
+### Summary
+A popover's top edge is now pinned for the lifetime of one open: growing the panel (a preset
+section switched to `All`, the suggestions block opened, another tab's grid) changes its height
+and never its top. Before, every content resize re-ran `place()` and re-decided the fit, so a
+taller grid could flip the panel above its trigger or push it up the screen mid-edit.
+
+### Changed
+**[1] - `src/popover.js` (76 → 120 lines): the placement is remembered, not recomputed per resize.**
+  - Reason: the `ResizeObserver` calls `place()` on every content change, and `place()` re-derived
+    `top` from the *current* height — so growth re-ran the flip/clamp branch. Measured on the
+    brand picker (3 slots, dark, `All` clicked, 1440×813 viewport): top `344 → 213`, a 131px jump,
+    because `481 + 592` no longer fitted and the clamp took the new height into account.
+  - Resolution: `place()` keys its decision on the trigger box + viewport (`keyOf`). An unchanged
+    key keeps the stored `left/top` and only repaints, so content growth never re-decides.
+    Scroll or `resize` changes the key and re-anchors, which is the trigger moving, not the panel.
+  - Resolution: growth is bounded by a `max-height` (`innerHeight - 8 - top`, floor 160px) written
+    on the same pass, so a taller grid scrolls inside the panel instead of running off the bottom
+    edge — before this, `344 + 592 = 936` on an 813px viewport painted 123px past the window.
+    A panel flipped *above* its trigger is capped at its opening height instead: growing downwards
+    there would cover the anchor it hangs off. The natural box is re-measured (cap cleared first)
+    whenever the key changes, so a stale cap cannot decide the flip.
+  - Resolution: the mobile bottom-sheet branch still clears `left`, `top` **and** the new
+    `max-height`, so the CSS keeps owning the sheet.
+**[2] - `src/color-picker.js` stays at 200 lines: `open()` keeps its single `popover.place()` call.**
+  - Reason: the pin is per instance and keyed, so re-opening the same trigger at the same viewport
+    keeps the top the popup was last shown at (stable across opens), and a different trigger, a
+    scroll or a resized window changes the key and re-measures. No new entry point was needed on a
+    file already sitting on the repo's 200-line rule.
+**[3] - `README.md`: the popover paragraph states the pinned-top rule** (grow downwards, cap to an
+internal scroll, re-anchor only when the trigger or the window moves).
+
+### Verification
+- Probe `.local/probe-brand-diag2.html` (real modules, 1440×900 → viewport 813): brand picker
+  open `700,344 620x461`; after `All` + forced `place()` (the RO path, rAF is throttled headless)
+  top stays `344`, height stays `461`, `scrollHeight 590` → the grid scrolls inside. Before the fix
+  the same probe read top `344 → 213`.
+- Probe `.local/probe-brand-top.html`: with room to grow (trigger at 12px) the top holds at `63`
+  and the panel still grows `461 → 592` on `All`; the clamped-at-bottom instance holds `344` for
+  `All`, `Accent`, back to `Text` and back to `Brand`.
+- Probe `.local/probe-tabs-top3.html`: below-anchor `63` and above-anchor `337` both constant
+  across `All → Blue → All`.
+- Mobile (390×844 in a same-origin iframe, `.local/probe-sheet-cap.html`): `sheet:true`, panel
+  `0,186 390x658`, inline `left/top/maxHeight` all empty, bottom gap `0` — the sheet is untouched.
+- `node --test` → **40/40**. `test/smoke.html` (`--headless=new --window-size=1200,900
+  --virtual-time-budget=5000`) → **211 PASS, 0 FAIL**, title `PASS` (was 208). New checks: the
+  `All` grid is taller than one category, the popover top survives that growth, and the panel
+  still ends inside the viewport.
+- Screenshots inspected: `.local/shot-tabs-top.png` (below a trigger at the page top — hangs
+  under it, grows down, nothing clipped) and `.local/shot-tabs-mid.png` (clamped at the bottom
+  edge — full width, all rows reachable, no overflow past the window).
+
+## Iteration 11 — 2026-11-08 22:35 +07
+**Trigger:** user request — "Make the popup move-able and resize-able. Add a maximize/minimize
+toggle icon on the top right, on the left of the X icon and add hotkey "m" for it, when the popup
+is open. Ctrl/Cmd + Enter to close the popup like OK button."
+**Status:** Implemented
+**Delivery:** Manual
+**Plan reference:** none — a shell-geometry feature, no plan iteration written
+
+### Summary
+The panel box is the user's in both modes: the header moves it, a corner grip resizes it, and a
+header toggle (or `m`) swaps it between its own box and the whole viewport. `⌘`/`Ctrl`+`Enter` is
+the OK button — a modal commits and closes, a popover (no transaction) closes and keeps its edit.
+A popover used to be nailed to its trigger (`draggable` forced false); dragging or resizing it now
+detaches it from the anchor until the next open, while a fresh open still hands the box back to
+the trigger. Below 680px the bottom sheet still owns the geometry: grip and toggle are off.
+
+### Changed
+**[1] - `src/template.js` (182 → 214 lines): the toggle, the grip, and one scroll container.**
+  - `maximize-btn` sits between `reset-btn` and `close-btn`, drawn as two inline SVGs
+    (expand/collapse) rather than a glyph — `⤢`/`⤡` land on different baselines per OS. Both paths
+    are in the DOM and CSS shows one, so the JS only swaps the label.
+  - The shipped strings became `export const LABELS` so `maximize.js` reads the two names of the
+    toggle (`Maximize` / `Restore`) instead of a second copy of the default.
+  - Every child moved into a new `.picker-body`; the `.resize-grip` is its sibling. An absolutely
+    positioned grip inside the old scrolling panel travelled with the content (measured: after
+    `scrollTop = 400` its rect moved with the text), so the panel now clips and the body scrolls.
+**[2] - `src/resize.js` (new, 71 lines) and `src/drag.js` (99 → 118 lines).**
+  - The grip writes an explicit `width`/`height`, clamped to the room the viewport leaves it
+    (`400×320` floor; a popover grows right/down from its corner, a centred modal into both sides).
+  - `drag.js` gained `reset()`, `getOffset()`/`setOffset()` (the toggle restores a dragged box),
+    an `onStart` hook (the first press pins the popover) and a maximized guard. Double-click still
+    re-centres.
+**[3] - `src/maximize.js` (new, 96 lines) and `src/geometry.js` (new, 60 lines).**
+  - The toggle saves the box (`width`, `height`, `position`, `left`, `top`, `max-height`, offset),
+    writes `8px`/`8px` + viewport-minus-margins and `position: fixed`, and restores every field.
+    `position: fixed` is not decoration: a grid item that outgrows its area overflows one way only
+    (measured `16,16 1184x797` before), so the box needs a real containing block.
+  - One `createGeometry` builds drag + resize + maximize on one panel and owns `reset()` (un-maximize,
+    zero the offset in popover mode only, un-pin the popover) and `destroy()`, so `color-picker.js` stays at 200 lines:
+    `open()` calls `geometry.reset()` where it called `drag.clamp()`, `destroy()` calls
+    `geometry.destroy()`.
+  - `draggable`/`resizable` stay per-option predicates in `resolveOptions`; the missing half is a
+    stub, so the toggle survives `draggable: false, resizable: false`.
+**[4] - `src/popover.js` (120 → 145 lines): `pin()`/`unpin()`.** A pinned `place()` keeps `left/top`
+  and only re-caps the height; the sheet branch un-pins, so a narrow viewport hands the box back.
+  `options.js`: `resizable: true` added to `DEFAULTS`; the popover no longer forces `draggable: false`.
+**[5] - `src/bindings.js` (91 → 127 lines): the two keys, on the existing topmost-instance guard.**
+  `⌘`/`Ctrl`+`Enter` → `apply()` in a modal, `dismiss()` in a popover. `m` → `toggleMaximize()`, and
+  it is skipped while `event.target` is a text field, with any modifier, or on `event.repeat`.
+**[6] - `color-picker.css` (1063 → 1192 lines).**
+  - `.picker` is a flex column with `overflow: hidden`; `.picker-body` scrolls with
+    `> * { flex-shrink: 0 }` so a capped panel still scrolls instead of squeezing. The editor grows
+    into leftover height and `.footer` carries `margin-top: auto`, so a maximized panel is a big SV
+    area with `Cancel`/`OK` on the bottom edge instead of 380px of white space.
+  - Grip: 18px corner, `nwse-resize`, three diagonal grooves (`repeating-linear-gradient` inside a
+    `clip-path` triangle) + hover tint. Hidden while maximized and with `resizable: false`.
+  - Maximize glyph pair, drag cursor off while maximized, focus ring for the new button, and in the
+    `680px` block the sheet forces `width: 100% !important; height: auto !important` (an inline
+    desktop size must not leak) and hides both the grip and the toggle.
+**[7] - `README.md` / `sop.md`: options table (`resizable`, `draggable`, `mode`), labels, `dismiss()`,
+  `onApply`, both mode paragraphs, the file lists and the spec's header/keyboard rules.**
+
+### Verification
+- `node --test` → **40/40**. `test/smoke.html` (`--headless=new --window-size=1200,900
+  --virtual-time-budget=6000`) → **236 PASS, 0 FAIL**, title `PASS` (was 210). New checks: grip
+  present with `nwse-resize`, toggle left of close and named, `500x485 -> 620x565` on a 120/80 grip
+  drag, grip still in the corner after the resize, no drag starts on the toggle, `8,8 1184x797`
+  maximized, icon/label flip, grip hidden while maximized, `m` restores `620x565`, `m` in the HEX
+  field is not a shortcut, `⌘+Enter` applies a modal, a popover drag `40,30` then `place()` leaves
+  it at `48,38`, `m` puts the popover back, a reopen re-anchors it, `⌘+Enter` closes a popover and
+  keeps the edit, a modal keeps its dragged position across open/close, `resizable: false` drops
+  the grip, and the toggle survives both options off.
+- Probe `.local/probe-geom.html` (real modules, 1200×900 → viewport `1200x813`): modal panel
+  `350,163.8 500x485.4` — unchanged by the body wrapper; maximized `8,8 1184x797`; smallest
+  `400x320` with `scrollHeight 556 / clientHeight 318` (the box scrolls); popover `24,75 620x413.5`
+  → resized `520x320` with `scrollHeight 428 / clientHeight 318`, and the grip still at
+  `525,376` after `scrollTop = 400`.
+- Sheet (500×844 window, viewport `500x757`): panel `0,166.5 500x590.5`, grip `0x0` (hidden),
+  header shows `↺` and `×` only. Screenshots inspected: `.local/geom-modal2.png` (three header
+  icons, grip at the corner), `.local/geom-max2.png` (SV area fills, footer on the bottom edge),
+  `.local/geom-pop2.png` (resized popover, grip stays put while the body scrolls),
+  `.local/geom-sheet.png` (no toggle, no grip).

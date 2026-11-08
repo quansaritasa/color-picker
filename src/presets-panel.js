@@ -4,13 +4,14 @@
  *
  * Both groups are always mounted. A swatch is a *suggestion*: clicking it writes
  * the slot the editor is showing, never a slot the palette "owns", so a pale
- * panel colour can be applied to text when that is what the host wants.
+ * background colour can be applied to text when that is what the host wants.
  *
  * The grid is built once per (group, category) and repainted on colour change,
  * so dragging the SV area never rebuilds DOM.
  */
 
 import { parseHex } from './color.js';
+import { ALL_CATEGORY, allColors, categoriesWithAll } from './presets.js';
 
 const CHECK_DARK = '#172033';
 const CHECK_LIGHT = '#FFFFFF';
@@ -54,8 +55,13 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
 
   function buildSwatches(key, ref) {
     const entry = state[key];
-    const list = (palettes[key] || {})[entry.category] || [];
+    const list = entry.category === ALL_CATEGORY
+      ? allColors(palettes[key])
+      : (palettes[key] || {})[entry.category] || [];
     ref.swatches.replaceChildren();
+    /* The union grid is taller than any one category: CSS needs to know which
+       mode it is painting before the rows are measured. */
+    ref.swatches.classList.toggle('is-all', entry.category === ALL_CATEGORY);
     entry.swatches = [];
     for (const hex of list) {
       const node = document.createElement('button');
@@ -78,7 +84,7 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
     const ref = refOf(key);
     if (!ref || !state[key] || name === state[key].category) return;
     state[key].category = name;
-    buildPills(key, ref, Object.keys(palettes[key] || {}));
+    buildPills(key, ref, categoriesWithAll(palettes[key] || {}));
     buildSwatches(key, ref);
     paint(key, ref);
   }
@@ -103,19 +109,22 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
       const key = entry.key;
       const ref = refOf(key);
       if (!ref) continue;
-      const names = Object.keys(palettes[key] || {});
-      if (!names.length) {
+      const own = Object.keys(palettes[key] || {});
+      if (!own.length) {
         ref.section.hidden = true;
         continue;
       }
+      const names = categoriesWithAll(palettes[key] || {});
       ref.section.hidden = false;
       const current = state[key];
       const signature = names.join('|');
+      /* `All` is an offer, not the opening view: a section still starts on its
+         first shipped category, so the panel opens the size it always did. */
       if (!current || current.signature !== signature) {
-        state[key] = { category: names[0], signature, built: null, swatches: [] };
+        state[key] = { category: own[0], signature, built: null, swatches: [] };
         buildPills(key, ref, names);
       } else if (!names.includes(current.category)) {
-        current.category = names[0];
+        current.category = own[0];
         buildPills(key, ref, names);
       }
       if (state[key].built !== state[key].category) buildSwatches(key, ref);

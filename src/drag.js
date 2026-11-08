@@ -1,9 +1,10 @@
 /**
- * Pointer drag for the picker shell. The overlay keeps the panel centred; a
- * translate offset moves it from there and is clamped to the viewport, so the
- * panel can never be dragged out of reach. Below 680px the shell is a bottom
- * sheet that owns its own scroll, so dragging is off there. There is no
- * keyboard equivalent on purpose: the dialog is fully usable un-moved.
+ * Pointer drag for the picker shell. A translate offset moves the panel off
+ * wherever the layout put it — the middle of the viewport for a modal, under
+ * its trigger for a popover — and is clamped to the viewport, so the panel can
+ * never be dragged out of reach. Below 680px the shell is a bottom sheet that
+ * owns its own scroll, so dragging is off there. There is no keyboard
+ * equivalent on purpose: `m` gives the keyboard user a full-size box instead.
  */
 
 const MARGIN = 8;
@@ -13,7 +14,7 @@ const CONTROLS = 'button, input, select, textarea, a[href], [role="slider"]';
 /** Clamp that survives a panel larger than the viewport (pin instead of flip). */
 const within = (value, min, max) => (max < min ? min : Math.min(Math.max(value, min), max));
 
-export function createDrag({ panel, handle }) {
+export function createDrag({ panel, handle, onStart }) {
   const offset = { x: 0, y: 0 };
   let start = null;
 
@@ -43,10 +44,15 @@ export function createDrag({ panel, handle }) {
     // Left button only for a mouse; touch and pen report their own `button`.
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     if (window.matchMedia(SHEET).matches) return;
+    // A maximized box is the screen; there is nowhere to move it to.
+    if (panel.classList.contains('is-maximized')) return;
     // The close button and the title stay clickable: only bare header drags.
     if (event.target.closest(CONTROLS)) return;
     start = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
     panel.classList.add('is-dragging');
+    /* A moved popover stops following its trigger: the caller takes the box
+       out of the anchor's hands on the first real press, not on the first move. */
+    if (onStart) onStart();
     try {
       handle.setPointerCapture(event.pointerId);
     } catch (error) {
@@ -70,7 +76,7 @@ export function createDrag({ panel, handle }) {
     panel.classList.remove('is-dragging');
   };
 
-  /** Double-clicking the header puts the panel back in the middle. */
+  /** Double-clicking the header puts the panel back where the layout wants it. */
   const onDoubleClick = (event) => {
     if (event.target.closest(CONTROLS)) return;
     offset.x = 0;
@@ -87,6 +93,19 @@ export function createDrag({ panel, handle }) {
 
   return {
     clamp,
+    /** Move back to the layout position: a fresh open starts anchored. */
+    reset() {
+      offset.x = 0;
+      offset.y = 0;
+      paint();
+    },
+    /** The live translate, so maximize can put the box back where it was. */
+    getOffset: () => ({ x: offset.x, y: offset.y }),
+    setOffset(x, y) {
+      offset.x = x;
+      offset.y = y;
+      paint();
+    },
     destroy() {
       handle.removeEventListener('pointerdown', onPointerDown);
       handle.removeEventListener('pointermove', onPointerMove);

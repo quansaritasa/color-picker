@@ -2,28 +2,27 @@
  * ColorPicker — public surface, per-instance state, and the modal shell.
  * No module-level mutable state, so two instances stay independent.
  *
- * `colors` is keyed by slot id, so the host always knows which thing a value
- * belongs to: the key it reads back is the name it declared.
+ * `colors` is keyed by slot id, so the key a host reads back is the name it declared.
  */
 
 import { formatHex, normalizeHex, parseHex } from './color.js';
 import { assemble } from './assemble.js';
 import { bindShell, unbindShell } from './bindings.js';
+import { readFields } from './fields.js';
 import { clampAlpha, resolveColors, resolveOptions, resolvePair, resolveSlots } from './options.js';
 import { syncTabs } from './tablist.js';
 
 export default class ColorPicker {
   constructor(options = {}) {
-    this.options = resolveOptions(options);
+    this.options = resolveOptions(options, options.fields ? readFields(options.fields) : null);
     this.slots = resolveSlots(this.options.slots, this.options.labels);
     this.slotIds = this.slots.map((slot) => slot.id);
     this.pair = resolvePair(this.options.contrastPair, this.slotIds);
-    this.initialColors = resolveColors(options.initialColors, this.slots, this.options.showAlpha);
+    this.initialColors = resolveColors(this.options.startColors, this.slots, this.options.showAlpha);
     this.colors = { ...this.initialColors };
     this.snapshot = { ...this.colors };
     this.activeSlot = this.slotIds.includes(options.activeSlot) ? options.activeSlot : this.slotIds[0];
     this.isOpen = false;
-    this.mode = this.options.mode;
     /** The element a popover hangs off; null means "no anchor". */
     this.anchor = null;
 
@@ -62,7 +61,7 @@ export default class ColorPicker {
     const slot = this.slots.find((entry) => entry.id === this.activeSlot) || this.slots[0];
     this.panel.render(slot.presetSet, this.colors[this.activeSlot]);
     this.suggestions.render(this.activeSlot, slot.presetSet, this.colors);
-    if (this.swatches) this.swatches.render(this.colors);
+    if (this.triggers) this.triggers.render(this.colors);
   }
 
   /**
@@ -127,19 +126,19 @@ export default class ColorPicker {
 
   open(anchor = null) {
     if (this.isOpen) return;
-    this.anchor = anchor || (this.swatches ? this.swatches.anchorFor(this.activeSlot) : null);
+    this.anchor = anchor || (this.triggers ? this.triggers.anchorFor(this.activeSlot) : null);
     this.snapshot = { ...this.colors };
     this.isOpen = true;
     this.root.classList.remove('hidden');
     this.refresh();
-    this.drag.clamp();
+    this.geometry.reset();
     if (this.popover) this.popover.place();
     this.setStatus('');
     this.focusTrap.activate(this.anchor);
     const activeTab = this.refs.tabs[this.slotIds.indexOf(this.activeSlot)];
     /* No tablist on one slot: the SV area is the primary control. */
     (activeTab || this.refs.sv).focus();
-    if (this.swatches) this.swatches.sync(true);
+    if (this.triggers) this.triggers.sync(true);
     this.emit('onOpen');
   }
 
@@ -149,7 +148,7 @@ export default class ColorPicker {
     this.anchor = null;
     this.root.classList.add('hidden');
     this.focusTrap.deactivate();
-    if (this.swatches) this.swatches.sync(false);
+    if (this.triggers) this.triggers.sync(false);
     this.emit('onClose');
   }
 
@@ -159,7 +158,7 @@ export default class ColorPicker {
    * modal restores the snapshot it opened with.
    */
   dismiss() {
-    if (this.mode === 'popover') this.close();
+    if (this.options.mode === 'popover') this.close();
     else this.cancel();
   }
 
@@ -189,9 +188,9 @@ export default class ColorPicker {
   destroy() {
     unbindShell(this);
     this.focusTrap.deactivate();
-    this.drag.destroy();
+    this.geometry.destroy();
     if (this.popover) this.popover.destroy();
-    if (this.swatches) this.swatches.destroy();
+    if (this.triggers) this.triggers.destroy();
     for (const part of [this.copy, this.suggestions, this.panel, this.editor]) part.destroy();
     this.root.remove();
     this.isOpen = false;

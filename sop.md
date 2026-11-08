@@ -14,7 +14,7 @@ The library edits **named colour slots**. A slot is one colour the host paints s
 
 Each slot gets its own preserved colour and its own preset grid inside one shared popup; a popup with two or more slots also gets a tab row so the shared editor knows which slot it writes.
 
-A slot's preset group (`text` or `panel`) is a **hint** for which palette to show first. It never restricts what the user may pick, and it must not be treated as a semantic rule by the implementation.
+A slot's preset group (`text` or `background`) is a **hint** for which palette to show first. It never restricts what the user may pick, and it must not be treated as a semantic rule by the implementation.
 
 The design should be clean, modern, compact, and easy to use. Avoid excessive colors, unnecessary decoration, and complicated controls.
 
@@ -45,7 +45,7 @@ Create a floating modal/popover color picker with the following structure:
 
 - Title: "Choose Color"
 - Small color palette icon.
-- Reset and close buttons in the top-right corner.
+- Reset, maximize/restore and close buttons in the top-right corner, in that order: the toggle sits directly left of the close button.
 - Clean typography and subtle separators.
 
 ### B. Slot Tabs
@@ -57,7 +57,8 @@ With two or more slots, display one large tab per slot, horizontally, in the ord
 Each tab carries:
 
 - The slot's label (`text` defaults to "Text colour", `background` to "Panel background", any other slot to its id).
-- An optional short description line (`hint`), e.g. "For text color".
+- The slot's type as a small line under the label: the preset group's short name (`Text` / `Background`) by default, overridable per slot or through `labels.tabs` — "Accent", "Border", "Surface". Two slots may carry the same type; the tabs are still distinct because the label, not the type, names the slot.
+- An optional `hint`, exposed as the tab's tooltip — never a second visible line.
 - A small glyph (`symbol`) — "Aa" for text, a filled square for backgrounds, the id's first letter otherwise.
 
 The active tab should have:
@@ -70,7 +71,7 @@ The inactive tabs should remain neutral.
 
 Switching tabs must preserve the selected color of every slot independently.
 
-The tab row lays out one column per slot. With three or more slots it must remain readable rather than shrinking labels into an ellipsis; on narrow viewports it may wrap.
+The tab row lays out one column per slot. With three or more slots it must remain readable rather than shrinking labels into an ellipsis; on narrow viewports it may wrap. Slots that share a preset group get one tab each — the row is per slot, never per group.
 
 ### C. Custom Color Editor
 
@@ -103,9 +104,10 @@ Use pointer events to support both mouse and touch.
 
 Display preset categories and their corresponding color swatches, **both palette groups at once**, always. A dimmed panel tone is a legitimate text colour, so the panel group must never be hidden just because the editor is showing a text slot.
 
-- Two sections, side by side: **Text colour presets** (`Aa`) and **Panel colour presets** (▰), whatever the slot count.
+- Two sections, side by side: **Text colour presets** (`Aa`) and **Background colour presets** (▰), whatever the slot count.
 - The section matching the active slot's `presetSet` is emphasised; the other stays neutral but fully usable.
 - Each section has its own categories and its own memory of the last category chosen.
+- Each section leads with an **`All`** pill that shows every colour of that palette in one grid, each hex once. It is a view over the categories, not a category of its own: a section still opens on its first shipped category.
 - A swatch click writes **the slot the editor is showing** — never a slot the palette "owns". With one slot that is the only colour; with several it is the active tab's.
 - Preset category buttons should be compact pills.
 
@@ -187,9 +189,9 @@ Important:
 - Avoid overly pale colors as text presets.
 - White and light colors may be included as exceptions for use on dark surfaces.
 
-## 5. Preset Group `panel` – Background Colors
+## 5. Preset Group `background` – Background Colors
 
-These presets are intended for panels, chips, badges, and subtle UI surfaces. They are shown for any slot whose `presetSet` is `panel`, and they are also the default group for a slot that names none.
+These presets are intended for panels, chips, badges, and subtle UI surfaces. They are shown for any slot whose `presetSet` is `background`, and they are also the default group for a slot that names none.
 
 Colors should be soft, light, and visually comfortable.
 
@@ -343,8 +345,8 @@ const picker = new ColorPicker({
 
     slots: [
         { id: "text", label: "Body ink", symbol: "Aa", presetSet: "text" },
-        { id: "background", label: "Card", symbol: "▰", presetSet: "panel" },
-        { id: "accent", label: "Accent", symbol: "✦", hint: "Buttons and links" }
+        { id: "background", label: "Card", symbol: "▰", presetSet: "background" },
+        { id: "accent", label: "Accent", type: "Accent", symbol: "✦", hint: "Buttons and links" }
     ],
 
     initialColors: {
@@ -392,9 +394,10 @@ The example above declares three slots; two or more also bring the tab row, and 
 {
     id: "accent",          // required, unique, /^[A-Za-z][\w-]*$/, the key in colors
     label: "Accent",       // tab name
+    type: "Accent",        // small line under the name; default: the preset group's name
     symbol: "✦",           // glyph in the tab
-    hint: "Buttons and links",  // small line under the tab label
-    presetSet: "text",     // which palette group is emphasised; default "panel"
+    hint: "Buttons and links",  // tooltip on the tab
+    presetSet: "text",     // which palette group is emphasised; default "background"
     color: "#7C3AED"       // fallback when initialColors has no value for this id
 }
 ```
@@ -451,7 +454,7 @@ const picker = new ColorPicker({
     slots: [
         { id: "text" },
         { id: "background" },
-        { id: "accent", presetSet: "panel" }
+        { id: "accent", presetSet: "background" }
     ],
 
     initialColors: {
@@ -474,7 +477,7 @@ const picker = new ColorPicker({
             Blue: ["#1D4ED8", "#2563EB"]
         },
 
-        panel: {
+        background: {
             Brand: ["#F0FDFA", "#CCFBF1"]
         }
     }
@@ -482,8 +485,8 @@ const picker = new ColorPicker({
 ```
 
 Support:
-- Any number of named slots, each with its own label, glyph and hint.
-- A preset group hint per slot, defaulting to `panel`.
+- Any number of named slots, each with its own label, glyph, type and hint.
+- A preset group hint per slot, defaulting to `background`; slots may share one group.
 - Custom preset categories and colors, keyed by palette group.
 - Initial colors per slot.
 - Initial active slot.
@@ -492,7 +495,7 @@ Support:
 - Alpha support.
 - Contrast suggestions.
 - Custom CSS class.
-- Custom labels where practical (chrome strings, tab titles and hints, swatch names).
+- Custom labels where practical (chrome strings, tab titles, types and hints, swatch names).
 
 A category the configuration names **replaces** the shipped category of that name and keeps its position; a new name is appended after the shipped ones. The shipped tables are never mutated.
 
@@ -544,6 +547,7 @@ Desktop:
 - Centered modal or anchored popover.
 - Preset sections can appear side by side, one column per slot.
 - Color editor and presets should fit without unnecessary scrolling.
+- The box belongs to the user once it is open: the header moves it, the corner grip resizes it, and the header toggle (or `m`) takes it to the viewport and back. Every state stays inside the viewport, and the panel scrolls inside itself instead of growing past the screen.
 
 Tablet:
 - Reduce spacing and swatch sizes.
@@ -564,6 +568,7 @@ Mobile:
 - Sufficient text contrast.
 - Support Escape to cancel/close.
 - Support Enter to confirm where appropriate.
+- `m` toggles the box while the picker is open, and `⌘`/`Ctrl`+`Enter` is the `OK` button (in a popover, which has no transaction, it closes and keeps the edit). Neither key may fire while the user is typing in a field.
 - Do not rely only on color to indicate selection.
 - Respect prefers-reduced-motion.
 
@@ -590,8 +595,12 @@ color-picker/
     ├── suggestions.js
     ├── focus.js
     ├── drag.js
+    ├── resize.js
+    ├── maximize.js
+    ├── geometry.js
     ├── popover.js
-    ├── swatches.js
+    ├── triggers.js
+    ├── fields.js
     ├── bindings.js
     ├── assemble.js
     └── color-picker.js
@@ -605,6 +614,8 @@ A complete demonstration page containing:
 - A slot beyond the shipped pair (e.g. `accent`).
 - Live preview of selected colors.
 - Demonstration of custom preset configuration.
+- One panel per shape — setup call, then that instance live — including the
+  default single colour and the `fields` (host inputs) shape.
 
 ### src/color-picker.js and the modules beside it
 Together they contain:
@@ -661,7 +672,7 @@ Verify the following:
 12. Reset restores the initial values of every slot.
 13. Cancel restores the pre-edit values.
 14. OK commits the current values.
-15. A slot with no preset group borrows the panel palette.
+15. A slot with no preset group borrows the background palette.
 16. Contrast suggestions appear only for the slots named in `contrastPair`, and never move the color being edited.
 17. Multiple instances work independently.
 18. The component works without external dependencies.

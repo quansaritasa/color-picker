@@ -10,11 +10,22 @@ import { createCopy } from './copy.js';
 import { GROUP_KEYS, PRESET_GROUPS, PRESET_SETS, mergePalette } from './presets.js';
 import { createPresetPanel } from './presets-panel.js';
 import { createSuggestions } from './suggestions.js';
-import { createSwatches } from './swatches.js';
+import { createTriggers } from './triggers.js';
+import { createFields } from './fields.js';
 import { createPopover } from './popover.js';
 
 export function assemble(picker) {
   const { options, slots } = picker;
+  /* Both `container` and `triggers` take an element or a selector. A selector
+     that matches nothing must not throw inside `append`, so name it and fall
+     back — the picker still works, just where the caller did not ask. */
+  const host = (() => {
+    if (!options.container) return document.body;
+    if (typeof options.container !== 'string') return options.container;
+    const found = document.querySelector(options.container);
+    if (!found) console.warn(`ColorPicker: container "${options.container}" matches nothing — mounting on document.body.`);
+    return found || document.body;
+  })();
   /* Both palettes are always offered; `labels.presets` renames a section. */
   const groupLabels = options.labels.presets || {};
   const groups = GROUP_KEYS.map((key) => ({ key, ...PRESET_GROUPS[key], label: groupLabels[key] || PRESET_GROUPS[key].label }));
@@ -24,7 +35,7 @@ export function assemble(picker) {
   /* One column per slot: the CSS cannot count them, so the template tells it. */
   picker.root.style.setProperty('--cp-slots', String(slots.length));
   if (options.mode === 'popover') picker.root.classList.add('cp-popover');
-  (options.container || document.body).append(picker.root);
+  host.append(picker.root);
 
   picker.editor = createEditor(picker.refs, {
     showAlpha: options.showAlpha,
@@ -61,9 +72,15 @@ export function assemble(picker) {
     onPick: (hex, slot) => picker.selectColor(hex, { source: 'suggestion', slot }),
   });
 
-  picker.swatches = options.swatches
-    ? createSwatches({ picker, target: options.swatches, slots, labels: options.labels })
-    : null;
+  /* A field list *is* the control surface: the host's inputs are the triggers.
+     Otherwise a `triggers` host gets the bar; with neither, the host owns the
+     trigger and calls `open()`. */
+  picker.triggers = null;
+  if (options.fieldEntries.length) {
+    picker.triggers = createFields({ picker, entries: options.fieldEntries, labels: options.labels });
+  } else if (options.triggers) {
+    picker.triggers = createTriggers({ picker, target: options.triggers, slots, labels: options.labels });
+  }
   picker.popover = options.mode === 'popover'
     ? createPopover({ panel: picker.refs.panel, getAnchor: () => picker.anchor })
     : null;

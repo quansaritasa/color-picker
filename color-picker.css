@@ -99,13 +99,45 @@
   /* Small on purpose: the surface being recoloured must stay visible around it. */
   width: min(100%, 500px);
   max-height: calc(100vh - 32px);
-  overflow: auto;
+  /* The panel does not scroll — `.picker-body` does — so the resize grip can
+     sit in the corner of the box instead of travelling with the content. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
   background: var(--cp-surface);
   border: 1px solid var(--cp-line-soft);
   border-radius: var(--cp-radius);
   box-shadow: var(--cp-shadow);
   /* No transform transition on purpose: the panel must track the pointer 1:1,
      and a re-centre that eases would make the browser read a mid-flight value. */
+}
+
+.cp-root .picker-body {
+  /* min-height 0 is what lets the body shrink below its content and scroll. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  /* A column so the footer can sit at the bottom of a box taller than its
+     content, and the editor can take the height that is left over. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Children keep their natural height: the box scrolls instead of squeezing. */
+.cp-root .picker-body > * {
+  flex-shrink: 0;
+}
+
+/* The colour area is the surface that benefits from a bigger box. */
+.cp-root .picker-body > .editor {
+  flex-grow: 1;
+}
+
+/* Maximized: the box is the screen, so the corner grip has nothing to offer. */
+.cp-root .picker.is-maximized .resize-grip,
+.cp-root .picker:not(.is-resizable) .resize-grip {
+  display: none;
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -126,6 +158,11 @@
 
 .cp-root .picker.is-dragging .picker-header.is-draggable {
   cursor: grabbing;
+}
+
+/* A maximized box is the screen: the header is no longer a handle. */
+.cp-root .picker.is-maximized .picker-header.is-draggable {
+  cursor: default;
 }
 
 .cp-root .heading {
@@ -191,10 +228,21 @@
   border-radius: 8px;
   padding: 6px 9px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 9px;
   text-align: left;
   color: var(--cp-muted);
+  min-width: 0;
+}
+
+/* Name above, type below: two tabs of one group in a four-tab row may wrap
+   their names to different line counts, and stretching the body keeps every
+   type line on the same baseline instead of drifting with each label. */
+.cp-root .tab-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
   min-width: 0;
 }
 
@@ -209,6 +257,7 @@
   width: 22px;
   height: 22px;
   flex: 0 0 22px;
+  align-self: center;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -743,6 +792,9 @@
   align-items: center;
   justify-content: flex-end;
   padding: 9px 14px 11px;
+  /* `margin-top: auto` inside a panel taller than its content: the actions sit
+     on the bottom edge instead of floating right under the presets. */
+  margin-top: auto;
 }
 
 .cp-root .header-actions {
@@ -769,6 +821,85 @@
 .cp-root .reset-btn:hover {
   background: var(--cp-hover);
   color: var(--cp-ink);
+}
+
+/* Same metrics as `↺` and `×`; the glyph is drawn, so it needs its own box. */
+.cp-root .maximize-btn {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-subtle);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.cp-root .maximize-btn:hover {
+  background: var(--cp-hover);
+  color: var(--cp-ink);
+}
+
+.cp-root .maximize-btn svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+/* One button, two glyphs: maximized shows the way back. */
+.cp-root .maximize-btn .icon-collapse {
+  display: none;
+}
+
+.cp-root .picker.is-maximized .maximize-btn .icon-expand {
+  display: none;
+}
+
+.cp-root .picker.is-maximized .maximize-btn .icon-collapse {
+  display: block;
+}
+
+/* ── Resize grip ────────────────────────────────────────── */
+
+/* Sits in the panel's own corner, not in the scrolling body. */
+.cp-root .resize-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  z-index: 3;
+  cursor: nwse-resize;
+  touch-action: none;
+  border-bottom-right-radius: var(--cp-radius);
+}
+
+/* Three diagonal grooves in the corner: the shape the platform uses for
+   "drag me", readable on both themes without a second glyph. */
+.cp-root .resize-grip::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 11px;
+  height: 11px;
+  background-image: repeating-linear-gradient(135deg, var(--cp-pill-ink) 0 1px, transparent 1px 3.5px);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  opacity: 0.8;
+}
+
+.cp-root .resize-grip:hover {
+  background: var(--cp-hover);
+}
+
+.cp-root .resize-grip:hover::after {
+  opacity: 1;
+  background-image: repeating-linear-gradient(135deg, var(--cp-ink) 0 1px, transparent 1px 3.5px);
+}
+
+.cp-root .picker.is-resizing {
+  user-select: none;
 }
 
 .cp-root .actions {
@@ -804,6 +935,7 @@
 
 .cp-root .close-btn:focus-visible,
 .cp-root .reset-btn:focus-visible,
+.cp-root .maximize-btn:focus-visible,
 .cp-root .secondary-btn:focus-visible,
 .cp-root .primary-btn:focus-visible,
 .cp-root .tab:focus-visible {
@@ -827,12 +959,21 @@
   }
 
   .cp-root .picker {
-    width: 100%;
+    /* `!important` because a resized desktop box carries inline width/height. */
+    width: 100% !important;
+    height: auto !important;
     max-height: 92vh;
     border-width: 1px 0 0;
     border-radius: 20px 20px 0 0;
     /* The sheet is anchored to the bottom edge; a drag offset would lift it. */
     transform: none !important;
+  }
+
+  /* The sheet owns its own size: neither the grip nor the toggle has a box
+     to give it. */
+  .cp-root .maximize-btn,
+  .cp-root .resize-grip {
+    display: none;
   }
 
   .cp-root .picker-header {
@@ -963,17 +1104,17 @@
   }
 }
 
-/* ── Swatch triggers ───────────────────────────────────── */
+/* ── Triggers ──────────────────────────────────────────── */
 
 /* These live in the host's own layout, outside `.cp-root`, so they carry their
    own tokens instead of inheriting the panel's theme. */
-.cp-swatches {
-  --cps-surface: #ffffff;
-  --cps-ink: #344054;
-  --cps-muted: #667085;
-  --cps-line: #dce2eb;
-  --cps-accent: #2563eb;
-  --cps-accent-soft: #eff6ff;
+.cp-triggers {
+  --cpt-surface: #ffffff;
+  --cpt-ink: #344054;
+  --cpt-muted: #667085;
+  --cpt-line: #dce2eb;
+  --cpt-accent: #2563eb;
+  --cpt-accent-soft: #eff6ff;
   display: inline-flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -981,69 +1122,69 @@
   line-height: 1.3;
 }
 
-.cp-swatches[data-theme="dark"] {
-  --cps-surface: #151d2c;
-  --cps-ink: #e8eefb;
-  --cps-muted: #9aa8bd;
-  --cps-line: #33415a;
-  --cps-accent: #60a5fa;
-  --cps-accent-soft: #1c2740;
+.cp-triggers[data-theme="dark"] {
+  --cpt-surface: #151d2c;
+  --cpt-ink: #e8eefb;
+  --cpt-muted: #9aa8bd;
+  --cpt-line: #33415a;
+  --cpt-accent: #60a5fa;
+  --cpt-accent-soft: #1c2740;
 }
 
-.cp-swatches .cp-trigger {
+.cp-triggers .cp-trigger {
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: auto auto;
   align-items: center;
   column-gap: 8px;
   padding: 5px 12px 5px 5px;
-  border: 1px solid var(--cps-line);
+  border: 1px solid var(--cpt-line);
   border-radius: 11px;
-  background: var(--cps-surface);
-  color: var(--cps-ink);
+  background: var(--cpt-surface);
+  color: var(--cpt-ink);
   font: inherit;
   font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
 
-.cp-swatches .cp-trigger:hover {
-  border-color: var(--cps-accent);
+.cp-triggers .cp-trigger:hover {
+  border-color: var(--cpt-accent);
 }
 
 /* The square that opened the panel stays marked while it is open. */
-.cp-swatches .cp-trigger[aria-expanded="true"] {
-  border-color: var(--cps-accent);
-  box-shadow: 0 0 0 3px var(--cps-accent-soft);
+.cp-triggers .cp-trigger[aria-expanded="true"] {
+  border-color: var(--cpt-accent);
+  box-shadow: 0 0 0 3px var(--cpt-accent-soft);
 }
 
-.cp-swatches .cp-trigger:focus-visible {
-  outline: 2px solid var(--cps-accent);
+.cp-triggers .cp-trigger:focus-visible {
+  outline: 2px solid var(--cpt-accent);
   outline-offset: 2px;
 }
 
 /* The fill is a gradient layer *over* a checker: an opaque colour hides the
-   checker completely, a translucent one lets it through. `--cps-fill` is the
+   checker completely, a translucent one lets it through. `--cpt-fill` is the
    only thing the script writes, so both layers survive every repaint. */
-.cp-swatches .cp-trigger-chip {
+.cp-triggers .cp-trigger-chip {
   grid-row: 1 / span 2;
   width: 26px;
   height: 26px;
   border-radius: 8px;
   box-shadow: inset 0 0 0 1px #0000001f;
   background-image:
-    linear-gradient(var(--cps-fill, transparent), var(--cps-fill, transparent)),
+    linear-gradient(var(--cpt-fill, transparent), var(--cpt-fill, transparent)),
     linear-gradient(45deg, #00000014 25%, transparent 25%, transparent 75%, #00000014 75%);
   background-size: auto, 8px 8px;
 }
 
-.cp-swatches .cp-trigger-name {
+.cp-triggers .cp-trigger-name {
   font-weight: 600;
   white-space: nowrap;
 }
 
-.cp-swatches .cp-trigger-hex {
-  color: var(--cps-muted);
+.cp-triggers .cp-trigger-hex {
+  color: var(--cpt-muted);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

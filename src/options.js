@@ -8,7 +8,8 @@
  */
 
 import { formatHex, normalizeHex, parseHex } from './color.js';
-import { PRESET_SETS } from './presets.js';
+import { fieldSlots } from './fields.js';
+import { PRESET_GROUPS, PRESET_SETS } from './presets.js';
 
 const ID_PATTERN = /^[A-Za-z][\w-]*$/;
 
@@ -36,13 +37,16 @@ export const DEFAULTS = {
   /* Suggestions measure a pair: `['text', 'background']`. Without one they stay off. */
   contrastPair: null,
   draggable: true,
+  resizable: true,
   theme: 'light',
   presets: null,
   classNames: '',
   labels: {},
-  /* A host element (or selector) for the colour squares. See `createSwatches`. */
-  swatches: null,
-  /* 'auto' = popover when `swatches` renders the trigger, modal otherwise. */
+  /* A host element (or selector) for the trigger bar. See `createTriggers`. */
+  triggers: null,
+  /* Inputs that *are* the controls (`<input data-color-picker>`); see `fields.js`. */
+  fields: null,
+  /* 'auto' = popover when a trigger is rendered, modal otherwise. */
   mode: 'auto',
   onChange: null,
   onApply: null,
@@ -56,20 +60,37 @@ export const DEFAULTS = {
  * template, the editor and `clampAlpha` all read the same boolean, so a value
  * like `0` cannot hide the slider while the colour keeps its alpha.
  *
- * `mode` resolves here too: a popover is anchored to its trigger, so it is
- * never draggable, and an explicit `draggable` cannot re-enable the drag.
+ * `mode` resolves here too. A popover is anchored to its trigger when it opens,
+ * but its box is still the user's: dragging or resizing it detaches it from the
+ * anchor for as long as it is open, so `draggable`/`resizable` mean the same
+ * thing in both modes.
+ *
+ * `fieldEntries` comes from `readFields()` — the caller does the DOM read, so
+ * this stays a pure normalizer. A field list is also a slot list: the host's
+ * own inputs are the colours, named after themselves.
  */
-export function resolveOptions(options = {}) {
+export function resolveOptions(options = {}, fieldEntries = null) {
+  const fields = Array.isArray(fieldEntries) ? fieldEntries : [];
+  if (fields.length && Array.isArray(options.slots) && options.slots.length) {
+    throw new TypeError('ColorPicker: `fields` names its own slots — drop `slots`.');
+  }
+  if (options.fields && !fields.length) {
+    console.warn(`ColorPicker: \`fields\` ${JSON.stringify(options.fields)} matched no inputs — opening as a centred modal.`);
+  }
   const picked = options.mode === 'popover' || options.mode === 'modal'
     ? options.mode
-    : (options.swatches ? 'popover' : 'modal');
+    : (options.triggers || fields.length ? 'popover' : 'modal');
+  const fieldColors = fields.length ? Object.fromEntries(fields.map((field) => [field.id, field.raw])) : null;
   return {
     ...DEFAULTS,
     ...options,
     mode: picked,
-    draggable: picked === 'popover'
-      ? false
-      : options.draggable === undefined ? DEFAULTS.draggable : Boolean(options.draggable),
+    slots: fields.length ? fieldSlots(fields) : options.slots,
+    fieldEntries: fields,
+    /* A field's own value is the colour it starts with; `initialColors` wins. */
+    startColors: { ...fieldColors, ...(options.initialColors || {}) },
+    draggable: options.draggable === undefined ? DEFAULTS.draggable : Boolean(options.draggable),
+    resizable: options.resizable === undefined ? DEFAULTS.resizable : Boolean(options.resizable),
     showAlpha: options.showAlpha === undefined ? DEFAULTS.showAlpha : Boolean(options.showAlpha),
     labels: { ...DEFAULTS.labels, ...(options.labels || {}) },
   };
@@ -77,15 +98,20 @@ export function resolveOptions(options = {}) {
 
 /** First colour of a set's first category — a slot's fallback when none is given. */
 function firstPresetHex(set) {
-  const palette = PRESET_SETS[set] || PRESET_SETS.panel;
+  const palette = PRESET_SETS[set] || PRESET_SETS.background;
   const first = palette[Object.keys(palette)[0]];
   return (first && first[0]) || '#000000';
 }
 
 /**
  * Normalize the slot list: ids are unique and usable as object keys, every
- * slot carries the label/symbol the tabs need, and `presetSet` records which
- * palette group is emphasised for it — a hint, never a restriction.
+ * slot carries the label/symbol/type the tabs need, and `presetSet` records
+ * which palette group is emphasised for it — a hint, never a restriction.
+ *
+ * `type` is the small line under the tab name: the preset group's short name
+ * by default (`Text` / `Panel`), overridable per slot or via `labels.tabs`.
+ * Two slots may share one type — two panel backgrounds are two tabs, not a
+ * conflict — so nothing here dedupes or validates it against `presetSet`.
  */
 export function resolveSlots(slots, labels = {}) {
   /* The shipped slot is the spec only when the caller named none — an explicit
@@ -104,12 +130,13 @@ export function resolveSlots(slots, labels = {}) {
     if (out.some((slot) => slot.id === id)) {
       throw new TypeError(`ColorPicker: duplicate slot id "${id}"`);
     }
-    const presetSet = spec.presetSet === 'text' ? 'text' : 'panel';
+    const presetSet = spec.presetSet === 'text' ? 'text' : 'background';
     const shipped = DEFAULT_SLOTS.find((slot) => slot.id === id) || {};
     const overrides = tabLabels[id] || {};
     out.push({
       id,
       label: explicit.label || overrides.title || shipped.label || id,
+      type: explicit.type || overrides.type || shipped.type || PRESET_GROUPS[presetSet].type,
       hint: explicit.hint || overrides.hint || shipped.hint || '',
       symbol: explicit.symbol || shipped.symbol || id.charAt(0).toUpperCase(),
       presetSet,
