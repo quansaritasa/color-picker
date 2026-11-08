@@ -30,3 +30,4 @@
 
 ### Notes
 - Shipped after the push quarantine was found ineffective: killing the driver restored `origin`'s pushurl while the round was still alive, and the orphan round force-pushed to `main`. `origin/main` was reset to `d52b68c` (the pre-task commit) and the work moved onto `feature/color-picker-lib` before the PR was opened.
+- `dev-review` pass 3 ran after the PR opened (one `dfr` round, 4m33s, $0.0377): **Pass with Changes**. Pass 2's two findings confirmed resolved; its one `[minor] Medium` finding — the `showAlpha` predicate differed between `clampAlpha` (`!== false`) and the template/editor (truthy) — was fixed in `resolveOptions` with `test/options.test.js`. `node --test` 25/25; the browser smoke harness was not re-run (Chrome invocation blocked by tool approval).
