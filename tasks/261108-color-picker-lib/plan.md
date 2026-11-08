@@ -396,12 +396,12 @@ Checklist tracks step completion. Progress table tracks timeline.
 - [x] 1.1 Color core module — `src/color.js`
 - [x] 1.2 Preset tables — `src/presets.js`
 - [x] 1.3 Repo hygiene — `.gitignore`
-- [ ] 2.1 DOM template builder — `src/template.js`
-- [ ] 2.2 HSV editor controller — `src/editor.js`
-- [ ] 2.3 ColorPicker class and public API — `src/color-picker.js`
-- [ ] 2.4 Component stylesheet (base) — `color-picker.css`
-- [ ] 2.5 Demo page — `index.html`
-- [ ] 2.6 README — `README.md`
+- [x] 2.1 DOM template builder — `src/template.js`
+- [x] 2.2 HSV editor controller — `src/editor.js`
+- [x] 2.3 ColorPicker class and public API — `src/color-picker.js`
+- [x] 2.4 Component stylesheet (base) — `color-picker.css`
+- [x] 2.5 Demo page — `index.html`
+- [x] 2.6 README — `README.md`
 - [ ] 3.1 Preset panel renderer — `src/presets-panel.js`
 - [ ] 3.2 Selection state sync — `src/color-picker.js`
 - [ ] 3.3 Preset styles — `color-picker.css`
@@ -414,3 +414,4 @@ Checklist tracks step completion. Progress table tracks timeline.
 |------|------|--------|
 | 2026-11-08 | — | Plan created (4 iterations, source: `sop.md` + `reference/modern-color-picker.html`) |
 | 2026-11-08 | 1.1 | Iteration 1 coded: `src/color.js` (131 lines), `src/presets.js` (47), `test/color.test.js`, `.gitignore` — `node --test` 12/12 green |
+| 2026-11-08 | 2.1-2.6 | Iteration 2 coded: `src/template.js` (149), `src/editor.js` (154), `src/color-picker.js` (198), `color-picker.css` (407), `index.html`, `README.md`, `test/smoke.html` — `node --test` 12/12, smoke 36/36 in headless Chrome |
