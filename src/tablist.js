@@ -1,21 +1,21 @@
 /**
  * Roving tablist behaviour for the `role="tab"` buttons in the template.
- * Tab order comes from `refs.tabs`, so nothing here duplicates the tab list.
+ * Slot order comes from `refs.tabs`, so nothing here duplicates the list.
  */
 
-export function syncTabs(refs, activeTab) {
+export function syncTabs(refs, activeSlot) {
   for (const button of refs.tabs) {
-    const active = button.dataset.tab === activeTab;
+    const active = button.dataset.slot === activeSlot;
     button.classList.toggle('active', active);
     button.setAttribute('aria-selected', String(active));
     button.tabIndex = active ? 0 : -1;
   }
 }
 
-/** Next tab id for an arrow key, or `null` when the key is not ours. */
-export function tabAfterKey(event, activeTab, tabs) {
+/** Next slot id for an arrow key, or `null` when the key is not ours. */
+export function tabAfterKey(event, activeSlot, slots) {
   if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return null;
-  const index = tabs.indexOf(activeTab);
-  const step = event.key === 'ArrowRight' ? 1 : tabs.length - 1;
-  return tabs[(index + step) % tabs.length];
+  const index = slots.indexOf(activeSlot);
+  const step = event.key === 'ArrowRight' ? 1 : slots.length - 1;
+  return slots[(index + step) % slots.length];
 }

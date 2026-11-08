@@ -1,18 +1,16 @@
 /**
- * Preset panel: category pills + swatch grids for both modes.
- * Behaviour mirrors `reference/modern-color-picker.html:292-310`; both
- * sections stay mounted and only the active tab's one is emphasised.
+ * Preset panel: category pills + swatch grids, one section per palette group.
+ * Behaviour mirrors `reference/modern-color-picker.html:292-310`.
  *
- * The grid is built once per (tab, category) and repainted on color change,
+ * Both groups are always mounted. A swatch is a *suggestion*: clicking it writes
+ * the slot the editor is showing, never a slot the palette "owns", so a pale
+ * panel colour can be applied to text when that is what the host wants.
+ *
+ * The grid is built once per (group, category) and repainted on colour change,
  * so dragging the SV area never rebuilds DOM.
  */
 
 import { parseHex } from './color.js';
-
-const SECTIONS = [
-  { tab: 'highContrast', key: 'high' },
-  { tab: 'lowContrast', key: 'low' },
-];
 
 const CHECK_DARK = '#172033';
 const CHECK_LIGHT = '#FFFFFF';
@@ -27,37 +25,37 @@ function checkColor(hex) {
 
 const sameColor = (a, b) => String(a).toUpperCase() === String(b).toUpperCase();
 
-export function createPresetPanel({ refs, presets, onSelect }) {
-  const state = {}; // tab -> { category, signature, built, swatches }
+export function createPresetPanel({ refs, groups, palettes, onSelect }) {
+  const state = {}; // group key -> { category, signature, built, swatches }
   const handlers = []; // { node, type, fn } — removed by destroy()
-  let lastActive = 'highContrast';
-  let lastColors = {};
+  let activeGroup = null;
+  let activeColor = null;
 
   const listen = (node, type, fn) => {
     node.addEventListener(type, fn);
     handlers.push({ node, type, fn });
   };
 
-  const slotOf = (tab) => refs[SECTIONS.find((spec) => spec.tab === tab).key];
+  const refOf = (key) => (refs.sections || {})[key];
 
-  function buildPills(tab, slot, names) {
-    slot.categories.replaceChildren();
+  function buildPills(key, ref, names) {
+    ref.categories.replaceChildren();
     for (const name of names) {
       const pill = document.createElement('button');
       pill.type = 'button';
       pill.className = 'cp-category';
       pill.textContent = name;
-      pill.setAttribute('aria-pressed', String(state[tab].category === name));
-      pill.classList.toggle('is-active', state[tab].category === name);
-      listen(pill, 'click', () => selectCategory(tab, name));
-      slot.categories.append(pill);
+      pill.setAttribute('aria-pressed', String(state[key].category === name));
+      pill.classList.toggle('is-active', state[key].category === name);
+      listen(pill, 'click', () => selectCategory(key, name));
+      ref.categories.append(pill);
     }
   }
 
-  function buildSwatches(tab, slot) {
-    const entry = state[tab];
-    const list = (presets[tab] || {})[entry.category] || [];
-    slot.swatches.replaceChildren();
+  function buildSwatches(key, ref) {
+    const entry = state[key];
+    const list = (palettes[key] || {})[entry.category] || [];
+    ref.swatches.replaceChildren();
     entry.swatches = [];
     for (const hex of list) {
       const node = document.createElement('button');
@@ -68,59 +66,60 @@ export function createPresetPanel({ refs, presets, onSelect }) {
       node.style.background = hex;
       node.setAttribute('aria-label', `${entry.category} ${hex}`);
       listen(node, 'click', () => {
-        if (typeof onSelect === 'function') onSelect(hex, tab);
+        if (typeof onSelect === 'function') onSelect(hex);
       });
-      slot.swatches.append(node);
+      ref.swatches.append(node);
       entry.swatches.push({ hex, node });
     }
     entry.built = entry.category;
   }
 
-  function selectCategory(tab, name) {
-    const slot = slotOf(tab);
-    if (!slot || !state[tab] || name === state[tab].category) return;
-    state[tab].category = name;
-    buildPills(tab, slot, Object.keys(presets[tab] || {}));
-    buildSwatches(tab, slot);
-    paint(tab, slot, lastColors);
+  function selectCategory(key, name) {
+    const ref = refOf(key);
+    if (!ref || !state[key] || name === state[key].category) return;
+    state[key].category = name;
+    buildPills(key, ref, Object.keys(palettes[key] || {}));
+    buildSwatches(key, ref);
+    paint(key, ref);
   }
 
-  /** Repaint checkmarks only — the cheap path used on every color change. */
-  function paint(tab, slot, colors) {
-    const current = colors[tab];
-    for (const { hex, node } of state[tab].swatches) {
-      const selected = sameColor(hex, current);
+  /** Repaint checkmarks + emphasis only — the cheap path used on every change. */
+  function paint(key, ref) {
+    for (const { hex, node } of state[key].swatches) {
+      const selected = sameColor(hex, activeColor);
       node.classList.toggle('is-selected', selected);
       node.setAttribute('aria-pressed', String(selected));
       if (selected) node.style.setProperty('--cp-check-color', checkColor(hex));
       else node.style.removeProperty('--cp-check-color');
     }
-    slot.section.classList.toggle('is-emphasis', tab === lastActive);
+    ref.section.classList.toggle('is-emphasis', key === activeGroup);
   }
 
-  function render(activeTab, colors = {}) {
-    lastActive = activeTab;
-    lastColors = colors || {};
-    for (const { tab } of SECTIONS) {
-      const slot = slotOf(tab);
-      if (!slot) continue;
-      const names = Object.keys(presets[tab] || {});
+  /** `group` is the active slot's hint: it only decides which side is emphasised. */
+  function render(group, color) {
+    activeGroup = group;
+    activeColor = color;
+    for (const entry of groups) {
+      const key = entry.key;
+      const ref = refOf(key);
+      if (!ref) continue;
+      const names = Object.keys(palettes[key] || {});
       if (!names.length) {
-        slot.section.hidden = true;
+        ref.section.hidden = true;
         continue;
       }
-      slot.section.hidden = false;
-      const entry = state[tab];
+      ref.section.hidden = false;
+      const current = state[key];
       const signature = names.join('|');
-      if (!entry || entry.signature !== signature) {
-        state[tab] = { category: names[0], signature, built: null, swatches: [] };
-        buildPills(tab, slot, names);
-      } else if (!names.includes(entry.category)) {
-        entry.category = names[0];
-        buildPills(tab, slot, names);
+      if (!current || current.signature !== signature) {
+        state[key] = { category: names[0], signature, built: null, swatches: [] };
+        buildPills(key, ref, names);
+      } else if (!names.includes(current.category)) {
+        current.category = names[0];
+        buildPills(key, ref, names);
       }
-      if (state[tab].built !== state[tab].category) buildSwatches(tab, slot);
-      paint(tab, slot, lastColors);
+      if (state[key].built !== state[key].category) buildSwatches(key, ref);
+      paint(key, ref);
     }
   }
 
@@ -129,11 +128,11 @@ export function createPresetPanel({ refs, presets, onSelect }) {
     destroy() {
       for (const { node, type, fn } of handlers) node.removeEventListener(type, fn);
       handlers.length = 0;
-      for (const { tab } of SECTIONS) {
-        const slot = slotOf(tab);
-        if (slot) {
-          slot.categories.replaceChildren();
-          slot.swatches.replaceChildren();
+      for (const entry of groups) {
+        const ref = refOf(entry.key);
+        if (ref) {
+          ref.categories.replaceChildren();
+          ref.swatches.replaceChildren();
         }
       }
     },

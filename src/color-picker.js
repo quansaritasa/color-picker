@@ -1,57 +1,40 @@
 /**
  * ColorPicker — public surface, per-instance state, and the modal shell.
  * No module-level mutable state, so two instances stay independent.
+ *
+ * `colors` is keyed by slot id, so the host always knows which thing a value
+ * belongs to: the key it reads back is the name it declared.
  */
 
 import { formatHex, normalizeHex, parseHex } from './color.js';
-import { buildTemplate } from './template.js';
-import { createEditor } from './editor.js';
-import { DEFAULT_PRESETS, mergePresets } from './presets.js';
-import { createPresetPanel } from './presets-panel.js';
-import { createSuggestions } from './suggestions.js';
-import { bindShell } from './bindings.js';
-import { DEFAULTS, TABS, clampAlpha, resolveColors, resolveOptions } from './options.js';
+import { assemble } from './assemble.js';
+import { bindShell, unbindShell } from './bindings.js';
+import { clampAlpha, resolveColors, resolveOptions, resolvePair, resolveSlots } from './options.js';
 import { syncTabs } from './tablist.js';
 
 export default class ColorPicker {
   constructor(options = {}) {
     this.options = resolveOptions(options);
-    this.initialColors = resolveColors(options.initialColors, DEFAULTS.initialColors, this.options.showAlpha);
+    this.slots = resolveSlots(this.options.slots, this.options.labels);
+    this.slotIds = this.slots.map((slot) => slot.id);
+    this.pair = resolvePair(this.options.contrastPair, this.slotIds);
+    this.initialColors = resolveColors(options.initialColors, this.slots, this.options.showAlpha);
     this.colors = { ...this.initialColors };
     this.snapshot = { ...this.colors };
-    this.activeTab = TABS.includes(options.activeTab) ? options.activeTab : DEFAULTS.activeTab;
+    this.activeSlot = this.slotIds.includes(options.activeSlot) ? options.activeSlot : this.slotIds[0];
     this.isOpen = false;
+    this.mode = this.options.mode;
+    /** The element a popover hangs off; null means "no anchor". */
+    this.anchor = null;
 
     this.root = document.createElement('div');
     this.root.className = `cp-root${this.options.classNames ? ` ${this.options.classNames}` : ''}`;
     this.root.dataset.theme = this.options.theme;
     this.root.classList.add('hidden');
-    const built = buildTemplate({ showAlpha: this.options.showAlpha, labels: this.options.labels });
-    this.refs = built.refs;
-    this.root.append(built.root);
-    (this.options.container || document.body).append(this.root);
 
-    this.editor = createEditor(this.refs, {
-      showAlpha: this.options.showAlpha,
-      onChange: (rgba) => this.commit(rgba),
-      onStatus: (message) => this.setStatus(message),
-    });
-
-    this.presets = mergePresets(DEFAULT_PRESETS, this.options.presets || {});
-    this.panel = createPresetPanel({
-      refs: this.refs,
-      presets: this.presets,
-      onSelect: (hex, tab) => this.selectColor(hex, { source: 'preset', tab }),
-    });
-    this.suggestions = createSuggestions({
-      mount: this.refs.suggestions,
-      presets: this.presets,
-      enabled: this.options.showContrastSuggestions,
-      onPick: (hex, tab) => this.selectColor(hex, { source: 'suggestion', tab }),
-    });
-
+    assemble(this);
     bindShell(this);
-    syncTabs(this.refs, this.activeTab);
+    syncTabs(this.refs, this.activeSlot);
     this.refresh();
   }
 
@@ -70,37 +53,43 @@ export default class ColorPicker {
 
   /** Push editor + panels from `this.colors` without emitting. */
   refresh() {
-    this.editor.setColor(parseHex(this.colors[this.activeTab]));
+    this.editor.setColor(parseHex(this.colors[this.activeSlot]));
     this.renderPanels();
   }
 
   /** Repaint the read-only surfaces; the editor is left alone mid-drag. */
   renderPanels() {
-    this.panel.render(this.activeTab, this.colors);
-    this.suggestions.render(this.activeTab, this.colors);
+    const slot = this.slots.find((entry) => entry.id === this.activeSlot) || this.slots[0];
+    this.panel.render(slot.presetSet, this.colors[this.activeSlot]);
+    this.suggestions.render(this.activeSlot, slot.presetSet, this.colors);
+    if (this.swatches) this.swatches.render(this.colors);
   }
 
   /**
    * The single writer to `colors`. Swatch clicks, HEX/SV edits and
-   * `setColors()` all land here, so editor, HEX, preview and tab memory
-   * can never disagree.
+   * `setColors()` all land here, so editor, HEX, preview and per-slot memory
+   * can never disagree. `slot` defaults to the one the editor is showing; a
+   * preset grid passes its own slot, so its click never lands elsewhere.
    */
-  selectColor(hex, { source = 'preset', tab = this.activeTab } = {}) {
+  selectColor(hex, { source = 'preset', slot = this.activeSlot } = {}) {
     const normalized = clampAlpha(normalizeHex(hex), this.options.showAlpha);
-    if (!normalized || !TABS.includes(tab)) return;
-    if (tab !== this.activeTab) {
-      this.activeTab = tab;
-      syncTabs(this.refs, this.activeTab);
+    if (!normalized || !this.slotIds.includes(slot)) return;
+    if (slot !== this.activeSlot) {
+      this.activeSlot = slot;
+      syncTabs(this.refs, this.activeSlot);
       this.setStatus('');
     }
-    const changed = this.colors[tab] !== normalized;
-    this.colors[tab] = normalized;
+    const changed = this.colors[slot] !== normalized;
+    this.colors[slot] = normalized;
     if (source === 'editor') {
       // The editor emits once per pointermove: writing the status region here
       // would queue dozens of polite announcements during one drag. The editor
       // owns that region for commit-level messages (invalid HEX, etc), so the
       // first commit only clears a message it has already made stale.
-      if (this.refs.status.textContent) this.setStatus('');
+      if (this.refs.status.textContent) {
+        this.setStatus('');
+        this.refs.hex.removeAttribute('aria-invalid');
+      }
       this.renderPanels();
     } else {
       this.refresh();
@@ -109,10 +98,10 @@ export default class ColorPicker {
     if (changed) this.emit('onChange');
   }
 
-  setActiveTab(tab) {
-    if (!TABS.includes(tab) || tab === this.activeTab) return;
-    this.activeTab = tab;
-    syncTabs(this.refs, this.activeTab);
+  setActiveSlot(slot) {
+    if (!this.slotIds.includes(slot) || slot === this.activeSlot) return;
+    this.activeSlot = slot;
+    syncTabs(this.refs, this.activeSlot);
     this.refresh();
     this.setStatus('');
   }
@@ -122,11 +111,11 @@ export default class ColorPicker {
   }
 
   setColors(partial) {
-    const next = resolveColors({ ...this.colors, ...(partial || {}) }, this.colors, this.options.showAlpha);
+    const next = resolveColors({ ...this.colors, ...(partial || {}) }, this.slots, this.options.showAlpha);
     let changed = false;
-    for (const tab of TABS) {
-      if (next[tab] !== this.colors[tab]) {
-        this.colors[tab] = next[tab];
+    for (const id of this.slotIds) {
+      if (next[id] !== this.colors[id]) {
+        this.colors[id] = next[id];
         changed = true;
       }
     }
@@ -136,24 +125,42 @@ export default class ColorPicker {
     this.emit('onChange');
   }
 
-  open() {
+  open(anchor = null) {
     if (this.isOpen) return;
+    this.anchor = anchor || (this.swatches ? this.swatches.anchorFor(this.activeSlot) : null);
     this.snapshot = { ...this.colors };
     this.isOpen = true;
     this.root.classList.remove('hidden');
     this.refresh();
+    this.drag.clamp();
+    if (this.popover) this.popover.place();
     this.setStatus('');
-    this.focusTrap.activate();
-    this.refs.tabs[TABS.indexOf(this.activeTab)].focus();
+    this.focusTrap.activate(this.anchor);
+    const activeTab = this.refs.tabs[this.slotIds.indexOf(this.activeSlot)];
+    /* No tablist on one slot: the SV area is the primary control. */
+    (activeTab || this.refs.sv).focus();
+    if (this.swatches) this.swatches.sync(true);
     this.emit('onOpen');
   }
 
   close() {
     if (!this.isOpen) return;
     this.isOpen = false;
+    this.anchor = null;
     this.root.classList.add('hidden');
     this.focusTrap.deactivate();
+    if (this.swatches) this.swatches.sync(false);
     this.emit('onClose');
+  }
+
+  /**
+   * The one dismiss path for the shell. A popover commits on the way out —
+   * every edit is painted live and there is no OK/Cancel to undo it — while a
+   * modal restores the snapshot it opened with.
+   */
+  dismiss() {
+    if (this.mode === 'popover') this.close();
+    else this.cancel();
   }
 
   reset() {
@@ -180,11 +187,12 @@ export default class ColorPicker {
   }
 
   destroy() {
-    document.removeEventListener('keydown', this.onDocumentKey);
+    unbindShell(this);
     this.focusTrap.deactivate();
-    this.suggestions.destroy();
-    this.panel.destroy();
-    this.editor.destroy();
+    this.drag.destroy();
+    if (this.popover) this.popover.destroy();
+    if (this.swatches) this.swatches.destroy();
+    for (const part of [this.copy, this.suggestions, this.panel, this.editor]) part.destroy();
     this.root.remove();
     this.isOpen = false;
   }

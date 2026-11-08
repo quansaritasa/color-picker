@@ -1,25 +1,35 @@
 /**
  * Contrast suggestions: a collapsed panel under the presets that measures the
- * current pair and lists readable partners from the *opposing* palette.
+ * current pair and lists readable partners from the *other* slot's palette.
  *
- * It never writes the active color — spec §6 — a pick sets the other mode's
- * color instead, so the pair improves without the user's choice moving.
+ * It never writes the active colour — spec §6 — a pick sets the other slot of
+ * `contrastPair` instead, so the pair improves without the user's choice
+ * moving. Without a declared pair there is nothing to measure, so the whole
+ * panel stays hidden.
  */
 
 import { parseHex } from './color.js';
 import { contrastRatio, formatRatio, suggestPartners, wcagLevel } from './contrast.js';
+import { OTHER_GROUP } from './presets.js';
 
-const OTHER = { highContrast: 'lowContrast', lowContrast: 'highContrast' };
 const CAPACITY = 3;
 
-/** Every hex in one mode's palettes, deduplicated, spec order. */
-function candidatesOf(presets, mode) {
+/** Every hex in one palette, deduplicated, in preset order. */
+function candidatesOf(palette) {
   const out = [];
-  for (const list of Object.values(presets[mode] || {})) out.push(...list);
+  for (const list of Object.values(palette || {})) out.push(...list);
   return [...new Set(out)];
 }
 
-export function createSuggestions({ mount, presets, enabled = false, onPick }) {
+export function createSuggestions({ mount, slots = [], pair = null, palettes = {}, enabled = false, onPick }) {
+  const labelOf = (id) => (slots.find((slot) => slot.id === id) || {}).label || id;
+  const otherOf = (activeSlot) => {
+    if (!pair) return null;
+    if (pair[0] === activeSlot) return pair[1];
+    if (pair[1] === activeSlot) return pair[0];
+    return null;
+  };
+
   const details = document.createElement('details');
   details.className = 'cp-suggestions';
 
@@ -43,7 +53,7 @@ export function createSuggestions({ mount, presets, enabled = false, onPick }) {
 
   const hint = document.createElement('p');
   hint.className = 'cp-sugg-hint';
-  hint.textContent = 'Partners that read well against the current color. Picking one sets the other mode.';
+  hint.textContent = 'Partners that read well against the current color. Picking one sets the other color.';
   const empty = document.createElement('p');
   empty.className = 'cp-sugg-empty';
   empty.textContent = 'No preset in this palette reaches 4.5:1.';
@@ -64,7 +74,7 @@ export function createSuggestions({ mount, presets, enabled = false, onPick }) {
     partnerRatio.className = 'cp-partner-ratio';
     button.append(dot, hexOut, partnerRatio);
     button.addEventListener('click', () => {
-      if (typeof onPick === 'function' && button.dataset.hex) onPick(button.dataset.hex, button.dataset.tab);
+      if (typeof onPick === 'function' && button.dataset.hex) onPick(button.dataset.hex, button.dataset.slot);
     });
     list.append(button);
     return { button, dot, hexOut, partnerRatio };
@@ -72,10 +82,14 @@ export function createSuggestions({ mount, presets, enabled = false, onPick }) {
 
   details.append(summary, hint, list, empty);
   mount.append(details);
-  mount.hidden = !enabled;
+  mount.hidden = !enabled || !pair;
+
+  if (enabled && !pair && typeof console !== 'undefined') {
+    console.warn('ColorPicker: showContrastSuggestions needs contrastPair: [slotA, slotB] — suggestions stay hidden.');
+  }
 
   /** Paint one partner slot, or hide it. */
-  function paintSlot(slot, partner, tab) {
+  function paintSlot(slot, partner, id) {
     if (!partner) {
       slot.button.hidden = true;
       slot.button.removeAttribute('aria-label');
@@ -84,20 +98,25 @@ export function createSuggestions({ mount, presets, enabled = false, onPick }) {
     }
     slot.button.hidden = false;
     slot.button.dataset.hex = partner.hex;
-    slot.button.dataset.tab = tab;
+    slot.button.dataset.slot = id;
     slot.dot.style.background = partner.hex;
     slot.hexOut.textContent = partner.hex;
     slot.partnerRatio.textContent = `${formatRatio(partner.ratio)} ${partner.level}`;
-    slot.button.setAttribute('aria-label', `Use ${partner.hex} (${formatRatio(partner.ratio)}) as the ${tab === 'highContrast' ? 'text' : 'panel'} color`);
+    slot.button.setAttribute('aria-label', `Use ${partner.hex} (${formatRatio(partner.ratio)}) as the ${labelOf(id).toLowerCase()} color`);
   }
 
   return {
-    render(activeTab, colors = {}) {
+    render(activeSlot, group, colors = {}) {
       if (!enabled) return;
-      const other = OTHER[activeTab];
-      const base = parseHex(colors[activeTab] || '');
+      const other = otherOf(activeSlot);
+      if (!other) {
+        mount.hidden = true;
+        return;
+      }
+      const base = parseHex(colors[activeSlot] || '');
       const surface = parseHex(colors[other] || '');
-      if (!other || !base || !surface) return;
+      if (!base || !surface) return;
+      mount.hidden = false;
 
       const ratio = contrastRatio(base, surface);
       const level = wcagLevel(ratio);
@@ -106,7 +125,9 @@ export function createSuggestions({ mount, presets, enabled = false, onPick }) {
       largeBadge.hidden = !(level === 'fail' && ratio >= 3);
       ratioOut.textContent = formatRatio(ratio);
 
-      const ranked = suggestPartners(base, candidatesOf(presets, other), { limit: CAPACITY });
+      /* Partners come from the opposite palette group: the quiet one when the
+         edited slot is a text colour, the strong one when it is a surface. */
+      const ranked = suggestPartners(base, candidatesOf(palettes[OTHER_GROUP[group]]), { limit: CAPACITY });
       partners.forEach((slot, i) => paintSlot(slot, ranked[i], other));
       empty.hidden = ranked.length > 0;
       list.hidden = ranked.length === 0;

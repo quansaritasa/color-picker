@@ -42,8 +42,8 @@ export function createFocusTrap(root) {
 
   return {
     /** Remember the opener and start wrapping Tab inside the root. */
-    activate() {
-      previous = document.activeElement;
+    activate(opener) {
+      previous = opener || document.activeElement;
       document.addEventListener('keydown', onKey, true);
     },
     /** Stop wrapping and restore focus, when the opener is still on the page. */

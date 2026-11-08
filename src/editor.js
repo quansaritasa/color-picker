@@ -59,6 +59,7 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
     // typed into the field must not leave a translucent color behind.
     state.a = showAlpha && typeof rgba.a === 'number' ? clamp01(rgba.a) : 1;
     current = { r: round(rgba.r), g: round(rgba.g), b: round(rgba.b), a: state.a };
+    if (refs.hex) refs.hex.removeAttribute('aria-invalid');
     render();
     if (!silent && onChange) onChange({ ...current });
   }
@@ -113,9 +114,12 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
     const parsed = parseHex(event.target.value);
     if (!parsed) {
       refs.hex.value = formatHex(current);
+      // The message region is screen-reader only, so the field marks itself too.
+      refs.hex.setAttribute('aria-invalid', 'true');
       if (onStatus) onStatus('Enter a valid HEX value.');
       return;
     }
+    refs.hex.removeAttribute('aria-invalid');
     if (onStatus) onStatus('');
     setColor(parsed, { silent: false });
   };
