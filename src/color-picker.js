@@ -10,7 +10,7 @@ import { DEFAULT_PRESETS, mergePresets } from './presets.js';
 import { createPresetPanel } from './presets-panel.js';
 import { createSuggestions } from './suggestions.js';
 import { bindShell } from './bindings.js';
-import { DEFAULTS, TABS, resolveColors } from './options.js';
+import { DEFAULTS, TABS, clampAlpha, resolveColors } from './options.js';
 import { syncTabs } from './tablist.js';
 
 export default class ColorPicker {
@@ -20,7 +20,7 @@ export default class ColorPicker {
       ...options,
       labels: { ...DEFAULTS.labels, ...(options.labels || {}) },
     };
-    this.initialColors = resolveColors(options.initialColors, DEFAULTS.initialColors);
+    this.initialColors = resolveColors(options.initialColors, DEFAULTS.initialColors, this.options.showAlpha);
     this.colors = { ...this.initialColors };
     this.snapshot = { ...this.colors };
     this.activeTab = TABS.includes(options.activeTab) ? options.activeTab : DEFAULTS.activeTab;
@@ -90,7 +90,7 @@ export default class ColorPicker {
    * can never disagree.
    */
   selectColor(hex, { source = 'preset', tab = this.activeTab } = {}) {
-    const normalized = normalizeHex(hex);
+    const normalized = clampAlpha(normalizeHex(hex), this.options.showAlpha);
     if (!normalized || !TABS.includes(tab)) return;
     if (tab !== this.activeTab) {
       this.activeTab = tab;
@@ -102,7 +102,9 @@ export default class ColorPicker {
     if (source === 'editor') {
       // The editor emits once per pointermove: writing the status region here
       // would queue dozens of polite announcements during one drag. The editor
-      // owns that region for commit-level messages (invalid HEX, etc).
+      // owns that region for commit-level messages (invalid HEX, etc), so the
+      // first commit only clears a message it has already made stale.
+      if (this.refs.status.textContent) this.setStatus('');
       this.renderPanels();
     } else {
       this.refresh();
@@ -124,7 +126,7 @@ export default class ColorPicker {
   }
 
   setColors(partial) {
-    const next = resolveColors({ ...this.colors, ...(partial || {}) }, this.colors);
+    const next = resolveColors({ ...this.colors, ...(partial || {}) }, this.colors, this.options.showAlpha);
     let changed = false;
     for (const tab of TABS) {
       if (next[tab] !== this.colors[tab]) {
