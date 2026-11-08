@@ -334,7 +334,51 @@
   opaqueHex.dispatchEvent(new Event('change', { bubbles: true }));
   check('showAlpha:false drops the alpha of an 8-digit hex',
     opaque.getColors().highContrast === '#FF0000', opaque.getColors().highContrast);
+  // every writer, not just the editor: the option means alpha off on all entry paths
+  opaque.setColors({ highContrast: '#00FF0040' });
+  check('showAlpha:false clamps alpha on setColors',
+    opaque.getColors().highContrast === '#00FF00', opaque.getColors().highContrast);
+  check('showAlpha:false leaves the rendered hex opaque too',
+    opaqueHex.value === '#00FF00', opaqueHex.value);
+  opaque.selectColor('#0000FF33', { source: 'preset' });
+  check('showAlpha:false clamps alpha on a preset colour',
+    opaque.getColors().highContrast === '#0000FF', opaque.getColors().highContrast);
+  let applied = null;
+  const opaqueApply = new ColorPicker({
+    showAlpha: false,
+    initialColors: { highContrast: '#11223344', lowContrast: '#44556677' },
+    onApply: (colors) => { applied = colors; },
+  });
+  check('showAlpha:false clamps alpha in initialColors',
+    opaqueApply.getColors().highContrast === '#112233' && opaqueApply.getColors().lowContrast === '#445566',
+    JSON.stringify(opaqueApply.getColors()));
+  opaqueApply.open();
+  opaqueApply.apply();
+  check('showAlpha:false clamps alpha in the onApply payload',
+    applied && applied.highContrast === '#112233', applied && applied.highContrast);
+  opaqueApply.reset();
+  check('showAlpha:false clamps alpha after reset',
+    opaqueApply.getColors().highContrast === '#112233', opaqueApply.getColors().highContrast);
+  opaqueApply.destroy();
   opaque.destroy();
+
+  // 29. an editor commit clears the error message the editor left behind
+  const stale = new ColorPicker({ initialColors: { highContrast: '#0F766E', lowContrast: '#CCFBF1' } });
+  stale.open();
+  const staleHex = stale.root.querySelector('.hex-input');
+  staleHex.value = '#GGGGGG';
+  staleHex.dispatchEvent(new Event('change', { bubbles: true }));
+  const staleStatus = stale.root.querySelector('.status');
+  check('invalid hex raises a status message', staleStatus.textContent === 'Enter a valid HEX value.', staleStatus.textContent);
+  const staleSv = stale.root.querySelector('.sv');
+  const staleBox = staleSv.getBoundingClientRect();
+  const staleOpts = { bubbles: true, pointerId: 7, clientX: staleBox.left + staleBox.width * 0.3, clientY: staleBox.top + staleBox.height * 0.7 };
+  staleSv.dispatchEvent(new PointerEvent('pointerdown', staleOpts));
+  staleSv.dispatchEvent(new PointerEvent('pointermove', { ...staleOpts, clientX: staleBox.left + staleBox.width * 0.8, clientY: staleBox.top + staleBox.height * 0.2 }));
+  staleSv.dispatchEvent(new PointerEvent('pointerup', { ...staleOpts, pointerId: 7 }));
+  check('an editor commit clears the stale error', staleStatus.textContent === '', staleStatus.textContent);
+  stale.close();
+  stale.destroy();
 
   dark.destroy();
   suggPicker.destroy();
