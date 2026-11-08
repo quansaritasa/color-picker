@@ -24,19 +24,19 @@ export const DEFAULT_PRESETS = {
 };
 
 /**
- * Build a fresh presets object: defaults first, then any custom category that
- * does not already exist. Default categories are never replaced, so a typo in
- * user config cannot damage the shipped palettes.
+ * Build a fresh presets object: the shipped palettes first, then `override`.
+ * A category the override names **replaces** the shipped palette of that name
+ * (spec §9's own example — `highContrast: { Cool: [...] }` — must take effect);
+ * a name the defaults do not have is added after the shipped ones. Every array
+ * is copied, so neither `defaults` nor the caller's config is mutated.
  */
 export function mergePresets(defaults, override = {}) {
   const out = {};
   for (const mode of Object.keys(defaults)) {
-    const merged = { ...defaults[mode] };
-    const extra = override[mode] || {};
-    for (const name of Object.keys(extra)) {
-      if (!(name in merged)) merged[name] = [...extra[name]];
-    }
-    out[mode] = merged;
+    const merged = { ...defaults[mode], ...(override[mode] || {}) };
+    out[mode] = Object.fromEntries(
+      Object.entries(merged).map(([name, colors]) => [name, [...colors]]),
+    );
   }
   return out;
 }

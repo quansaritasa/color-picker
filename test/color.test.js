@@ -119,16 +119,24 @@ test('high contrast Neutral carries pure black and pure white', () => {
   assert.ok(Neutral.includes('#FFFFFF'));
 });
 
-test('mergePresets adds custom categories without replacing defaults', () => {
+test('mergePresets replaces a named category and adds new ones', () => {
   const merged = mergePresets(DEFAULT_PRESETS, {
     highContrast: { Brand: ['#123456', '#654321'], Cool: ['#FFFFFF'] },
     lowContrast: { Sand: ['#EFE7DA'] },
   });
+  // new categories land after the shipped ones
   assert.deepEqual(merged.highContrast.Brand, ['#123456', '#654321']);
   assert.deepEqual(merged.lowContrast.Sand, ['#EFE7DA']);
-  assert.deepEqual(merged.highContrast.Cool, DEFAULT_PRESETS.highContrast.Cool);
   assert.equal(categoriesOf(merged, 'highContrast').length, 7);
-  // defaults untouched
-  assert.equal(categoriesOf(DEFAULT_PRESETS, 'highContrast').length, 6);
+  // spec §9's example: naming a shipped category replaces it, in place
+  assert.deepEqual(merged.highContrast.Cool, ['#FFFFFF']);
+  assert.equal(categoriesOf(merged, 'highContrast')[0], 'Cool');
+  // every other shipped category survives
+  assert.deepEqual(merged.highContrast.Blue, DEFAULT_PRESETS.highContrast.Blue);
+  assert.deepEqual(merged.lowContrast.Cool, DEFAULT_PRESETS.lowContrast.Cool);
+  // the shipped tables are never mutated
+  assert.equal(DEFAULT_PRESETS.highContrast.Cool.length, 7);
   assert.ok(!('Brand' in DEFAULT_PRESETS.highContrast));
+  merged.highContrast.Blue.push('#000000');
+  assert.equal(DEFAULT_PRESETS.highContrast.Blue.length, 7);
 });
