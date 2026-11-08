@@ -25,8 +25,8 @@
 ### 🧪 Testing
 - ✅ `node --test` 22/22.
 - ✅ `showAlpha: false` probe through `resolveColors`/`clampAlpha`.
-- ⬜ Browser smoke re-run at ship time (Chrome invocation blocked); the dev-code round recorded 103/103.
-- ⬜ `dev-review` pass 3 — pass 2's findings fixed and pinned in iteration 6.
+- ✅ Browser smoke re-run for review pass 3 in headless Chrome: 103/103, title `PASS`.
+- ✅ `dev-review` pass 3: **Pass with Changes** — pass 2's two findings resolved and pinned; one `[minor] Medium` open (the `showAlpha` on/off predicate differs between `clampAlpha`, `template.js` and `editor.js`).
 
 ### Notes
 - Shipped after the push quarantine was found ineffective: killing the driver restored `origin`'s pushurl while the round was still alive, and the orphan round force-pushed to `main`. `origin/main` was reset to `d52b68c` (the pre-task commit) and the work moved onto `feature/color-picker-lib` before the PR was opened.

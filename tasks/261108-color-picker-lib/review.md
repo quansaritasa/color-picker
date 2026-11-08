@@ -4,7 +4,7 @@
 - ID: 261108-color-picker-lib
 - Title: Build a modern, dependency-free color picker library (High Contrast / Low Contrast)
 - Repository / Project: color-picker (branch `main`)
-- Review objective: grade the whole delivered library against `sop.md`, the visual reference, and every plan iteration — one pass over iterations 1–4, since review runs once at the end of the code phase.
+- Review objective: grade the whole delivered library against `sop.md`, the visual reference, and every plan iteration — pass 1 over iterations 1–4, pass 2 over iteration 5, pass 3 over iteration 6.
 
 ## Stable Review Criteria
 - Fit criteria:
@@ -36,125 +36,7 @@
 **Trigger:** planned review
 **Verdict:** Fail
 
-### Fit Check
-**Acceptance Criteria Review**
-
-1. Two tabs switch modes and each keeps its own color — **Pass** — `src/color-picker.js:92-118`, `src/tablist.js:6-13`; smoke checks "tab switch sets activeTab", "other tab keeps its color", "returning to the tab restores its color/checkmark" all PASS.
-2. Selecting a preset swatch updates editor, HEX field, and selection state — **Pass** — `src/presets-panel.js:62-99`; smoke "swatch click updates the hex field" and "swatch click moves the checkmark" PASS.
-3. Drag in the SV area updates color continuously with pointer + touch — **Pass** — `src/editor.js:63-86` (`pointerdown` + `setPointerCapture` + `pointermove` + `pointercancel`); smoke drives a real `PointerEvent` sequence and sees the color change. Pointer events cover touch without a separate `touchmove` path.
-4. Hue and alpha sliders update gradient, preview and HEX live — **Pass** — `src/editor.js:22-40,101-108`; smoke checks both `input` handlers change the color and that alpha yields an 8-digit hex.
-5. HEX accepts `#RGB`/`#RGBA`/`#RRGGBB`/`#RRGGBBAA`, normalizes, rejects invalid without overwriting — **Pass** — `src/color.js:16-28`; 5 unit tests (valid forms, `[3,4,6,8]` length, `#GGGGGG`), plus smoke "invalid hex keeps the color / reverts the field / shows a status message".
-6. `getColors()` returns a normalized-hex copy, alpha only when `a < 1` — **Pass** — `src/color-picker.js:120-122`, `src/color.js:31-34`; test "formatHex omits alpha at or above 0.999"; smoke "getColors returns a copy".
-7. Reset / Cancel / OK per spec §7 — **Pass** — `src/color-picker.js:159-180`; smoke 11-14: Reset restores `initialColors` and stays open, Cancel restores the open snapshot and closes, OK fires `onApply` and closes, Escape cancels.
-8. Multiple instances work independently — **Pass** — no module-level mutable state (`src/color-picker.js:16-60`); smoke "second instance isolated" + "two roots mounted"; probe confirmed each instance keeps its own colors and panels. The one cross-instance defect that survives (Escape reaching another open instance) is graded separately as Quality Check #4 because colour state itself stays independent.
-9. Public API `open/close/destroy/getColors/setColors/setActiveTab` + 5 callbacks — **Pass** — `src/color-picker.js:112-190`; every name in the README API/callback tables exists and behaves as documented (smoke exercises all five callbacks).
-10. Contrast ratio math is WCAG-correct — **Pass** — `src/contrast.js:13-56`, 10 tests in `test/contrast.test.js`. Independently recomputed this pass: `#0F766E` on `#CCFBF1` = 4.8573 (test pins 4.857), black/white = 21, mid-grey luminance 0.2158 — the sRGB linearization is right, not the gamma-shortcut.
-11. Preset data matches spec §4/§5 exactly and is overridable via `options.presets` — **Partial** — data verified line-by-line against `sop.md:127-240` (all 12 categories, order and case exact). Overriding does not work: `mergePresets` (`src/presets.js:31-42`) skips any name that already exists, so the configuration `sop.md:421-431` itself demonstrates (`highContrast: { Cool: ['#111827', '#1F2937'] }`) is silently discarded. Probe result: `Cool` unchanged, only the new `Brand` category landed.
-12. Light + dark theme via CSS variables; responsive desktop/tablet/mobile bottom sheet — **Pass** — token blocks `color-picker.css:8-74` (dark = token swap only, no duplicated rules); `@media (max-width: 680px)` at `:703`. Verified at 1280/1024 (centred modal, both sections side by side) and 500 (full-width bottom sheet, stacked sections, sticky footer) by screenshot and by measuring rendered boxes.
-13. Accessible: roving tablist, `aria-selected`, `aria-live` status, Escape/Enter, focus-visible, reduced motion — **Pass** — `src/tablist.js` (roving `tabIndex` + Arrow/Home/End in `src/bindings.js:23-31`), `src/template.js:58-70`, `color-picker.css:680-700`. The ARIA gaps this criterion does not name (dialog semantics, slider value attributes, live-region churn) are graded as Quality Check #3, #5 and #6.
-14. Demo page: both tabs, text usage, panel usage, live preview, custom-preset instance — **Pass** — `index.html:65-91` (two preview cards), `:111-155` (two instances, the second with `theme: 'dark'` and `Brand` presets).
-15. No external dependency, no build step — **Pass** — `grep -rn "from '" src/*.js | grep -v "\./"` → 0 hits; no `package.json`; ES modules served over HTTP.
-
-**Plan Coverage Review**
-
-1. 1.1 Color core module — **Pass** — `src/color.js` (131 lines), full listed surface, 8 unit tests.
-2. 1.2 Preset tables — **Pass** — `src/presets.js` (47 lines) verbatim from spec; the "user categories replace nothing, they are added" implementation is what AC 11 marks `Partial` above.
-3. 1.3 Repo hygiene — **Pass** — `.gitignore:1-3`; `git status` stays clean across every skill run.
-4. 2.1 DOM template builder — **Pass** — `src/template.js` (152 lines), `createElement` throughout, no `innerHTML`.
-5. 2.2 HSV editor controller — **Pass** — `src/editor.js` (154 lines), HSV state held in the editor so a grey never steals a hue (`:49-61`).
-6. 2.3 ColorPicker class and public API — **Pass** — `src/color-picker.js` (193 lines ≤ 200), per-instance state, snapshot/cancel/apply semantics.
-7. 2.4 Component stylesheet (base) — **Pass** — tokens from the reference under `.cp-root`, `--cp-*` names, focus-visible and reduced-motion from this iteration.
-8. 2.5 Demo page — **Pass** — `index.html`; live preview off `onChange`, restored on cancel.
-9. 2.6 README — **Pass (after a mechanical fix this pass, see Quality Check #8)** — every option/method/callback documented; the install list was four modules short and is now complete.
-10. 3.1 Preset panel renderer — **Pass** — `src/presets-panel.js` (141); pills, 7-column grid, luminance-picked check colour, both sections mounted.
-11. 3.2 Selection state sync — **Pass** — `selectColor` is the single writer (`src/color-picker.js:92-110`); swatch click on the idle tab activates that tab first.
-12. 3.3 Preset styles — **Pass** — `.cp-category`/`.cp-swatch` at `color-picker.css:419-468`; selected swatch uses outline + `✓`, not colour alone.
-13. 4.1 Contrast math — **Pass** — `src/contrast.js` (77), `test/contrast.test.js` (10 tests).
-14. 4.2 Suggestions panel — **Pass** — `src/suggestions.js` (118), collapsed `<details>` below the presets, partners from the opposing palette, never writes the active tab.
-15. 4.3 Dark theme + a11y + responsive CSS — **Pass with findings** — the three surfaces render as claimed (screenshots inspected this pass); Quality Check #1, #3, #5, #6 and #7 are the accessibility debt inside it.
-16. 4.4 Demo: custom presets + second instance — **Pass** — `grep -c "new ColorPicker" index.html` → 2; second instance mounts in `#brandRoot` with `theme: 'dark'`.
-
-**Scope Review**
-- Unexpected files changed:
-  - `sop.md`, `reference/modern-color-picker.html` — `planned` — the spec and visual reference are the task inputs named in `plan.md:6`; committed by the planner before iteration 1.
-  - `test/smoke.html` — `drift` (no plan iteration names it, no user message asks for it) — logged in `changelog.md:84` as iteration 2 [7], referenced by `README.md:172`, and it is the only automated cover for every DOM behaviour. Justified and low risk; recorded as Quality Check #10 rather than failed.
-- Scope drift: the 16-file plan became 12 modules (iteration 3/4 splits under the 200-line rule) plus the smoke harness; both are documented deviations, none of them widen the feature set.
-- Constraints / do-not-modify respected: Yes. Every `src/*.js` ≤ 200 lines (max 193); `color-picker.css` stays a single file; presets panel and suggestions sit where the plan put them; `node --test` covers colour/contrast math only, UI by the smoke harness.
-
-**Fit Issues**
-1. AC 11 `Partial` — `options.presets` cannot override a shipped category, so the configuration the spec example shows has no effect (Quality Check #2).
-2. Spec §12's "sufficient text contrast" does not hold for the light theme's secondary text — measured 3.18:1 (Quality Check #1).
-
-### Quality Check
-1. **[blocking] High** [Accessibility / Theme] — `color-picker.css:15` (`--cp-subtle`), used at `:140, :210, :475, :565, :608, :633, :648`
-   - Should hold: every text label the component renders clears WCAG AA — 4.5:1 at the sizes it uses — against the surface it sits on.
-   - Details: `--cp-subtle: #8791A3` measures 3.18:1 on `--cp-surface` (`#FFFFFF`) and 2.96:1 on `--cp-surface-alt` (`#F5F7FA`), computed this pass with the WCAG formula (not by eye). It colours `.section-hint` (10px), `.status` (11px), `.tab small` (12px), `.cp-sugg-hint`/`.cp-partner-ratio` (11px) and `.reset-btn` (13px/600) — all "normal text" by WCAG's 18.66px-bold threshold, so the floor is 4.5:1. `sop.md:510` requires "Sufficient text contrast"; the dark theme's equivalent token passes at 5.53:1, so this is the light theme only and it is the light theme that ships by default.
-   - Suggested fix: set `--cp-subtle: #6B7280` (4.83:1 on surface, 4.50:1 on surface-alt, 4.55:1 on pill-bg) — or collapse it onto `--cp-muted: #667085` (4.97/4.64/4.68) if two greys are more than the design needs — and re-check `.reset-btn`, the only interactive label among them.
-2. **[blocking] High** [Correctness / Fit] — `src/presets.js:36-38`
-   - Should hold: `options.presets` replaces the palettes it names and adds the ones it does not, which is what `sop.md:421-431` demonstrates.
-   - Details: `if (!(name in merged)) merged[name] = [...extra[name]];` silently drops every override of a shipped category. Probe this pass: `new ColorPicker({ presets: { highContrast: { Cool: ['#123456'], Brand: ['#654321'] } } })` → `Cool` still the 7 shipped hexes, `Brand` added. `README.md:63,106` documents the behaviour as additive, so it is at least honest, but a consumer following the spec's own example gets no effect and no warning — the class of defect that costs a debugging hour.
-   - Suggested fix: assign unconditionally (`merged[name] = [...extra[name]]`) so a named category is replaced and a new one added; update `test/color.test.js:122-133` to pin replacement instead of the default surviving; adjust `README.md:63` and `:106`.
-3. **[minor] Medium** [Accessibility / Design] — `src/template.js:128-129`
-   - Details: the modal shell is a plain `div.picker` with no `role="dialog"`, no `aria-modal="true"` and no accessible name; the `<h2>Choose Color` at `:53` is not referenced by anything. `open()` moves focus inside (`src/color-picker.js:146-147`), but assistive tech is never told a dialog opened, so the focus jump reads as context loss.
-   - Suggested fix: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` pointing at an `id` on the `<h2>`.
-4. **[minor] Medium** [Correctness / State] — `src/bindings.js:38-41`
-   - Details: every instance registers its own document `keydown`, and each handler cancels *its* picker on Escape without asking whether it is the one on top. Probe: two pickers open, one `Escape` → both `isOpen === false`, and the hidden one silently lost its edits (Cancel restores its open snapshot). The plan accepted "two simultaneous modals can fight over focus" (`plan.md:384`), but this is not a focus fight — it discards state in an instance the user is not looking at, while `README.md:162-163` promises instances are independent.
-   - Suggested fix: cancel only when no other `.cp-root` is both open and later in DOM order than this one (a 3-line guard in the Escape handler), or keep an open-instance stack in a small module.
-5. **[minor] Medium** [Accessibility] — `src/template.js:70`, `src/editor.js:39`
-   - Details: `.sv` carries `role="slider"` with `aria-label` and `aria-valuetext` but no `aria-valuenow`/`aria-valuemin`/`aria-valuemax`. A `slider` without a value is invalid ARIA: screen readers announce the name and stop, and the arrow-key handler (`src/editor.js:87-100`) changes two dimensions that AT cannot read.
-   - Suggested fix: add `aria-valuemin="0"`, `aria-valuemax="100"`, `aria-valuenow` (saturation, updated in `render()`) and keep the hex in `aria-valuetext`; state the arrow/SV mapping in `aria-description` or the label.
-6. **[minor] Medium** [Accessibility / Behaviour] — `src/color-picker.js:103`
-   - Details: `selectColor` writes the new hex into the `aria-live="polite"` status region on every editor update (`source === 'editor'`), and the editor emits one per `pointermove` (`src/editor.js:42-46,63-83`). During a drag that is dozens of polite announcements queued per second — unusable with a screen reader, and it also floods the visible status line with the user's own colour.
-   - Suggested fix: keep the live region for commit-level messages only — skip `setStatus` on `source === 'editor'`, or debounce it to `pointerup`/`change`.
-7. **[minor] Medium** [Docs / Dead code] — `color-picker.css:29-30`, `README.md:154`
-   - Details: `--cp-radius` is defined and never read (`.picker` hardcodes `border-radius: 22px` at `:98`), yet the README's theming example advertises `--cp-radius: 14px` as a knob — a consumer sets it and nothing moves. `--cp-check` (`:29`) is likewise defined and never used; the checkmark reads the JS-set `--cp-check-color`.
-   - Suggested fix: make `.picker` read `var(--cp-radius)`, and delete `--cp-check` (or wire it into `.cp-swatch::after` as the fallback).
-8. **[minor] Medium** [Docs] — `README.md:12-23` — **fixed in this pass**
-   - Details: the install list named 8 of the 12 modules; `contrast.js`, `suggestions.js`, `focus.js` and `bindings.js` were missing, so a copy-paste install would fail at the first import (`color-picker.js:11-12`). Stale since iteration 4 added them.
-   - Suggested fix (applied): added the four modules to the list. Re-ran `for f in $(sed -n '/^```text$/,/^```$/p' README.md | grep -E '^src/|^color-picker.css'); do [ -f "$f" ] || echo MISSING $f; done` → no output, and `comm -3` between `ls src/*.js` and the listed set → no diff (12 listed, 12 present). No test covers a README, so no suite re-run was needed; `node --test` and the smoke harness were re-run afterwards for the record (22/22, 85/85).
-9. **[minor] Low** [Behaviour / Consistency] — `src/editor.js:49-61`, `src/color-picker.js:71-73`
-   - Details: with `showAlpha: false` the opacity slider is hidden (`src/template.js:94`) but the HEX field still accepts 8-digit input and the alpha reaches `getColors()` — probe: `#FF000080` stored while the alpha control is invisible. The user can end up with a translucent colour and no control to change it.
-   - Suggested fix: when `showAlpha` is false, normalize through 6 digits (drop alpha in `commit`/`setColor`), so the option means "alpha off" rather than "alpha UI hidden".
-10. **[minor] Low** [Scope / Process] — `test/smoke.html`
-   - Details: the harness is not named in any plan iteration — it entered as drift in iteration 2 and grew to 85 checks by iteration 4. It is logged (`changelog.md:84`) and it is the only automated cover for the DOM surface, so it should have a plan home.
-   - Suggested fix: add it to iteration 2's in-scope list and to `Progress` step 2.6 the next time `plan.md` is opened for a new iteration.
-
-### Test & Verification Review
-- Reviewer checks run:
-  - `node --test` → 22/22 pass (12 colour + 10 contrast).
-  - `test/smoke.html` over `python3.12 -m http.server 8123` in `--headless=new --dump-dom` → 85 results, 0 `FAIL`, document title `PASS`.
-  - Independent recomputation of the contrast maths in this pass (WCAG formula, not the project's module): `#0F766E`/`#CCFBF1` = 4.8573, `#000`/`#FFF` = 21.0, `#7A7A7A`/`#FFF` = 4.292 — matches the numbers the panel and the tests report.
-  - Rendered measurements at 1280, 1024 and 500 px: `.picker` 940/100/500 with no horizontal overflow, 7-column swatch grid ≈53px, mobile media query active and stacked.
-  - Screenshots inspected: dark theme at 1280 (tokens swap cleanly, presets readable, badges tinted), mobile bottom sheet at 500 (footer pinned, one preset column), selected-swatch ring and `✓` legible on both a near-black and a pale swatch.
-  - Behaviour probe for the findings above: dialog role, two-instance Escape, preset override, category memory across a tab round-trip, `showAlpha: false` + 8-digit hex.
-  - Colour-token contrast audit of both themes (9 pairs light, 7 dark) with the WCAG formula.
-- Coverage assessment: adequate for behaviour — every spec §14 item maps to a smoke check, and the maths has its own suite. Gaps: no automated check for ARIA semantics (dialog role, slider value attrs), no test for two simultaneous instances, and the SV area's arrow-key path is never exercised.
-- Verification gaps or regression risk: the light-theme token change (#1) is visual only and needs a screenshot re-check, not a test; the preset override change (#2) needs its unit test rewritten, which is the natural place to pin the new semantic.
-
-### Changelog Review
-- Matches implementation: Yes. Iterations 1-4 describe what is on disk — line counts (131/47/154/152/193/141/77/118/57/43), the CSS growth to 797, the file splits under the 200-line rule, the two-instance demo, and the measurement corrections (`4.857` not `4.4-4.6`; `grep -c` → 7 not 3) are all accurate when re-run.
-- Missing or misleading entries: None. `test/smoke.html` is entered under iteration 2 [7] even though the plan never named it, which is the right place for it.
-
-### Record Check
-- `None` — every figure re-checked this pass (`wc -l` on all 12 modules → 21-193; `grep -rn "from '" src/*.js | grep -v "\./"` → 0; `grep -c "new ColorPicker" index.html` → 2; `grep -c "prefers-reduced-motion\|data-theme\|max-width: 680px" color-picker.css` → 7; `node --test` 22; smoke 85) matches what `changelog.md` and `plan.md`'s Progress table record.
-
-### Previous Issues Status
-- `Not applicable` — first review pass for this task.
-
-### ADR Suggestion
-- Suggested: No
-- Reason: no decision with a lasting contract is in play — both blocking findings are a token value and a merge semantic that the spec already fixes, so they are code work, not a decision record.
-
-### Declined to Judge
-- Modal corner radius 22px (`color-picker.css:98`) vs spec §10's "16–20px", and swatches ≈53px vs "44–52px" — `reference/modern-color-picker.html:44,91` is the authoritative source for design tokens (`plan.md:6`) and carries 22px/9px itself; §10 states ranges "approximately". Recorded as a deliberate reference-port, not judged.
-- "Reset selected categories if configured" (`sop.md:311`) — the qualifier makes it opt-in and no configuration enables it in this deliverable; outside this change set.
-- Two modals fighting over *focus* (`plan.md:384`, accepted risk) — the focus half stays accepted; only the Escape half is judged, as Quality Check #4, because it destroys state rather than confusing focus.
-
-### Final Recommendation
-- Reject — with two targeted fixes, not a re-plan.
-- Required next steps: fix Quality Check #1 (light-theme `--cp-subtle` below AA) and #2 (`options.presets` must override a named category, per spec §9) — both carry their own fix; then clear the Medium findings #3-#7 and the Low #9 while the files are open. #8 is already applied this pass. Every finding names its own fix and none reopens a requirement, so the next round is `dev-code`, not a new plan iteration.
-
----
+Body: `review-archive.md` → `## Review Pass [1]`.
 
 ## Review Pass [2] — 2026-11-08 15:56 +07
 **Iteration:** 1–5
@@ -268,3 +150,96 @@ All three of pass 1's items appear here for a second time, so this pass judges t
 ### Final Recommendation
 - Reject — one targeted fix, not a re-plan.
 - Required next steps: Quality Check #1 — clamp alpha where colours enter the class (`resolveColors`) so constructor, `setColors`, `reset`, `onApply` and the editor agree, and pin it with a smoke check; while those files are open, clear the stale status message (#2). Every finding names its own fix and no requirement changed, so the next round is `dev-code`, not a new plan iteration.
+## Review Pass [3] — 2026-11-08 16:19 +07
+**Iteration:** 6
+**Trigger:** user request
+**Verdict:** Pass with Changes
+
+Graded on the delta: `git diff --name-only f217153..HEAD` → `src/color-picker.js`, `src/options.js`, `test/smoke.html`, plus `changelog.md`, `plan.md` and `pr.md` in the task folder. Every criterion and planned item whose files are absent from that list carries pass 2's verdict forward as `Pass (unchanged since pass 2)`.
+
+### Fit Check
+**Acceptance Criteria Review**
+
+1. Two tabs switch modes and each keeps its own color — **Pass** — the tab path is untouched (`setActiveTab`, `syncTabs`); `selectColor` only gained a clamp on the incoming hex and a `changed`-guarded emit. Smoke's "tab switch sets activeTab", "other tab keeps its color" and "returning to the tab restores its color" PASS in the re-run.
+2. Preset swatch click updates editor, HEX field and selection — **Pass** — probe `selectColor('#0000FF33', { source: 'preset' })` with `showAlpha: false` → `#0000FF`, field and preview follow; with alpha on it keeps `#0000FF33` (smoke + probe B4).
+3. SV drag updates color with pointer + touch — **Pass** — real `PointerEvent` sequence still drives the colour (probe C6: `#0F766E` → `#40807B` over a 6-move drag); `editor.js` is absent from the delta.
+4. Hue and alpha sliders update gradient, preview, HEX live — **Pass** — same untouched `apply()` path; smoke's hue/alpha `input` checks PASS; the alpha block is still built when `showAlpha` is on and omitted when it is `false` (probe A11).
+5. HEX accepts `#RGB`/`#RGBA`/`#RRGGBB`/`#RRGGBBAA`, normalizes, rejects invalid — **Pass (unchanged since pass 2)** — `src/color.js` absent from the delta; the invalid-hex status probe (C1) and the smoke's format checks still PASS.
+6. `getColors()` returns a normalized copy, alpha only when `a < 1` — **Pass** — with `showAlpha: false` every writer now returns 6 digits and the rendered HEX agrees with `getColors()` (probe A1–A10). With alpha on, an 8-digit value round-trips unchanged (B1–B6), so the option-off path is the only behaviour that moved. The residual predicate hole for non-boolean input is Quality Check #1.
+7. Reset / Cancel / OK per spec §7 — **Pass** — `reset()` copies `initialColors`, resolved and clamped once at construction (A7: `#11223344` → `#112233`, field `#112233`); `cancel()` restores a snapshot taken from the clamped state (A8 → A9/A10: `setColors('#ABCDEF80')` → `#ABCDEF`, cancel → `#112233`); `onApply` carries no alpha (A6).
+8. Multiple instances work independently — **Pass (unchanged since pass 2)** — `src/bindings.js` and `src/focus.js` absent from the delta; the probe ran three instances on one page with no cross-talk.
+9. Public API `open/close/destroy/getColors/setColors/setActiveTab` + 5 callbacks — **Pass** — no signature or return type changed; `selectColor` gained the same clamp the constructor now applies, so no writer can disagree with another. All five callbacks exercised by the probe and the smoke.
+10. Contrast ratio math is WCAG-correct — **Pass (unchanged since pass 2)** — `src/contrast.js` and `test/contrast.test.js` absent from the delta.
+11. Preset data matches spec §4/§5 and is overridable via `options.presets` — **Pass (unchanged since pass 2)** — `src/presets.js` absent from the delta; `mergePresets` untouched by iteration 6.
+12. Light + dark theme via CSS variables; responsive bottom sheet — **Pass (unchanged since pass 2)** — `color-picker.css` absent from the delta, so the AA tokens (4.97/4.64/4.60), 22px radius and the 680px sheet are exactly what pass 2 measured and screenshotted.
+13. Accessible: roving tablist, `aria-selected`, `aria-live` status, Escape/Enter, focus-visible, reduced motion — **Pass** — `.status` is still `aria-live="polite"` and the fix writes it at most once per stale message: probe counted **1** mutation for an 8-move drag that started with an invalid-HEX error, **0** for a clean 8-move drag, so the churn pass 1 fixed cannot come back. A preset click still announces its colour (1 write, `#111827`).
+14. Demo page: both tabs, text/panel usage, live preview, custom-preset instance — **Pass (unchanged since pass 2)** — `index.html` absent from the delta.
+15. No external dependency, no build step — **Pass** — `grep -rn "from '" src/*.js | grep -v "from '\./"` → 0; `src/color.js` imports nothing, so `options.js`'s new `formatHex`/`parseHex` import is a leaf, no cycle; still no `package.json`.
+
+**Plan Coverage Review**
+
+1. 1.1 Color core module — **Pass (unchanged since pass 2)** — `src/color.js` absent from the delta.
+2. 1.2 Preset tables — **Pass (unchanged since pass 2)** — `src/presets.js` absent from the delta.
+3. 1.3 Repo hygiene — **Pass** — tree clean before this pass (`git status --short` empty); the review's probe pages live under the ignored `.local/` and were deleted.
+4. 2.1 DOM template builder — **Pass (unchanged since pass 2)** — `src/template.js` absent from the delta.
+5. 2.2 HSV editor controller — **Pass (unchanged since pass 2)** — `src/editor.js` absent from the delta.
+6. 2.3 ColorPicker class and public API — **Pass** — `src/color-picker.js` **196** lines ≤ 200 with both new call sites single-line; `clampAlpha` lives in `src/options.js` (47 lines), so the class file did not grow past the rule.
+7. 2.4 Component stylesheet (base) — **Pass (unchanged since pass 2)** — `color-picker.css` absent from the delta.
+8. 2.5 Demo page — **Pass (unchanged since pass 2)** — `index.html` untouched.
+9. 2.6 README — **Pass (unchanged since pass 2)** — `README.md` absent from the delta; its `showAlpha` row ("alpha is forced to `1`, so an 8-digit HEX cannot leave a translucent color behind") is now true for every boolean-configured writer, which is what iteration 6 fixed.
+10. 2.7 Browser smoke harness — **Pass** — `test/smoke.html` **103** checks, 0 FAIL, document title `PASS` (independently re-run); the 8 new checks are the two review fixes pinned, and they fail whenever the clamp does not run (probe D reproduces the assertion they make).
+11. 3.1 Preset panel renderer — **Pass (unchanged since pass 2)** — `src/presets-panel.js` absent from the delta.
+12. 3.2 Selection state sync — **Pass** — `selectColor` is still the single writer to `this.colors` (`grep -n "this.colors" src/color-picker.js` → only `selectColor`, `setColors`, `reset`, `cancel`, `open`, `apply` snapshots) and now clamps at the door.
+13. 3.3 Preset styles — **Pass (unchanged since pass 2)** — `color-picker.css` absent from the delta.
+14. 4.1 Contrast math — **Pass (unchanged since pass 2)** — `src/contrast.js` absent from the delta.
+15. 4.2 Suggestions panel — **Pass (unchanged since pass 2)** — `src/suggestions.js` absent from the delta; the suggestion entry path is clamped like the preset one (probe A5).
+16. 4.3 Dark theme + a11y + responsive CSS — **Pass (unchanged since pass 2)** — only `color-picker.js`'s status write changed; the live-region behaviour is graded in AC 13 and is strictly better than the pass-2 state.
+17. 4.4 Demo: custom presets + second instance — **Pass (unchanged since pass 2)** — `index.html` untouched.
+
+**Scope Review**
+- Unexpected files changed: None — every file in `f217153..HEAD` outside `TASK_DIR` is one iteration 6 names (`src/options.js`, `src/color-picker.js`, `test/smoke.html`), all `planned` per `changelog.md`'s `**Plan reference:** Review fix [6]` and the plan's Progress row.
+- Scope drift: None. No behaviour outside `showAlpha: false` and the editor's status write moved: `showAlpha: true` round-trips alpha unchanged on every writer (probe B1–B6).
+- Constraints / do-not-modify respected: Yes — `wc -l src/*.js` → 21–196, one stylesheet, no dependency, no build step, no new module.
+
+**Fit Issues**
+- None at criterion level.
+
+### Quality Check
+
+1. **[minor] Medium** [Consistency / Public API] — `src/options.js:33` (`clampAlpha`) against `src/template.js:108` and `src/editor.js:19,32,60`
+   - Details: the new clamp asks `showAlpha !== false`, while the two modules that define what the option *does* to the UI ask the truthiness question — `if (!showAlpha) alpha.block.hidden = true` and `showAlpha ? clamp01(state.a) : 1`. Any falsy value other than the literal `false` therefore splits them: probe `new ColorPicker({ showAlpha: 0, initialColors: { highContrast: '#11223344' } })` → no `.alpha` node is rendered, the editor forces `a = 1`, and yet `getColors()` is `#11223344`, the HEX field shows `#112233`, and `onApply` hands back `{ highContrast: '#00FF0040' }` after `setColors({ highContrast: '#00FF0040' })`. That is the pass-2 symptom — a returned colour the component does not render — reachable through a value the component's own two other modules already treat as "off". Graded Medium, not High: `showAlpha` is documented as `boolean` in `README.md:64`, so `0`/`null`/`""` are out-of-contract input, and the boolean paths are now correct and pinned. It is not a carry of pass 2 #1 either: every entry path is clamped on this pass's evidence, and the defect is the predicate, a different rule.
+   - Suggested fix: one predicate for one option — `!showAlpha` in `clampAlpha` (matching template/editor), or make template/editor strict `showAlpha !== false`, whichever the next iteration picks; then pin the agreement with one check (`showAlpha: 0` → `setColors('#00FF0040')` returns `#00FF00`, and the alpha block is absent), so the three modules cannot drift apart again.
+
+### Test & Verification Review
+- Reviewer checks run (this pass, independently of the author's log):
+  - `node --test` → **22/22 pass**.
+  - `test/smoke.html` over `python3.12 -m http.server 8899` in headless Chrome (`--headless=new --virtual-time-budget=8000 --dump-dom`) → **103 result lines, 0 FAIL**, document title `PASS`; `grep -c "check("` on the harness → 103, so the count in the changelog is the harness's, not a sample.
+  - Behaviour probes in headless Chrome (throwaway pages under the ignored `.local/`, deleted after): every `showAlpha: false` writer (`initialColors` both tabs, `setColors`, preset, suggestion, `onApply`, `reset`, `cancel` snapshot, rendered HEX agreement); the same writers with alpha on, to prove nothing else moved; live-region write counting with a `MutationObserver` (1 write to clear a stale error over an 8-move drag, 0 on a clean drag, 1 on a preset click); `clampAlpha`/`resolveColors` called directly with `false`, `0`, `undefined` and an invalid string; `showAlpha: 0` end to end, which is Quality Check #1.
+  - Line counts and contract sweep re-measured: `wc -l src/*.js` → 21–196 (`color-picker.js` 196, `options.js` 47); `grep -rn "from '" src/*.js | grep -v "from '\./"` → 0; `ls package.json` → absent.
+- Coverage assessment: adequate for both fixes. The alpha rule now has a check on each writer class the finding named, and the stale-status rule has one; each fails when its clamp/write is removed, verified by the `showAlpha: 0` probe reproducing the same contradiction those checks assert against.
+- Verification gaps or regression risk: one — the non-boolean-`showAlpha` agreement between `clampAlpha`, `template.js` and `editor.js` has no check, which is exactly Quality Check #1. `cancel()` under `showAlpha: false` has no dedicated smoke check; the probe covers it (A9/A10) and the snapshot it restores is taken from the already-clamped state, so there is no second path to pin.
+
+### Changelog Review
+- Matches implementation: Yes. Figures reproduce — `node --test` 22/22, smoke **103/103** (was 95, so `+8` is right), `src/color-picker.js` **196** lines, `clampAlpha` in `src/options.js` with `showAlpha` threaded into `resolveColors` at both call sites (`color-picker.js:23,129`) and applied in `selectColor` (`:93`); the stale-status clear is the one guarded write at `:105`; the smoke diff adds exactly the 8 checks the entry lists, plus the `stale` instance that pins #2.
+- Missing or misleading entries: None. The entry's claim that `reset()` and `cancel()` are "covered by the same point rather than by a second call" holds on inspection — `initialColors` is resolved once in the constructor and `snapshot` is copied from `colors` — and both were probed.
+
+### Record Check
+- `pr.md` `### 🧪 Testing` carried `⬜ Browser smoke re-run at ship time (Chrome invocation blocked)` and `⬜ dev-review pass 3 — pass 2's findings fixed and pinned in iteration 6`. Both are stale now: this pass ran the harness in headless Chrome (**103/103, title `PASS`**) and is pass 3. Both lines updated in-pass to the measured result — record only, no code.
+- Every other figure in `changelog.md` and `plan.md` for iteration 6 re-checked against its command and accurate: 22 tests, 103 smoke checks, 196/47 line counts, 21–196 module range, 0 external imports, `showAlpha` default `true`.
+
+### Previous Issues Status
+- Pass 2 #1 (`showAlpha: false` let alpha through `initialColors`, `setColors()`, `reset()` and `onApply`) — **Resolved** — one clamp at the door (`resolveColors` third argument + `selectColor`), probed on all seven writers (A1–A10) with the rendered HEX agreeing with `getColors()` at each step, and pinned by 6 of the 8 new smoke checks. The predicate condition under which it fails again is Quality Check #1, at its own level.
+- Pass 2 #2 (a stale `Enter a valid HEX value.` outlived an SV drag) — **Resolved** — the first editor commit clears the region, then writes nothing: 1 mutation for the drag that followed the error, 0 for the next drag (C1–C5), and the smoke pins it. The pass-1 churn fix survives measurably.
+
+### ADR Suggestion
+- Suggested: No
+- Reason: #1 is a predicate alignment inside one option, not a contract that outlives the task; the boolean behaviour the README states is already correct and pinned.
+
+### Declined to Judge
+- `cancel()` under `showAlpha: false` having no dedicated smoke check — outside this iteration's change set as a test task: the probe settles it (A9/A10) and the snapshot is a copy of already-clamped state, so a check would re-assert the constructor's own.
+- `test/options.test.js` not existing for `clampAlpha`/`resolveColors` — pre-existing shape: those helpers are covered through the browser harness, which is the only place their effect on the rendered colour is observable; a unit file would be suggested only alongside #1's fix if that fix lands in `src/options.js`.
+- The three items pass 2 judged (radius/swatch geometry, "reset selected categories", two modals sharing focus) — pre-existing and already judged in pass 2; nothing in iteration 6 touches them.
+
+### Final Recommendation
+- Approve with Changes — the pass's own two blocking findings are resolved and pinned; one Medium remains.
+- Required next steps: align the `showAlpha` predicate across `clampAlpha`, `template.js` and `editor.js` and pin the agreement with one check (Quality Check #1). No requirement, constraint or scope changed, so it is a one-iteration code fix, not a plan round; the shipped surface (`showAlpha: true|false`) is correct as it stands, so the PR does not wait on it.
