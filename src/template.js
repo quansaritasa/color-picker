@@ -9,6 +9,9 @@ const TABS = [
   { tab: 'lowContrast', symbol: '▰' },
 ];
 
+/** Ids must be unique per instance: two pickers can share a page. */
+let dialogCount = 0;
+
 export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
   const L = {
     title: 'Choose Color',
@@ -20,6 +23,7 @@ export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
     hue: 'Hue',
     opacity: 'Opacity',
     sv: 'Saturation and brightness',
+    svHint: 'Drag, or use the arrow keys: left and right change saturation, up and down change brightness. Hold Shift for larger steps.',
     textPresets: 'Text Color Presets',
     panelPresets: 'Panel Color Presets',
     textHint: 'Designed for text, icons, and foreground elements.',
@@ -50,7 +54,9 @@ export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
   };
 
   const heading = el('div', 'heading');
-  heading.append(el('div', 'app-icon', '◉'), el('h2', null, L.title));
+  const title = el('h2', null, L.title);
+  title.id = `cp-title-${++dialogCount}`;
+  heading.append(el('div', 'app-icon', '◉'), title);
   const close = button('close-btn', '×', { 'aria-label': L.close });
   const header = el('header', 'picker-header');
   header.append(heading, close);
@@ -67,7 +73,15 @@ export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
   });
 
   const svThumb = el('span', 'sv-thumb');
-  const sv = attr(el('div', 'sv'), { role: 'slider', 'aria-label': L.sv, tabindex: '0' });
+  const sv = attr(el('div', 'sv'), {
+    role: 'slider',
+    'aria-label': L.sv,
+    'aria-description': L.svHint,
+    'aria-valuemin': '0',
+    'aria-valuemax': '100',
+    'aria-valuenow': '87',
+    tabindex: '0',
+  });
   sv.append(svThumb);
   const svWrap = el('div', 'sv-wrap');
   svWrap.append(sv);
@@ -125,7 +139,11 @@ export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
   /** Empty band under the presets; `suggestions.js` fills it when enabled. */
   const suggestions = el('div', 'suggestions');
 
-  const picker = el('div', 'picker');
+  const picker = attr(el('div', 'picker'), {
+    role: 'dialog',
+    'aria-modal': 'true',
+    'aria-labelledby': title.id,
+  });
   picker.append(header, tabs, editor, el('div', 'divider'), presets, suggestions, status, footer);
 
   Object.assign(refs, {

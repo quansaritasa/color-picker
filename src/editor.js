@@ -16,7 +16,7 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
 
   const rgbaFromHsv = () => {
     const rgb = hsvToRgb(state.h, state.s, state.v);
-    return { r: round(rgb.r), g: round(rgb.g), b: round(rgb.b), a: clamp01(state.a) };
+    return { r: round(rgb.r), g: round(rgb.g), b: round(rgb.b), a: showAlpha ? clamp01(state.a) : 1 };
   };
 
   function render() {
@@ -36,6 +36,7 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
         `linear-gradient(90deg, transparent, ${opaque}), ` +
         'repeating-conic-gradient(#d9dee7 0 25%, white 0 50%) 0/12px 12px';
     }
+    refs.sv.setAttribute('aria-valuenow', String(Math.round(state.s)));
     refs.sv.setAttribute('aria-valuetext', formatHex(current));
   }
 
@@ -54,7 +55,9 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
       state.s = hsv.s;
     }
     state.v = hsv.v;
-    state.a = typeof rgba.a === 'number' ? clamp01(rgba.a) : 1;
+    // `showAlpha: false` means alpha is off, not merely hidden: an 8-digit HEX
+    // typed into the field must not leave a translucent color behind.
+    state.a = showAlpha && typeof rgba.a === 'number' ? clamp01(rgba.a) : 1;
     current = { r: round(rgba.r), g: round(rgba.g), b: round(rgba.b), a: state.a };
     render();
     if (!silent && onChange) onChange({ ...current });

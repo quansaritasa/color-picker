@@ -35,8 +35,23 @@ export function bindShell(picker) {
   refs.apply.addEventListener('click', () => picker.apply());
   refs.reset.addEventListener('click', () => picker.reset());
 
+  /**
+   * Escape belongs to the picker on top. Every instance listens on `document`,
+   * so without this guard one keystroke closes all of them and each one below
+   * silently discards the edits its user was making.
+   */
+  const isTopmostOpen = (root) => {
+    const roots = [...document.querySelectorAll('.cp-root')];
+    for (let i = roots.indexOf(root) + 1; i < roots.length; i += 1) {
+      if (!roots[i].classList.contains('hidden')) return false;
+    }
+    return true;
+  };
+
   picker.onDocumentKey = (event) => {
-    if (event.key === 'Escape' && picker.isOpen) picker.cancel();
+    if (event.key !== 'Escape' || !picker.isOpen) return;
+    if (!isTopmostOpen(picker.root)) return;
+    picker.cancel();
   };
   document.addEventListener('keydown', picker.onDocumentKey);
   picker.focusTrap = createFocusTrap(picker.root);

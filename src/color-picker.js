@@ -100,7 +100,9 @@ export default class ColorPicker {
     const changed = this.colors[tab] !== normalized;
     this.colors[tab] = normalized;
     if (source === 'editor') {
-      this.setStatus(normalized);
+      // The editor emits once per pointermove: writing the status region here
+      // would queue dozens of polite announcements during one drag. The editor
+      // owns that region for commit-level messages (invalid HEX, etc).
       this.renderPanels();
     } else {
       this.refresh();
