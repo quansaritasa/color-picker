@@ -85,7 +85,8 @@ test('preset sets are uppercase 6-digit hex in spec shape', () => {
   const sets = Object.keys(PRESET_SETS);
   assert.deepEqual(sets, ['text', 'background']);
   /* `text` is the six spec categories; `background` is the badge palette split
-     by chroma. Counts are pinned so neither set grows silently. */
+     by chroma plus the pale category the suggestions need. Counts are pinned so
+     neither set grows silently. */
   const counts = { text: 6, background: 2 };
   for (const set of sets) {
     assert.equal(categoriesOf(PRESET_SETS[set]).length, counts[set], `${set} category count`);
@@ -107,26 +108,38 @@ test('preset tables match sop.md §4/§5', () => {
   assert.deepEqual(text.Green, ['#14532D', '#166534', '#15803D', '#047857', '#0F766E', '#065F46', '#3F6212']);
   assert.deepEqual(text.Neutral, ['#000000', '#262626', '#404040', '#525252', '#737373', '#A3A3A3', '#FFFFFF']);
 
-  /* The background set is the sprints-planner badge palette (60 colours, sRGB
-     of its oklch triples), split at chroma .08. Dusty is pinned whole because it
-     is also that app's label-chip subset; Vivid is pinned at both ends and by
-     count, with the union checked for duplicates below. */
+  /* The background set is the sprints-planner badge palette (46 high-chroma
+     colours, sRGB of its oklch triples) plus this library's deep tier at L .64.
+     Vivid is pinned at both ends and by count; the deep tier is pinned whole
+     because it is the part this library authored; the union is checked for
+     duplicates below. */
   const background = PRESET_SETS.background;
-  assert.equal(background.Vivid.length, 46);
+  assert.equal(background.Vivid.length, 60);
   assert.deepEqual(background.Vivid.slice(0, 4), ['#70B1ED', '#F29B1D', '#EB77B6', '#51BF68']);
-  assert.deepEqual(background.Vivid.slice(-3), ['#F3813F', '#6BA5FB', '#51CAA7']);
-  assert.deepEqual(background.Dusty, [
-    '#9CBC91', '#D6A588', '#AA9CCB', '#6DB2BA', '#C993A6', '#ABA874', '#76C2B2',
-    '#9DB0DF', '#C8A2CB', '#C69C6D', '#DA9FA4', '#7FAACE', '#82B291', '#C3AF7E',
+  assert.deepEqual(background.Vivid.slice(46), [
+    '#FA0C86', '#FE2832', '#D76807', '#B88007', '#9B8F08', '#6C9E08', '#0BA75D',
+    '#0BA28F', '#0A9DB2', '#0A96D6', '#3189FD', '#8075FD', '#B94BFD', '#E70CD0',
   ]);
+  /* The app's low-chroma tail is not shipped: same hues and lightness as the
+     entries above, so it was washed copies in the grid. */
+  assert.ok(!('Dusty' in background));
+  /* The pale washes, merged into one category and de-duplicated, so the contrast
+     suggestions still have partners for a mid-tone text colour; the last five are
+     the additions in the hue gaps the merged set left empty. */
+  assert.equal(background.Pale.length, 39);
+  assert.deepEqual(background.Pale.slice(0, 3), ['#F0FDFA', '#CCFBF1', '#99F6E4']);
+  assert.deepEqual(background.Pale.slice(-5), ['#FBF6AE', '#E6F0D3', '#D5F9BA', '#A8FAFF', '#CDF5FF']);
+  assert.equal(new Set(background.Pale).size, 39, 'no colour twice in Pale');
 });
 
 test('the badge palette is 60 distinct colours across its two categories', () => {
-  const { Vivid, Dusty } = PRESET_SETS.background;
-  const all = [...Vivid, ...Dusty];
-  assert.equal(all.length, 60);
-  assert.equal(new Set(all).size, 60, 'no colour appears twice');
-  assert.deepEqual(allColors(PRESET_SETS.background), all, 'All is the union in category order');
+  const { Vivid, Pale } = PRESET_SETS.background;
+  const inks = Vivid.slice(0, 46);
+  assert.equal(inks.length, 46);
+  assert.equal(new Set(inks).size, 46, 'the vendored half repeats no colour');
+  assert.deepEqual(allColors(PRESET_SETS.background).slice(0, 60), Vivid, 'All starts with the badge inks then the deep tier');
+  assert.equal(allColors(PRESET_SETS.background).length, 99, 'All is the 60 vivid plus the 39 pale washes');
+  assert.equal(new Set([...Vivid, ...Pale]).size, 99, 'the two categories share no colour');
 });
 
 test('the text set carries pure black and pure white', () => {
@@ -159,7 +172,7 @@ test('palette merging keeps shipped categories and adds new ones', () => {
   const merged = mergePalette(PRESET_SETS.background, { Brand: ['#7C3AED'] });
   assert.deepEqual(merged.Brand, ['#7C3AED']);
   assert.deepEqual(merged.Vivid, PRESET_SETS.background.Vivid);
-  assert.deepEqual(merged.Dusty, PRESET_SETS.background.Dusty);
+  assert.deepEqual(merged.Pale, PRESET_SETS.background.Pale);
   assert.equal(categoriesOf(merged).length, 3);
   // the shipped table is never mutated
   assert.ok(!('Brand' in PRESET_SETS.background));
@@ -181,9 +194,10 @@ test('allColors unions a palette in category order, de-duplicated', () => {
   assert.equal(text.indexOf('#0F766E'), PRESET_SETS.text.Cool.indexOf('#0F766E'));
   assert.ok(text.length > PRESET_SETS.text.Cool.length);
   assert.deepEqual(allColors({}), []);
-  // the background set is the 60 badge inks: no duplicate to collapse, so All is
-  // the two categories read in order
+  // the background set is the 60 vivid inks first, then the pale washes; no
+  // duplicate to collapse anywhere in it
   const background = allColors(PRESET_SETS.background);
-  assert.deepEqual(background, [...PRESET_SETS.background.Vivid, ...PRESET_SETS.background.Dusty]);
-  assert.deepEqual(background.slice(0, PRESET_SETS.background.Vivid.length), PRESET_SETS.background.Vivid);
+  const { Vivid, Pale } = PRESET_SETS.background;
+  assert.deepEqual(background, [...Vivid, ...Pale]);
+  assert.deepEqual(background.slice(0, Vivid.length), Vivid);
 });

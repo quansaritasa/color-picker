@@ -493,9 +493,14 @@
     gripPt('pointermove', gripBox.left + 128, gripBox.top + 88);
     gripPt('pointerup', gripBox.left + 128, gripBox.top + 88);
     const boxResized = shellPanel.getBoundingClientRect();
-    check('dragging the grip resizes the panel by the pointer delta',
-      Math.round(boxResized.width - boxBefore.width) === 120 && Math.round(boxResized.height - boxBefore.height) === 80,
-      `${Math.round(boxBefore.width)}x${Math.round(boxBefore.height)} -> ${Math.round(boxResized.width)}x${Math.round(boxResized.height)}`);
+    /* The stylesheet caps the box at `calc(100vh - 32px)`; a palette that fills
+       the panel leaves less than the pointer's 80px, so the expectation is the
+       pointer delta up to that cap — not a fixed 80. */
+    const capPx = parseFloat(getComputedStyle(shellPanel).maxHeight);
+    const wantHeight = Math.min(boxBefore.height + 80, Number.isFinite(capPx) ? capPx : Infinity);
+    check('dragging the grip resizes the panel by the pointer delta, up to the stylesheet cap',
+      Math.round(boxResized.width - boxBefore.width) === 120 && Math.abs(boxResized.height - wantHeight) <= 1,
+      `${Math.round(boxBefore.width)}x${Math.round(boxBefore.height)} -> ${Math.round(boxResized.width)}x${Math.round(boxResized.height)}, cap ${capPx}`);
     const gripAfter = grip.getBoundingClientRect();
     check('the grip stays in the panel corner', Math.abs(boxResized.right - gripAfter.right) <= 1
       && Math.abs(boxResized.bottom - gripAfter.bottom) <= 1,
@@ -555,9 +560,13 @@
   movable.close();
   movable.open();
   const keptBox = shellPanel.getBoundingClientRect();
+  /* drag.js keeps an 8px margin: a box that already fills the viewport moves
+     less than the pointer asked for, so the expectation is the clamp. */
+  const roomY = Math.max(0, innerHeight - 8 - homeBox.top - homeBox.height);
+  const wantDy = Math.round(Math.min(20, roomY));
   check('a modal keeps its dragged position across open/close',
-    Math.round(keptBox.left - homeBox.left) === 50 && Math.round(keptBox.top - homeBox.top) === 20,
-    `${Math.round(keptBox.left - homeBox.left)}, ${Math.round(keptBox.top - homeBox.top)}`);
+    Math.round(keptBox.left - homeBox.left) === 50 && Math.round(keptBox.top - homeBox.top) === wantDy,
+    `${Math.round(keptBox.left - homeBox.left)}, ${Math.round(keptBox.top - homeBox.top)} (room ${Math.round(roomY)})`);
   movable.destroy();
 
   const fixedShell = mk({ draggable: false });
@@ -776,7 +785,7 @@
     three.root.style.getPropertyValue('--cp-slots'));
   // palettes belong to the two groups, whatever the slot count
   check('the palettes stay the two groups',
-    Object.keys(three.palettes).join(',') === 'text,background' && 'Dusty' in three.palettes.background && !('Hot' in three.palettes.background),
+    Object.keys(three.palettes).join(',') === 'text,background' && 'Pale' in three.palettes.background && !('Hot' in three.palettes.background),
     Object.keys(three.palettes).join(','));
   check('colors are keyed by slot id',
     JSON.stringify(three.getColors()) === JSON.stringify({ text: '#0F766E', background: '#70B1ED', accent: '#7C3AED' }),

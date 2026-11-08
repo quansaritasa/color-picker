@@ -5,20 +5,30 @@
  * and `reference/modern-color-picker.html` disagree the spec wins (`Pastel`
  * differs).
  *
- * `background` is not the spec's §5 set any more: it is the 60-colour badge
- * palette from the sprints-planner app (`src/renderer/modules/assignee-color.js`,
+ * `background` is not the spec's §5 set any more: it is the badge palette from
+ * the sprints-planner app (`src/renderer/modules/assignee-color.js`,
  * `BADGE_COLORS`), which is why the colours are mid-light inks rather than pale
  * washes. The app stores `[L, C, H]` oklch triples and paints those strings; a
  * picker only speaks hex (`parseHex`, the editor, the contrast maths), so each
  * entry here is the exact sRGB rendering of its triple.
  *
- * The split is the palette's own, not a taste call: `Vivid` is every entry with
- * chroma above .08 (46), `Dusty` the fourteen at or below it — in the app that
- * low-chroma tail doubles as the Jira label-chip colours, the ones that must not
- * compete with a person's badge. Order inside each category is the app's slot
- * order, which is chosen so any prefix is as far apart as that many colours can
- * be; a picker grid does not need that, but keeping it makes the two lists
- * diffable against their source.
+ * The first 46 `Vivid` entries are the badge palette's high-chroma half (chroma
+ * above .08), in the app's slot order: chosen so any prefix is as far apart as
+ * that many colours can be, which a picker grid does not need but which keeps the
+ * list diffable against its source. The app's low-chroma tail (14 label-chip
+ * inks) is not shipped: those hues already appear above at the same lightness, so
+ * as a category they were washed copies of colours the grid already had.
+ *
+ * The 14 entries after them are this library's own deep tier, one per hue at
+ * oklch L .64 with chroma pushed to the sRGB ceiling. `Vivid` before this was one
+ * lightness band (.72-.76) whose chroma topped out at .16, so the tier is the
+ * first genuinely saturated step in the palette: measured 4.53-5.66:1 against
+ * `#111827`, dE00 >= 6.3 from every entry above it.
+ *
+ * `Pale` is the pale washes this group shipped before, merged into one
+ * de-duplicated category, plus five more. The contrast suggestions rank partners
+ * out of this palette, and chip inks are the wrong shape for that — see the note
+ * on the category itself.
  *
  * A set is only a *hint*: both sets are always on screen and a swatch writes the
  * slot the editor is showing, so any colour is valid for any slot.
@@ -42,10 +52,29 @@ export const PRESET_SETS = {
       '#D6AB1B', '#6DBEDC', '#BB8FDE', '#F186D4', '#D289BB', '#FF82B2', '#FE8B82',
       '#B1A92B', '#90AEFE', '#DB940E', '#D78FF6', '#E183A1', '#39BAB4', '#E197BC',
       '#8AA2E4', '#F3813F', '#6BA5FB', '#51CAA7',
+      /* The deep tier: one hue per 25.7 degrees at oklch L .64, chroma at the
+         sRGB ceiling for that hue. The 46 above are the app's mid-light band
+         (.72-.76, chroma <= .16); these sit below it and are the only entries
+         saturated past .20. 4.53-5.66:1 against #111827, so they still take dark
+         text; dE00 >= 6.3 from the nearest entry above. */
+      '#FA0C86', '#FE2832', '#D76807', '#B88007', '#9B8F08', '#6C9E08', '#0BA75D',
+      '#0BA28F', '#0A9DB2', '#0A96D6', '#3189FD', '#8075FD', '#B94BFD', '#E70CD0',
     ],
-    Dusty: [
-      '#9CBC91', '#D6A588', '#AA9CCB', '#6DB2BA', '#C993A6', '#ABA874', '#76C2B2',
-      '#9DB0DF', '#C8A2CB', '#C69C6D', '#DA9FA4', '#7FAACE', '#82B291', '#C3AF7E',
+    /* The pale washes the group used to ship, kept as one category because the
+       contrast suggestions rank partners out of this palette: none of the 60
+       badge inks clears 4.5:1 against a mid-tone text like #0F766E, so without a
+       pale set the suggestions panel has nothing to offer for such a pair. The
+       old six categories are merged and de-duplicated here, with five more washes
+       in the hue gaps — 39 colours. The 4.5:1 bar against #0F766E is what caps
+       it: a wash light enough to clear it has little chroma left to spend, and
+       more additions than these five land within dE00 2.6 of one already here. */
+    Pale: [
+      '#F0FDFA', '#CCFBF1', '#99F6E4', '#E6FFFB', '#D1FAE5', '#ECFDF5', '#EFF6FF',
+      '#DBEAFE', '#BFDBFE', '#E0F2FE', '#BAE6FD', '#F0F9FF', '#FFF7ED', '#FFEDD5',
+      '#FED7AA', '#FEF3C7', '#FDE68A', '#FFFBEB', '#F9FAFB', '#F3F4F6', '#E5E7EB',
+      '#D1D5DB', '#FAFAFA', '#F5F5F5', '#FCE7F3', '#FBCFE8', '#F3E8FF', '#EDE9FE',
+      '#FFE4E6', '#F0FDF4', '#DCFCE7', '#BBF7D0', '#ECFCCB', '#F7FEE7',
+      '#FBF6AE', '#E6F0D3', '#D5F9BA', '#A8FAFF', '#CDF5FF',
     ],
   },
 };
@@ -80,7 +109,7 @@ export const PRESET_GROUPS = {
     label: 'Background colour presets',
     type: 'Background',
     symbol: '▰',
-    hint: 'The 60 badge inks — vivid for surfaces, dusty for labels.',
+    hint: 'The badge inks and their deep tier, plus the pale washes.',
   },
 };
 
