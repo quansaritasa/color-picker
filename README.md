@@ -171,9 +171,14 @@ listeners, so two pickers on one page never share colors.
 ## Development
 
 ```bash
-python3.12 -m http.server 8000   # demo page
+python3.12 -m http.server 8000   # then open /index.html or /demo.html
 node --test                      # color math + contrast math
 ```
+
+`index.html` shows both colors in a preview card; `demo.html` paints an entire
+page with them — the headline and body copy take the High Contrast colour, the
+panel takes the Low Contrast one, and a live ratio pill (the library's own WCAG
+code) says whether the pair still passes AA.
 
 `test/smoke.html` is a browser harness for the component itself — open it through
 the local server and it prints PASS/FAIL per behaviour (tabs, HEX, drag, footer

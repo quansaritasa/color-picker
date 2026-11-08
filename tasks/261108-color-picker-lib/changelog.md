@@ -327,3 +327,32 @@ The alpha contract now holds at the door instead of in the editor: `showAlpha: f
 
 ### Deferred
 - Nothing outstanding from review pass 2: #1 and #2 are fixed and pinned. The three items pass 2 declined to judge (radius/swatch geometry, "reset selected categories", two modals sharing focus) stay judged as recorded in `review.md`.
+
+## Iteration 7 — 2026-11-08 16:40 +07
+**Trigger:** user request (direct instruction after the PR opened)
+**Status:** Implemented
+**Delivery:** Manual
+**Plan reference:** none — a user-requested page, no plan iteration written
+
+### Summary
+Added `demo.html`, a page that is itself the preview: the High Contrast tab paints
+the headline and body copy, the Low Contrast tab paints the panel, and both read two
+custom properties the picker writes, so one assignment repaints the whole page. A
+ratio pill measures the current pair with the library's own WCAG code and names the
+verdict (`AAA` / `AA` / `AA-large` / fail). The README's Development section now
+points at both demo pages.
+
+### Added
+**[1] - `demo.html` — a page painted by the picker.**
+  - `ColorPicker` writes `--fg` and `--bg` on `documentElement` from `onChange`, `onCancel` and `onApply`; `.surface`, `.panel` and the swatch readouts are pure CSS consumers of those two properties.
+  - The readout imports `contrastRatio`, `wcagLevel` and `formatRatio` from `src/contrast.js` and `parseHex` from `src/color.js`, so the number on screen is the library's own math rather than a second implementation.
+  - Reset goes through `picker.setColors()`, which keeps the page in step with the single writer instead of writing styles by hand.
+
+### Changed
+**[1] - `README.md` Development section** — the server line now names both pages and a paragraph says what each shows.
+
+### Verification
+- `node --test` → **25/25 pass** (no library file changed by this iteration).
+- Structural checks on `demo.html`: every `getElementById` target exists in the markup (`0` missing), no unbalanced tag (HTMLParser walk, empty stack), inline module passes `node --check` as ESM, file is 178 lines.
+- Ratio cross-check for the shipped pair: `parseHex('#0F766E')` on `parseHex('#CCFBF1')` → `4.9:1`, `wcagLevel` → `AA`, which is what the initial pill renders.
+- Not verified: the page was not rendered in a browser this session — the headless Chrome invocation was blocked by tool approval. Open `/demo.html` through `python3.12 -m http.server` to check the paint path.
