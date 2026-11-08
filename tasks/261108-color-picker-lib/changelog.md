@@ -157,3 +157,84 @@ Both preset sections now render: category pills over a 7-column swatch grid per 
 ### Deferred
 - Nothing from this iteration.
 - Contrast suggestions — iteration 4 (4.1-4.2); dark theme, mobile bottom-sheet and the remaining a11y pass — iteration 4 (4.3); custom-preset demo instance — iteration 4 (4.4).
+
+---
+
+## Iteration 4 — 2026-11-08 15:40 +07
+**Trigger:** user request
+**Status:** Implemented
+**Delivery:** Skill
+**Plan reference:** Iteration 4 — contrast math, suggestions panel, dark theme + a11y + responsive, custom-preset demo
+
+### Summary
+The library is now complete against `sop.md`: WCAG 2.1 contrast math, an opt-in suggestions panel that measures the pair and offers readable partners without touching the active color, a token-only dark theme, a bottom-sheet mobile layout, arrow/Home/End tab roving with a focus trap, and a second demo instance carrying custom presets. Every planned step 4.1–4.4 landed; the two visual claims (dark theme, mobile sheet) were checked on real screenshots, not asserted.
+
+### Added
+**[1] - Added `src/contrast.js` (77 lines) — WCAG 2.1 math, pure functions.**
+  - Purpose: spec §6 and quality item #16 ("mathematically correct") need one implementation both the panel and the tests read, so the number on screen is the number under test.
+  - Details: `relativeLuminance` linearizes each sRGB channel (`c <= 0.03928 ? c/12.92 : ((c+0.055)/1.055)^2.4`) with the 0.2126/0.7152/0.0722 weights; `contrastRatio` returns `(Lmax+0.05)/(Lmin+0.05)`; `wcagLevel(ratio, { largeText })` → `AAA` (7:1) / `AA` (4.5:1) / `AA-large` (3:1, only with `largeText`) / `fail`; `suggestPartners(color, candidates, { limit = 3, minRatio = 4.5 })` filters, dedupes, sorts by exact ratio and slices.
+  - Details: alpha is composited over the opposing color before measuring (`compositeOver`, 8-bit rounding) — documented in the README as the rule, because "the ratio of a transparent color" only means anything once it is painted.
+  - Details: `formatRatio` (`4.9:1`, one decimal) is exported and is the only place the display rounding happens, so a partner is never filtered on its rounded value (a 4.47 would otherwise pass a 4.5 gate it fails).
+
+**[2] - Added `test/contrast.test.js` — 10 tests (suite 12 → 22).**
+  - Details: black/white = 21 (±0.01), identical = 1, symmetry, mid-grey luminance 0.2158 (the linear-vs-gamma trap), the `AA`/`AAA`/`AA-large` thresholds including `wcagLevel(4.49) = 'fail'` and `wcagLevel(3) = 'fail'` without `largeText`, alpha compositing both ways, partner filtering/ordering/limit/dedupe, and `formatRatio`.
+
+**[3] - Added `src/suggestions.js` (118 lines) — the collapsible contrast panel.**
+  - Purpose: spec §6 — suggest pairings, never change the user's choice.
+  - Details: `createSuggestions({ mount, presets, enabled, onPick })` → `{ render(activeTab, colors), destroy() }`. Summary line carries the pair's ratio and a WCAG badge; the body lists up to three partners with their own ratio and verdict. Partners come from the **other** mode's palettes (selected High → Low backgrounds, per §6), a pick writes the *other* tab via `onPick`, so the pair improves and the active color does not move.
+  - Details: the badge shows `Fail` when normal text fails, and a second `AA-large` badge appears in the 3:1–4.5:1 band (plan risk "could feel strict for large text"); when nothing clears 4.5:1 the body says so instead of listing unreadable colors.
+  - Details: a fixed pool of three buttons is repainted rather than rebuilt, matching the presets panel's cheap path — a drag frame re-renders neither grid nor DOM.
+
+**[4] - Added `src/focus.js` (57 lines) and `src/bindings.js` (43 lines).**
+  - Purpose: spec §11 keyboard access, and the repo's 200-line module rule — `color-picker.js` was at 198 lines before this iteration.
+  - Details: `createFocusTrap(root)` remembers the opener, wraps `Tab`/`Shift+Tab` between the first and last rendered control, and restores focus on close; `focusablesWithin` filters by `getClientRects()` so hidden controls (the alpha range with `showAlpha: false`) are skipped. `bindShell(picker)` owns every DOM listener — tab clicks, Arrow/Home/End on the `role="tablist"`, footer actions, Escape — and sets `picker.focusTrap`.
+
+**[5] - Added suggestions, dark-theme and bottom-sheet styles to `color-picker.css` (513 → 797 lines).**
+  - Details: `.cp-suggestions` (`<details>`, `▸` rotates on open, `list-style: none`), badge tints for `AA`/`AAA`/`fail`/`AA-large` with dark-theme variants, partner chips. Dark theme is tokens only — `.cp-root[data-theme="dark"]` swaps `--cp-surface/--cp-ink/--cp-line/--cp-canvas` plus the new secondary tokens; no rule is duplicated. `@media (max-width: 680px)` turns the modal into a bottom sheet (full width, 20px top corners, one preset column, `position: sticky` footer with `env(safe-area-inset-bottom)`), spacing ported from `reference/modern-color-picker.html:103-121`.
+  - Details: `:focus-visible` and `prefers-reduced-motion` already existed from iteration 2 and needed no change — the new transitions are covered by the same `reduce` block.
+
+**[6] - Demo now proves configuration: `index.html` has two instances.**
+  - Details: the first keeps the shipped palettes with `showContrastSuggestions: true`; the second mounts in `#brandRoot`, runs `theme: 'dark'`, and carries `Brand` categories on both modes, so custom presets and theming are visible on one page. They open one at a time, which is the plan's accepted answer to "two modals can fight over focus".
+
+### Changed
+**[1] - `src/color-picker.js` (192 lines): wiring moved out, panels unified behind `renderPanels()`.**
+  - Reason: `bind()`/`handleTabKey()` and the Escape listener belonged with the DOM, not the state machine, and every read-only surface must repaint from one place or the suggestions go stale mid-drag.
+  - Impact: `refresh()` = editor + `renderPanels()`; `selectColor`'s editor branch calls `renderPanels()` instead of `panel.render()` — that is what keeps the panel honest while the SV area is dragged. `open()` activates the focus trap before focusing the tab, `close()` deactivates it (restoring the opener), `destroy()` tears the trap and the panel down.
+
+**[2] - `src/template.js` (148 → 152 lines): a `.suggestions` band between the presets and the status line.**
+  - Reason: the panel needs a stable mount point; the template stays declarative, `suggestions.js` fills the band.
+
+**[3] - `color-picker.css`: hard-coded greys replaced by tokens (`--cp-subtle`, `--cp-surface-alt`, `--cp-pill-bg`, `--cp-pill-ink`, `--cp-btn-line`, `--cp-btn-ink`, `--cp-line-soft`, `--cp-field-alt`, `--cp-track`, `--cp-hover`, `--cp-accent-line`, `--cp-accent-strong`).**
+  - Reason: a dark theme built from token overrides only works if the rules read tokens; `theme: 'dark'` was otherwise a half-painted surface.
+  - Impact: light-mode defaults are the exact previous values, so the light screenshot is unchanged; `--cp-accent-strong` exists because the accent is both a fill (needs a dark blue under white text) and a text/ring colour (needs a lighter blue on dark surfaces).
+
+### Verification
+- `node --test` → 22/22 pass (12 color + 10 contrast).
+- `test/smoke.html` in headless Chrome (`--headless=new --dump-dom`) → **85/85 PASS**, document title `PASS` (was 60). New checks: suggestions off by default, band shown when enabled, collapsed by default, `4.9:1` + `AA` on the summary, partner cap/ordering/`≥ 4.5:1`, partner applying to the other mode while the active color stays put, `Fail` + `AA-large` on the 4.3:1 pair, dark theme landing on `data-theme` and repainting surface and ink, open moving focus in, `Tab` wrapping from the last control to the first, close restoring the opener, `Home`/`End` on the tablist, and `display:none` for a closed root.
+- Screenshots at 1280×950 (light + dark, suggestions expanded) and 500×1000 (mobile): light panel reads `AA 4.9:1` with three pale partners; dark instance reads `Fail` `AA-large` `4.3:1` with the empty-list message and no light-theme leftovers; mobile renders as a full-width bottom sheet, presets stacked, footer pinned. Demo page open/closed state checked at 1100×1000.
+- Plan's verify lines: `wc -l src/contrast.js` → 77 (≤ 200); `wc -l src/*.js` → 21–192, all modules inside the 200-line rule; `grep -c "new ColorPicker" index.html` → 2; `grep -c "prefers-reduced-motion\|data-theme\|max-width: 680px" color-picker.css` → 7 (the plan's `= 3` counted the three *features*, not their occurrences); `grep -c "4.5\|AAA" src/suggestions.js src/contrast.js` → 1 + 6 (the thresholds live in `contrast.js`, which is where the test reads them).
+- Spec §14 checklist, 16 items:
+
+| # | Item | Result | Evidence |
+|---|---|---|---|
+| 1 | Both tabs work independently | PASS | smoke: tab switch, per-tab memory |
+| 2 | Each tab remembers its color | PASS | smoke: "returning to the tab restores its color" |
+| 3 | Preset categories work | PASS | smoke: pill click swaps the grid |
+| 4 | Swatch updates the HEX input | PASS | smoke: "swatch click updates the hex input" |
+| 5 | HEX input updates the editor | PASS | smoke: "hex change updates active tab" |
+| 6 | Hue slider works | PASS | smoke: "hue slider changes the color" |
+| 7 | SV editor supports dragging | PASS | smoke: "sv drag changes the color" |
+| 8 | Alpha slider works | PASS | smoke: "alpha slider produces an alpha hex" |
+| 9 | Invalid HEX handled safely | PASS | smoke: value kept, field reverted, status shown |
+| 10 | Reset restores initial values | PASS | smoke: colors + both checkmarks |
+| 11 | Cancel restores pre-edit values | PASS | smoke: "cancel restores the snapshot" |
+| 12 | OK commits the values | PASS | smoke: apply closes, `onApply` fires |
+| 13 | Multiple instances independent | PASS | smoke: two instances; demo page runs two by design |
+| 14 | Works without dependencies | PASS | no `package.json`, no imports outside `src/`; served as plain ES modules |
+| 15 | Responsive on mobile and desktop | PASS | 500×1000 screenshot: bottom sheet, single preset column, sticky footer; 1280×950 desktop unchanged |
+| 16 | Contrast math is correct | PASS | `test/contrast.test.js`: 21:1 black/white, 1:1 identical, WCAG thresholds, alpha compositing |
+
+### Deferred
+- Nothing from this iteration.
+- Deviation worth recording: the plan pinned `#0F766E` on `#CCFBF1` to "4.4–4.6"; the sRGB curve gives **4.857**, and the test pins the computed value. The plan's manual check "pick `#FFFFFF` on High → suggestions list only dark panels" also contradicts spec §6 — partners come from the *opposing* palette, so white text finds nothing in the pale panel set and the panel says so. Spec won on both.
+- The `4.4–4.6` and `= 3` verify lines above were estimates; the numbers recorded here are the measured ones.

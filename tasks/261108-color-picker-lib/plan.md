@@ -405,10 +405,10 @@ Checklist tracks step completion. Progress table tracks timeline.
 - [x] 3.1 Preset panel renderer — `src/presets-panel.js`
 - [x] 3.2 Selection state sync — `src/color-picker.js`
 - [x] 3.3 Preset styles — `color-picker.css`
-- [ ] 4.1 Contrast math — `src/contrast.js`
-- [ ] 4.2 Suggestions panel — `src/suggestions.js`
-- [ ] 4.3 Dark theme + accessibility + responsive CSS
-- [ ] 4.4 Demo: custom presets + second instance
+- [x] 4.1 Contrast math — `src/contrast.js`
+- [x] 4.2 Suggestions panel — `src/suggestions.js`
+- [x] 4.3 Dark theme + accessibility + responsive CSS
+- [x] 4.4 Demo: custom presets + second instance
 
 | Date | Step | Action |
 |------|------|--------|
@@ -416,3 +416,4 @@ Checklist tracks step completion. Progress table tracks timeline.
 | 2026-11-08 | 1.1 | Iteration 1 coded: `src/color.js` (131 lines), `src/presets.js` (47), `test/color.test.js`, `.gitignore` — `node --test` 12/12 green |
 | 2026-11-08 | 2.1-2.6 | Iteration 2 coded: `src/template.js` (149), `src/editor.js` (154), `src/color-picker.js` (198), `color-picker.css` (407), `index.html`, `README.md`, `test/smoke.html` — `node --test` 12/12, smoke 36/36 in headless Chrome |
 | 2026-11-08 | 3.1-3.3 | Iteration 3 coded: `src/presets-panel.js` (141), `selectColor`/`refresh` in `src/color-picker.js`, preset CSS (+106 → 513), class file split into `src/options.js` (35) + `src/tablist.js` (21) to stay inside the 200-line rule — `node --test` 12/12, smoke 60/60 in headless Chrome |
+| 2026-11-08 | 4.1-4.4 | Iteration 4 coded: `src/contrast.js` (77) + `test/contrast.test.js` (10 tests), `src/suggestions.js` (118), `src/focus.js` (57) + `src/bindings.js` (43) to keep `color-picker.js` at 192, CSS token refactor + dark theme + bottom sheet (+284 → 797), two-instance demo — `node --test` 22/22, smoke 85/85 in headless Chrome |
