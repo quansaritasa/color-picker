@@ -127,7 +127,78 @@
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   check('escape closes', !picker.isOpen);
 
-  // 15. two instances are independent
+  // 15. preset panel renders both sections
+  picker.open();
+  const highSection = q(picker, '.preset-section[data-mode="high"]');
+  const lowSection = q(picker, '.preset-section[data-mode="low"]');
+  check('presets section is visible', !q(picker, '.presets').hidden && q(picker, '.presets').children.length === 2);
+  check('high pills match preset categories',
+    highSection.querySelectorAll('.cp-category').length === Object.keys(picker.presets.highContrast).length);
+  check('high swatches match the first category',
+    highSection.querySelectorAll('.cp-swatch').length === picker.presets.highContrast.Cool.length,
+    String(highSection.querySelectorAll('.cp-swatch').length));
+  check('low swatches match the first category',
+    lowSection.querySelectorAll('.cp-swatch').length === picker.presets.lowContrast.Cool.length,
+    String(lowSection.querySelectorAll('.cp-swatch').length));
+  check('first pill is active', highSection.querySelector('.cp-category').classList.contains('is-active'));
+  check('active section is emphasised', highSection.classList.contains('is-emphasis') && !lowSection.classList.contains('is-emphasis'));
+
+  // 16. selection state marks the current color in both sections
+  check('high current color is marked',
+    highSection.querySelectorAll('.cp-swatch.is-selected').length === 1,
+    String(highSection.querySelectorAll('.cp-swatch.is-selected').length));
+  check('low current color is marked', lowSection.querySelectorAll('.cp-swatch.is-selected').length === 1);
+  const marked = highSection.querySelector('.cp-swatch.is-selected');
+  check('marked swatch carries the hex', marked && marked.dataset.hex === '#0F766E', marked && marked.dataset.hex);
+  check('selected swatch has an aria-pressed state', marked && marked.getAttribute('aria-pressed') === 'true');
+  check('check color adapts to luminance',
+    marked.style.getPropertyValue('--cp-check-color').trim().length > 0,
+    marked.style.getPropertyValue('--cp-check-color'));
+
+  // 17. swatch click drives colors, editor and preview
+  const changeBefore = events.filter(([n]) => n === 'change').length;
+  const coolSwatch = [...highSection.querySelectorAll('.cp-swatch')].find((n) => n.dataset.hex === '#111827');
+  coolSwatch.click();
+  check('swatch click updates the color', picker.getColors().highContrast === '#111827', picker.getColors().highContrast);
+  check('swatch click updates the hex field', q(picker, '.hex-input').value === '#111827', q(picker, '.hex-input').value);
+  check('swatch click emits onChange', events.filter(([n]) => n === 'change').length === changeBefore + 1);
+  check('swatch click moves the checkmark', coolSwatch.classList.contains('is-selected') && !marked.classList.contains('is-selected'));
+
+  // 18. category pills swap the grid
+  let pills = highSection.querySelectorAll('.cp-category');
+  pills[1].click();
+  pills = highSection.querySelectorAll('.cp-category');
+  check('pill click activates the category', pills[1].classList.contains('is-active') && !pills[0].classList.contains('is-active'));
+  check('pill click swaps the swatch set',
+    highSection.querySelectorAll('.cp-swatch').length === picker.presets.highContrast[pills[1].textContent].length);
+  check('color survives a category change', picker.getColors().highContrast === '#111827');
+  check('a color outside the category marks no swatch',
+    highSection.querySelectorAll('.cp-swatch.is-selected').length === 0);
+  pills[0].click();
+
+  // 19. per-tab memory and cross-tab preset selection
+  const lowSwatch = [...lowSection.querySelectorAll('.cp-swatch')].find((n) => n.dataset.hex !== picker.getColors().lowContrast);
+  const tappedHex = lowSwatch.dataset.hex;
+  lowSwatch.click();
+  check('swatch on the idle tab switches tabs', picker.activeTab === 'lowContrast', picker.activeTab);
+  check('swatch on the idle tab writes that tab', picker.getColors().lowContrast === tappedHex, picker.getColors().lowContrast);
+  check('other tab keeps its color', picker.getColors().highContrast === '#111827');
+  check('emphasis follows the active tab',
+    lowSection.classList.contains('is-emphasis') && !highSection.classList.contains('is-emphasis'));
+  picker.setActiveTab('highContrast');
+  check('returning to the tab restores its color', q(picker, '.hex-input').value === '#111827', q(picker, '.hex-input').value);
+  const backMarked = highSection.querySelectorAll('.cp-swatch.is-selected');
+  check('returning to the tab restores its checkmark',
+    backMarked.length === 1 && backMarked[0].dataset.hex === '#111827');
+
+  // 20. reset restores the checkmarks
+  picker.root.querySelector('.reset-btn').click();
+  check('reset restores preset checkmarks',
+    highSection.querySelector('.cp-swatch.is-selected').dataset.hex === '#0F766E' &&
+    lowSection.querySelector('.cp-swatch.is-selected').dataset.hex === '#CCFBF1');
+  picker.close();
+
+  // 21. two instances are independent
   const second = new ColorPicker({ initialColors: { highContrast: '#991B1B', lowContrast: '#FEE2E2' } });
   second.setColors({ highContrast: '#1D4ED8' });
   check('second instance isolated', picker.getColors().highContrast === '#0F766E' && second.getColors().highContrast === '#1D4ED8', `${picker.getColors().highContrast} | ${second.getColors().highContrast}`);

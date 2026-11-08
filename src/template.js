@@ -1,7 +1,7 @@
 /**
  * DOM template for the picker shell. Structure and class names mirror
  * `reference/modern-color-picker.html:141-196`; no state, no behaviour.
- * Preset sections render empty until iteration 3 fills them.
+ * Preset sections are headers + empty containers; `presets-panel.js` fills them.
  */
 
 const TABS = [
@@ -99,8 +99,6 @@ export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
   editor.append(svWrap, side);
 
   const presets = el('section', 'presets');
-  // Iteration 3 renders swatches and unhides this block.
-  presets.hidden = true;
   const sections = {};
   for (const [key, icon, name, hint] of [
     ['high', 'Aa', L.textPresets, L.textHint],
@@ -111,6 +109,7 @@ export function buildTemplate({ showAlpha = true, labels = {} } = {}) {
     const categories = el('div', 'category-row');
     const swatches = el('div', 'swatches');
     const section = el('div', 'preset-section');
+    section.dataset.mode = key;
     section.append(title, categories, swatches, el('p', 'section-hint', hint));
     presets.append(section);
     sections[key] = { section, categories, swatches };

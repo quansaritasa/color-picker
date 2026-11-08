@@ -6,34 +6,10 @@
 import { formatHex, normalizeHex, parseHex } from './color.js';
 import { buildTemplate } from './template.js';
 import { createEditor } from './editor.js';
-
-const TABS = ['highContrast', 'lowContrast'];
-
-const DEFAULTS = {
-  container: null,
-  initialColors: { highContrast: '#0F766E', lowContrast: '#CCFBF1' },
-  activeTab: 'highContrast',
-  showAlpha: true,
-  showContrastSuggestions: false,
-  theme: 'light',
-  presets: null,
-  classNames: '',
-  labels: {},
-  onChange: null,
-  onApply: null,
-  onCancel: null,
-  onOpen: null,
-  onClose: null,
-};
-
-const resolveColors = (values, fallback) => {
-  const resolved = {};
-  for (const tab of TABS) {
-    const raw = values && values[tab];
-    resolved[tab] = (typeof raw === 'string' && normalizeHex(raw)) || fallback[tab];
-  }
-  return resolved;
-};
+import { DEFAULT_PRESETS, mergePresets } from './presets.js';
+import { createPresetPanel } from './presets-panel.js';
+import { DEFAULTS, TABS, resolveColors } from './options.js';
+import { syncTabs, tabAfterKey } from './tablist.js';
 
 export default class ColorPicker {
   constructor(options = {}) {
@@ -63,13 +39,20 @@ export default class ColorPicker {
       onStatus: (message) => this.setStatus(message),
     });
 
+    this.presets = mergePresets(DEFAULT_PRESETS, this.options.presets || {});
+    this.panel = createPresetPanel({
+      refs: this.refs,
+      presets: this.presets,
+      onSelect: (hex, tab) => this.selectColor(hex, { source: 'preset', tab }),
+    });
+
     this.onDocumentKey = (event) => {
       if (event.key === 'Escape' && this.isOpen) this.cancel();
     };
     document.addEventListener('keydown', this.onDocumentKey);
     this.bind();
-    this.syncTabs();
-    this.editor.setColor(parseHex(this.colors[this.activeTab]));
+    syncTabs(this.refs, this.activeTab);
+    this.refresh();
   }
 
   bind() {
@@ -84,22 +67,11 @@ export default class ColorPicker {
   }
 
   handleTabKey(event) {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    const index = TABS.indexOf(this.activeTab);
-    const step = event.key === 'ArrowRight' ? 1 : TABS.length - 1;
-    const next = TABS[(index + step) % TABS.length];
+    const next = tabAfterKey(event, this.activeTab, TABS);
+    if (!next) return;
     this.setActiveTab(next);
     this.refs.tabs[TABS.indexOf(next)].focus();
     event.preventDefault();
-  }
-
-  syncTabs() {
-    this.refs.tabs.forEach((button) => {
-      const active = button.dataset.tab === this.activeTab;
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-selected', String(active));
-      button.tabIndex = active ? 0 : -1;
-    });
   }
 
   setStatus(message) {
@@ -112,18 +84,45 @@ export default class ColorPicker {
   }
 
   commit(rgba) {
-    const hex = formatHex(rgba);
-    if (hex === this.colors[this.activeTab]) return;
-    this.colors[this.activeTab] = hex;
-    this.setStatus(hex);
-    this.emit('onChange');
+    this.selectColor(formatHex(rgba), { source: 'editor' });
+  }
+
+  /** Push editor + panel from `this.colors` without emitting. */
+  refresh() {
+    this.editor.setColor(parseHex(this.colors[this.activeTab]));
+    this.panel.render(this.activeTab, this.colors);
+  }
+
+  /**
+   * The single writer to `colors`. Swatch clicks, HEX/SV edits and
+   * `setColors()` all land here, so editor, HEX, preview and tab memory
+   * can never disagree.
+   */
+  selectColor(hex, { source = 'preset', tab = this.activeTab } = {}) {
+    const normalized = normalizeHex(hex);
+    if (!normalized || !TABS.includes(tab)) return;
+    if (tab !== this.activeTab) {
+      this.activeTab = tab;
+      syncTabs(this.refs, this.activeTab);
+      this.setStatus('');
+    }
+    const changed = this.colors[tab] !== normalized;
+    this.colors[tab] = normalized;
+    if (source === 'editor') {
+      this.setStatus(normalized);
+      this.panel.render(this.activeTab, this.colors);
+    } else {
+      this.refresh();
+      this.setStatus(normalized);
+    }
+    if (changed) this.emit('onChange');
   }
 
   setActiveTab(tab) {
     if (!TABS.includes(tab) || tab === this.activeTab) return;
     this.activeTab = tab;
-    this.syncTabs();
-    this.editor.setColor(parseHex(this.colors[tab]));
+    syncTabs(this.refs, this.activeTab);
+    this.refresh();
     this.setStatus('');
   }
 
@@ -141,7 +140,7 @@ export default class ColorPicker {
       }
     }
     if (!changed) return;
-    this.editor.setColor(parseHex(this.colors[this.activeTab]));
+    this.refresh();
     this.setStatus('');
     this.emit('onChange');
   }
@@ -151,7 +150,7 @@ export default class ColorPicker {
     this.snapshot = { ...this.colors };
     this.isOpen = true;
     this.root.classList.remove('hidden');
-    this.editor.setColor(parseHex(this.colors[this.activeTab]));
+    this.refresh();
     this.setStatus('');
     this.refs.tabs[TABS.indexOf(this.activeTab)].focus();
     this.emit('onOpen');
@@ -166,7 +165,7 @@ export default class ColorPicker {
 
   reset() {
     this.colors = { ...this.initialColors };
-    this.editor.setColor(parseHex(this.colors[this.activeTab]));
+    this.refresh();
     this.setStatus('Restored the initial colors.');
     this.emit('onChange');
   }
@@ -174,7 +173,7 @@ export default class ColorPicker {
   cancel() {
     if (!this.isOpen) return;
     this.colors = { ...this.snapshot };
-    this.editor.setColor(parseHex(this.colors[this.activeTab]));
+    this.refresh();
     this.setStatus('Changes discarded.');
     this.emit('onCancel');
     this.close();
@@ -189,6 +188,7 @@ export default class ColorPicker {
 
   destroy() {
     document.removeEventListener('keydown', this.onDocumentKey);
+    this.panel.destroy();
     this.editor.destroy();
     this.root.remove();
     this.isOpen = false;

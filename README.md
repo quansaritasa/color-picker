@@ -12,8 +12,11 @@ Copy these into your project — there is no npm package and no bundler:
 ```text
 src/color.js
 src/presets.js
+src/options.js
+src/tablist.js
 src/template.js
 src/editor.js
+src/presets-panel.js
 src/color-picker.js
 color-picker.css
 ```
