@@ -1,0 +1,1192 @@
+/*
+ * color-picker.css — component styles.
+ * Everything is scoped under `.cp-root` so host pages keep their own styling.
+ * Theme tokens are custom properties: override any `--cp-*` on `.cp-root`,
+ * or on a wrapper such as `.cp-root.my-theme`.
+ */
+
+.cp-root {
+  --cp-accent: #2563eb;
+  --cp-accent-strong: #2563eb;
+  --cp-accent-soft: #eff6ff;
+  --cp-accent-line: #bfd3ff;
+  --cp-ink: #172033;
+  --cp-muted: #667085;
+  /* Same value as --cp-muted on purpose: every surface it labels needs 4.5:1
+     (4.60 on --cp-canvas, 4.64 on --cp-surface-alt, 4.97 on --cp-surface).
+     Kept as its own token so a theme can still split the two greys. */
+  --cp-subtle: #667085;
+  --cp-line: #e5e9f0;
+  --cp-line-soft: #e7eaf0;
+  --cp-surface: #ffffff;
+  --cp-surface-alt: #f5f7fa;
+  --cp-field-alt: #e9edf5;
+  --cp-track: #eef1f6;
+  --cp-pill-bg: #f7f8fb;
+  --cp-pill-ink: #536075;
+  --cp-btn-line: #dce2eb;
+  --cp-btn-ink: #344054;
+  --cp-hover: #f1f4f8;
+  --cp-canvas: #f4f6fa;
+  --cp-field: #d8dee8;
+  --cp-danger: #b42318;
+  --cp-radius: 22px;
+  --cp-shadow: 0 24px 70px #1d2a441c, 0 3px 12px #1d2a440a;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  /* 24% scrim, not 45: the panel is small and movable, and the page under it is
+     the thing being re-coloured — a heavy veil made every edit unreadable. */
+  background: #1018283d;
+  color: var(--cp-ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cp-root.hidden {
+  display: none;
+}
+
+/* Dark theme: same structure, tokens only (spec §9 `theme: 'dark'`). */
+.cp-root[data-theme="dark"] {
+  --cp-accent: #60a5fa;
+  --cp-accent-soft: #1c2740;
+  --cp-accent-line: #3b5170;
+  --cp-ink: #e8eefb;
+  --cp-muted: #9aa8bd;
+  --cp-subtle: #8595aa;
+  --cp-line: #263143;
+  --cp-line-soft: #263143;
+  --cp-surface: #151d2c;
+  --cp-surface-alt: #1b2434;
+  --cp-field-alt: #243042;
+  --cp-track: #263143;
+  --cp-pill-bg: #1b2434;
+  --cp-pill-ink: #b9c6d9;
+  --cp-btn-line: #33415a;
+  --cp-btn-ink: #dbe4f0;
+  --cp-hover: #223047;
+  --cp-canvas: #0f1522;
+  --cp-field: #33415a;
+  --cp-danger: #fca5a5;
+  --cp-shadow: 0 24px 70px #00000080, 0 3px 12px #00000040;
+  /* Same reasoning as the light scrim: keep the page readable behind the panel. */
+  background: #0509124d;
+}
+
+.cp-root *,
+.cp-root *::before,
+.cp-root *::after {
+  box-sizing: border-box;
+}
+
+.cp-root button,
+.cp-root input {
+  font: inherit;
+  color: inherit;
+}
+
+.cp-root button {
+  cursor: pointer;
+}
+
+.cp-root .picker {
+  /* Small on purpose: the surface being recoloured must stay visible around it. */
+  width: min(100%, 500px);
+  max-height: calc(100vh - 32px);
+  /* The panel does not scroll — `.picker-body` does — so the resize grip can
+     sit in the corner of the box instead of travelling with the content. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-line-soft);
+  border-radius: var(--cp-radius);
+  box-shadow: var(--cp-shadow);
+  /* No transform transition on purpose: the panel must track the pointer 1:1,
+     and a re-centre that eases would make the browser read a mid-flight value. */
+}
+
+.cp-root .picker-body {
+  /* min-height 0 is what lets the body shrink below its content and scroll. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  /* A column so the footer can sit at the bottom of a box taller than its
+     content, and the editor can take the height that is left over. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Children keep their natural height: the box scrolls instead of squeezing. */
+.cp-root .picker-body > * {
+  flex-shrink: 0;
+}
+
+/* The colour area is the surface that benefits from a bigger box. */
+.cp-root .picker-body > .editor {
+  flex-grow: 1;
+}
+
+/* Maximized: the box is the screen, so the corner grip has nothing to offer. */
+.cp-root .picker.is-maximized .resize-grip,
+.cp-root .picker:not(.is-resizable) .resize-grip {
+  display: none;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.cp-root .picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 9px;
+}
+
+/* The header is the drag handle: grab anywhere on it except its controls. */
+.cp-root .picker-header.is-draggable {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.cp-root .picker.is-dragging .picker-header.is-draggable {
+  cursor: grabbing;
+}
+
+/* A maximized box is the screen: the header is no longer a handle. */
+.cp-root .picker.is-maximized .picker-header.is-draggable {
+  cursor: default;
+}
+
+.cp-root .heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cp-root .app-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--cp-accent-strong);
+  font-size: 13px;
+}
+
+.cp-root .picker-header h2 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: -0.03em;
+}
+
+.cp-root .close-btn {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-subtle);
+  font-size: 18px;
+  line-height: 1;
+  /* × is a text glyph and its ink sits ~2px below the em centre in a 28px box,
+     so centre the box and nudge the glyph back up. */
+  display: grid;
+  place-items: center;
+  padding: 0 0 3px;
+}
+
+.cp-root .close-btn:hover {
+  background: var(--cp-hover);
+}
+
+/* ── Tabs ───────────────────────────────────────────────── */
+
+.cp-root .tabs {
+  margin: 0 14px;
+  padding: 3px;
+  display: grid;
+  /* One column per slot; --cp-slots is written by assemble.js. */
+  grid-template-columns: repeat(var(--cp-slots, 2), minmax(0, 1fr));
+  gap: 3px;
+  background: var(--cp-surface-alt);
+  border: 1px solid var(--cp-line);
+  border-radius: 11px;
+}
+
+.cp-root .tab {
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  padding: 6px 9px;
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+  text-align: left;
+  color: var(--cp-muted);
+  min-width: 0;
+}
+
+/* Name above, type below: two tabs of one group in a four-tab row may wrap
+   their names to different line counts, and stretching the body keeps every
+   type line on the same baseline instead of drifting with each label. */
+.cp-root .tab-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.cp-root .tab.active {
+  background: var(--cp-surface);
+  color: var(--cp-ink);
+  box-shadow: 0 1px 4px #17203312;
+  outline: 1px solid var(--cp-line-soft);
+}
+
+.cp-root .tab-symbol {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cp-field-alt);
+  color: var(--cp-muted);
+  font-weight: 750;
+  font-size: 12px;
+}
+
+.cp-root .tab.active .tab-symbol {
+  background: var(--cp-accent-strong);
+  color: #fff;
+}
+
+.cp-root .tab strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cp-root .tab small {
+  display: block;
+  margin-top: 1px;
+  font-size: 10px;
+  color: var(--cp-subtle);
+}
+
+/* ── Editor ─────────────────────────────────────────────── */
+
+.cp-root .editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(148px, 1fr);
+  gap: 12px;
+  padding: 11px 14px;
+}
+
+.cp-root .sv-wrap {
+  position: relative;
+  min-height: 116px;
+}
+
+.cp-root .sv {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: crosshair;
+  background-color: hsl(174 82% 35%);
+  background-image: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent);
+  border: 1px solid var(--cp-field);
+  touch-action: none;
+}
+
+.cp-root .sv-thumb {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px #0005;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.cp-root .editor-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cp-root .hex-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.cp-root .color-preview {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 9px;
+  border: 1px solid #00000012;
+  background-image: repeating-conic-gradient(#d9dee7 0 25%, #fff 0 50%);
+  background-size: 10px 10px;
+}
+
+.cp-root .hex-input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border: 1px solid var(--cp-field);
+  border-radius: 9px;
+  padding: 0 10px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  outline: none;
+  background: var(--cp-surface);
+}
+
+.cp-root .hex-input:focus {
+  border-color: var(--cp-accent);
+  box-shadow: 0 0 0 3px #2563eb18;
+}
+
+/* The status line is screen-reader only now, so a rejected HEX marks the field
+   itself. Cleared by the next valid commit. */
+.cp-root .hex-input[aria-invalid="true"] {
+  border-color: var(--cp-danger);
+  box-shadow: 0 0 0 3px #b4231818;
+}
+
+.cp-root .hex-input[aria-invalid="true"]:focus {
+  border-color: var(--cp-danger);
+  box-shadow: 0 0 0 3px #b4231824;
+}
+
+/* Copy: same box as the header icon buttons, but it must not steal width from
+   the HEX field, so it keeps a fixed slot at the end of the row. */
+.cp-root .copy-btn {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-subtle);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.cp-root .copy-btn:hover {
+  background: var(--cp-hover);
+  color: var(--cp-ink);
+}
+
+.cp-root .copy-btn:focus-visible {
+  outline: 2px solid var(--cp-accent);
+  outline-offset: 1px;
+}
+
+.cp-root .cp-copy-done {
+  display: none;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cp-root .copy-btn[data-copied="true"] {
+  color: var(--cp-accent-strong);
+}
+
+/* One glyph at a time: the SVG copy mark, or the confirmation tick. */
+.cp-root .copy-btn[data-copied="true"] svg {
+  display: none;
+}
+
+.cp-root .copy-btn[data-copied="true"] .cp-copy-done {
+  display: block;
+}
+
+/* ── Sliders ────────────────────────────────────────────── */
+
+.cp-root .range-block {
+  display: grid;
+  gap: 7px;
+}
+
+.cp-root .range-block[hidden] {
+  display: none;
+}
+
+.cp-root .range-label {
+  display: flex;
+  justify-content: space-between;
+  color: var(--cp-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.cp-root .range-block input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 99px;
+  outline: none;
+  margin: 2px 0;
+  background: var(--cp-track);
+}
+
+.cp-root .range-block input[type="range"]:focus-visible {
+  box-shadow: 0 0 0 3px #2563eb33;
+}
+
+.cp-root .hue-range input[type="range"] {
+  background: linear-gradient(90deg, red, #ff0, #0f0, #0ff, #00f, #f0f, red);
+}
+
+.cp-root .alpha-range input[type="range"] {
+  background: linear-gradient(90deg, transparent, #1475ef), repeating-conic-gradient(#d9dee7 0 25%, #fff 0 50%) 0/12px 12px;
+}
+
+.cp-root .range-block input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--cp-accent);
+  box-shadow: 0 1px 5px #17203355;
+}
+
+.cp-root .range-block input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--cp-accent);
+  box-shadow: 0 1px 5px #17203355;
+}
+
+/* ── Presets (rendered in iteration 3) ──────────────────── */
+
+.cp-root .divider {
+  height: 1px;
+  background: var(--cp-line);
+  margin: 0 14px;
+}
+
+.cp-root .presets {
+  display: grid;
+  /* Both palette groups are always offered, whatever the slot count. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 10px 14px 12px;
+}
+
+.cp-root .presets[hidden] {
+  display: none;
+}
+
+.cp-root .presets:empty {
+  display: none;
+}
+
+.cp-root .preset-section {
+  min-width: 0;
+}
+
+/*
+ * Emphasis dims the swatch grid, never the section as a whole: section-level
+ * opacity 0.62 took the idle section's 10px hint to 2.44:1, under AA. Swatches
+ * carry no text, so they are the only thing that can fade safely.
+ */
+.cp-root .preset-section .swatches {
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.cp-root .preset-section:not(.is-emphasis) .swatches {
+  opacity: 0.55;
+}
+
+.cp-root .preset-section + .preset-section {
+  border-left: 1px solid var(--cp-line);
+  padding-left: 12px;
+}
+
+.cp-root .section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.cp-root .section-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: var(--cp-accent-soft);
+  color: var(--cp-accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cp-root .section-title strong {
+  font-size: 12px;
+  letter-spacing: -0.02em;
+}
+
+.cp-root .category-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.cp-root .cp-category {
+  border: 1px solid var(--cp-line-soft);
+  background: var(--cp-pill-bg);
+  color: var(--cp-pill-ink);
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.cp-root .cp-category.is-active {
+  background: var(--cp-accent-soft);
+  color: var(--cp-accent);
+  border-color: var(--cp-accent-line);
+}
+
+.cp-root .swatches {
+  display: grid;
+  /* Swatches keep a usable size as the panel narrows: rows wrap instead of shrinking. */
+  grid-template-columns: repeat(auto-fill, minmax(26px, 1fr));
+  gap: 5px;
+}
+
+.cp-root .cp-swatch {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid #0000001f;
+  border-radius: 7px;
+  position: relative;
+  box-shadow: inset 0 0 0 1px #ffffff35;
+  transition: transform 0.12s ease;
+}
+
+.cp-root .cp-swatch:hover {
+  transform: translateY(-1px);
+}
+
+.cp-root .cp-swatch.is-selected {
+  outline: 2px solid var(--cp-accent);
+  outline-offset: 1px;
+}
+
+.cp-root .cp-swatch.is-selected::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--cp-check-color, #fff);
+  font-size: 12px;
+  font-weight: 800;
+  text-shadow: 0 1px 3px #0006;
+}
+
+.cp-root .section-hint {
+  margin: 7px 0 0;
+  color: var(--cp-subtle);
+  font-size: 10px;
+}
+
+/* ── Contrast suggestions ───────────────────────────────── */
+
+.cp-root .suggestions {
+  padding: 0 18px;
+}
+
+.cp-root .suggestions[hidden] {
+  display: none;
+}
+
+.cp-root .cp-suggestions {
+  margin-bottom: 10px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-canvas);
+}
+
+.cp-root .cp-suggestions > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 11px;
+  color: var(--cp-muted);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+}
+
+.cp-root .cp-suggestions > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cp-root .cp-sugg-label::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 0.15s ease;
+}
+
+.cp-root .cp-suggestions[open] > summary .cp-sugg-label::before {
+  transform: rotate(90deg);
+}
+
+.cp-root .cp-sugg-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cp-root .cp-badge {
+  border-radius: 7px;
+  padding: 3px 7px;
+  background: var(--cp-pill-bg);
+  color: var(--cp-pill-ink);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.cp-root .cp-badge[data-level="AAA"],
+.cp-root .cp-badge[data-level="AA"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.cp-root .cp-badge[data-level="fail"] {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.cp-root .cp-badge-large {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.cp-root .cp-sugg-ratio {
+  color: var(--cp-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.cp-root .cp-sugg-hint,
+.cp-root .cp-sugg-empty {
+  margin: 0 11px 8px;
+  color: var(--cp-subtle);
+  font-size: 10px;
+}
+
+.cp-root .cp-partners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 11px 10px;
+}
+
+.cp-root .cp-partners[hidden] {
+  display: none;
+}
+
+.cp-root .cp-partner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 7px 4px 5px;
+  border: 1px solid var(--cp-line);
+  border-radius: 8px;
+  background: var(--cp-surface);
+  color: var(--cp-ink);
+  font-size: 10px;
+}
+
+.cp-root .cp-partner:hover {
+  border-color: var(--cp-accent);
+}
+
+.cp-root .cp-partner[hidden] {
+  display: none;
+}
+
+.cp-root .cp-partner-dot {
+  width: 13px;
+  height: 13px;
+  border: 1px solid #00000014;
+  border-radius: 4px;
+}
+
+.cp-root .cp-partner-ratio {
+  color: var(--cp-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-root[data-theme="dark"] .cp-badge[data-level="AAA"],
+.cp-root[data-theme="dark"] .cp-badge[data-level="AA"] {
+  background: #14351f;
+  color: #86efac;
+}
+
+.cp-root[data-theme="dark"] .cp-badge[data-level="fail"] {
+  background: #3f1d1d;
+  color: #fca5a5;
+}
+
+.cp-root[data-theme="dark"] .cp-badge-large {
+  background: #3a2c12;
+  color: #fcd34d;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+
+/* The message region is announced, not shown: the visible line repeated the
+   HEX field, and a rejected HEX is marked on the field itself. */
+.cp-root .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A footer exists only where there is something to decide: the modal's
+   Cancel/OK. A popover has no transaction, so it renders no bottom strip. */
+.cp-root .footer {
+  border-top: 1px solid var(--cp-line);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 9px 14px 11px;
+  /* `margin-top: auto` inside a panel taller than its content: the actions sit
+     on the bottom edge instead of floating right under the presets. */
+  margin-top: auto;
+}
+
+.cp-root .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Icon button, same metrics as the close button beside it. */
+.cp-root .reset-btn {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-subtle);
+  font-size: 17px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.cp-root .reset-btn:hover {
+  background: var(--cp-hover);
+  color: var(--cp-ink);
+}
+
+/* Same metrics as `↺` and `×`; the glyph is drawn, so it needs its own box. */
+.cp-root .maximize-btn {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cp-subtle);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.cp-root .maximize-btn:hover {
+  background: var(--cp-hover);
+  color: var(--cp-ink);
+}
+
+.cp-root .maximize-btn svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+/* One button, two glyphs: maximized shows the way back. */
+.cp-root .maximize-btn .icon-collapse {
+  display: none;
+}
+
+.cp-root .picker.is-maximized .maximize-btn .icon-expand {
+  display: none;
+}
+
+.cp-root .picker.is-maximized .maximize-btn .icon-collapse {
+  display: block;
+}
+
+/* ── Resize grip ────────────────────────────────────────── */
+
+/* Sits in the panel's own corner, not in the scrolling body. */
+.cp-root .resize-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  z-index: 3;
+  cursor: nwse-resize;
+  touch-action: none;
+  border-bottom-right-radius: var(--cp-radius);
+}
+
+/* Three diagonal grooves in the corner: the shape the platform uses for
+   "drag me", readable on both themes without a second glyph. */
+.cp-root .resize-grip::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 11px;
+  height: 11px;
+  background-image: repeating-linear-gradient(135deg, var(--cp-pill-ink) 0 1px, transparent 1px 3.5px);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  opacity: 0.8;
+}
+
+.cp-root .resize-grip:hover {
+  background: var(--cp-hover);
+}
+
+.cp-root .resize-grip:hover::after {
+  opacity: 1;
+  background-image: repeating-linear-gradient(135deg, var(--cp-ink) 0 1px, transparent 1px 3.5px);
+}
+
+.cp-root .picker.is-resizing {
+  user-select: none;
+}
+
+.cp-root .actions {
+  display: flex;
+  gap: 7px;
+}
+
+.cp-root .secondary-btn {
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-btn-line);
+  color: var(--cp-btn-ink);
+  border-radius: 9px;
+  padding: 8px 15px;
+  font-weight: 600;
+}
+
+.cp-root .primary-btn {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 17px;
+  background: var(--cp-accent-strong);
+  color: #fff;
+  font-weight: 650;
+  box-shadow: 0 4px 12px #2563eb25;
+}
+
+/* ── States ─────────────────────────────────────────────── */
+
+.cp-root :focus-visible {
+  outline: 2px solid var(--cp-accent);
+  outline-offset: 2px;
+}
+
+.cp-root .close-btn:focus-visible,
+.cp-root .reset-btn:focus-visible,
+.cp-root .maximize-btn:focus-visible,
+.cp-root .secondary-btn:focus-visible,
+.cp-root .primary-btn:focus-visible,
+.cp-root .tab:focus-visible {
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-root *,
+  .cp-root *::before,
+  .cp-root *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+/* ── Mobile bottom sheet ────────────────────────────────── */
+
+@media (max-width: 680px) {
+  .cp-root {
+    padding: 0;
+    align-items: end;
+  }
+
+  .cp-root .picker {
+    /* `!important` because a resized desktop box carries inline width/height. */
+    width: 100% !important;
+    height: auto !important;
+    max-height: 92vh;
+    border-width: 1px 0 0;
+    border-radius: 20px 20px 0 0;
+    /* The sheet is anchored to the bottom edge; a drag offset would lift it. */
+    transform: none !important;
+  }
+
+  /* The sheet owns its own size: neither the grip nor the toggle has a box
+     to give it. */
+  .cp-root .maximize-btn,
+  .cp-root .resize-grip {
+    display: none;
+  }
+
+  .cp-root .picker-header {
+    padding: 13px 14px 11px;
+  }
+
+  .cp-root .tabs {
+    margin: 0 14px;
+    /* Narrow screens: let three or more slot tabs wrap instead of shrinking. */
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .cp-root .tab {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .cp-root .tab-symbol {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+  }
+
+  .cp-root .tab strong {
+    font-size: 12px;
+  }
+
+  .cp-root .tab small {
+    font-size: 10px;
+  }
+
+  .cp-root .editor {
+    grid-template-columns: 1fr;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .cp-root .sv-wrap {
+    min-height: 150px;
+  }
+
+  .cp-root .editor-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+
+  .cp-root .hex-row {
+    grid-column: 1 / -1;
+  }
+
+  .cp-root .divider {
+    margin: 0 14px;
+  }
+
+  .cp-root .presets {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 12px 14px;
+  }
+
+  .cp-root .preset-section + .preset-section {
+    border-left: 0;
+    border-top: 1px solid var(--cp-line);
+    padding-left: 0;
+    padding-top: 14px;
+  }
+
+  .cp-root .swatches {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .cp-root .suggestions {
+    padding: 0 14px;
+  }
+
+  .cp-root .footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: 11px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    background: var(--cp-surface);
+  }
+}
+
+/* ── Popover mode ──────────────────────────────────────── */
+
+/* The root still owns the viewport box — it is what a fixed child measures
+   against — but it must neither paint nor swallow a click, or the page under
+   the popover stops being clickable and "click outside to close" never fires. */
+.cp-root.cp-popover {
+  background: transparent;
+  padding: 0;
+  display: block;
+  pointer-events: none;
+}
+
+/* Left/top are written by `src/popover.js`; nothing here may position the box. */
+.cp-root.cp-popover .picker {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: min(calc(100vw - 16px), 620px);
+  max-height: calc(100vh - 16px);
+  pointer-events: auto;
+}
+
+/* Every edit is already painted: there is no transaction to apply or discard,
+   so the modal footer — the OK/Cancel pair — is not rendered at all. */
+.cp-root.cp-popover .footer {
+  display: none;
+}
+
+/* A closed popover must stay closed: `.cp-popover` above sets `display:block`,
+   which would otherwise beat `.cp-root.hidden` on source order. */
+.cp-root.cp-popover.hidden {
+  display: none;
+}
+
+/* Below 680px the popover becomes the same bottom sheet as the modal, but
+   shorter: the page it is recolouring has to stay visible above it. */
+@media (max-width: 680px) {
+  .cp-root.cp-popover .picker {
+    inset: auto 0 0 0;
+    width: 100%;
+    max-height: 78vh;
+  }
+}
+
+/* ── Triggers ──────────────────────────────────────────── */
+
+/* These live in the host's own layout, outside `.cp-root`, so they carry their
+   own tokens instead of inheriting the panel's theme. */
+.cp-triggers {
+  --cpt-surface: #ffffff;
+  --cpt-ink: #344054;
+  --cpt-muted: #667085;
+  --cpt-line: #dce2eb;
+  --cpt-accent: #2563eb;
+  --cpt-accent-soft: #eff6ff;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.3;
+}
+
+.cp-triggers[data-theme="dark"] {
+  --cpt-surface: #151d2c;
+  --cpt-ink: #e8eefb;
+  --cpt-muted: #9aa8bd;
+  --cpt-line: #33415a;
+  --cpt-accent: #60a5fa;
+  --cpt-accent-soft: #1c2740;
+}
+
+.cp-triggers .cp-trigger {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border: 1px solid var(--cpt-line);
+  border-radius: 11px;
+  background: var(--cpt-surface);
+  color: var(--cpt-ink);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cp-triggers .cp-trigger:hover {
+  border-color: var(--cpt-accent);
+}
+
+/* The square that opened the panel stays marked while it is open. */
+.cp-triggers .cp-trigger[aria-expanded="true"] {
+  border-color: var(--cpt-accent);
+  box-shadow: 0 0 0 3px var(--cpt-accent-soft);
+}
+
+.cp-triggers .cp-trigger:focus-visible {
+  outline: 2px solid var(--cpt-accent);
+  outline-offset: 2px;
+}
+
+/* The fill is a gradient layer *over* a checker: an opaque colour hides the
+   checker completely, a translucent one lets it through. `--cpt-fill` is the
+   only thing the script writes, so both layers survive every repaint. */
+.cp-triggers .cp-trigger-chip {
+  grid-row: 1 / span 2;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px #0000001f;
+  background-image:
+    linear-gradient(var(--cpt-fill, transparent), var(--cpt-fill, transparent)),
+    linear-gradient(45deg, #00000014 25%, transparent 25%, transparent 75%, #00000014 75%);
+  background-size: auto, 8px 8px;
+}
+
+.cp-triggers .cp-trigger-name {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cp-triggers .cp-trigger-hex {
+  color: var(--cpt-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+

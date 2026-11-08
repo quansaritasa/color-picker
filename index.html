@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Picker — demo</title>
+<link rel="stylesheet" href="./color-picker.css">
+<style>
+  :root {
+    --page-ink: #172033;
+    --page-muted: #667085;
+    --page-line: #e5e9f0;
+    --page-accent: #2563eb;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--page-ink);
+    background: radial-gradient(circle at 50% 0%, #eaf0ff 0, #f4f6fa 48%, #f7f8fb 100%);
+    display: grid; place-items: start center; padding: 32px 28px 64px;
+  }
+  .page { width: min(100%, 880px); display: grid; gap: 16px; }
+  .page-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .page-head h1 { margin: 0; font-size: 21px; letter-spacing: -.03em; }
+  .page-head p { margin: 6px 0 0; max-width: 62ch; color: var(--page-muted); font-size: 13px; line-height: 1.55; }
+
+  /* One card per instance: the call it runs, then the instance itself. */
+  .panel {
+    min-width: 0;
+    background: #fff; border: 1px solid var(--page-line); border-radius: 16px;
+    padding: 20px; display: grid; gap: 10px;
+  }
+  .panel-head { display: grid; gap: 4px; margin-bottom: 2px; }
+  .panel-head h2 { margin: 0; font-size: 15.5px; letter-spacing: -.02em; display: flex; align-items: baseline; gap: 9px; }
+  .panel-no {
+    font-size: 11px; font-weight: 700; color: #9aa6b8; font-variant-numeric: tabular-nums;
+    letter-spacing: .06em;
+  }
+  .panel-head p { margin: 0; color: var(--page-muted); font-size: 12.5px; line-height: 1.6; }
+  .panel-head code, .stage code, .field-row code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+    background: #f1f4f9; border-radius: 5px; padding: 1px 4px; color: #334155;
+  }
+
+  .label {
+    display: flex; align-items: center; gap: 7px; margin: 4px 0 0;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #8592a6;
+  }
+  .label::before { content: ''; width: 17px; height: 1px; background: #cbd5e1; }
+
+  .snippet {
+    max-width: 100%; margin: 0; padding: 15px 16px; border-radius: 11px; overflow-x: auto;
+    background: #0b1220; color: #e8eefb; font-size: 11.5px; line-height: 1.6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    tab-size: 2;
+  }
+
+  /* The stage is the live half: anything the snippet paints lives here. */
+  .stage {
+    min-width: 0; padding: 16px; border-radius: 11px;
+    border: 1px solid var(--page-line); background: #f8fafc;
+    display: grid; gap: 15px;
+  }
+  .stage-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .stage-hint { margin: 0; font-size: 11.5px; color: #7a8699; line-height: 1.5; }
+
+  .one-headline { margin: 0; font-size: 27px; line-height: 1.2; letter-spacing: -.03em; color: #0F766E; }
+
+  .pair { min-width: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pair-card { min-width: 0; border: 1px solid var(--page-line); background: #fff; border-radius: 12px; padding: 15px; }
+  .pair-card small { display: block; margin-bottom: 9px; color: var(--page-muted); font-size: 11px; }
+  .pair-chip { display: inline-flex; padding: 8px 12px; border-radius: 8px; font-weight: 650; font-size: 13px; }
+  .pair-panel { min-height: 66px; border-radius: 9px; padding: 13px; display: flex; align-items: center; font-size: 13px; }
+
+  .brand { border-radius: 13px; padding: 18px; background: #0b1220; color: #e8eefb; }
+  .brand-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+  .brand h3 { margin: 0; font-size: 14px; letter-spacing: -.02em; }
+  .brand p { margin: 4px 0 0; color: #93a2b8; font-size: 11.5px; }
+  .brand-card { border: 1px solid #22304a; background: #131c2e; border-radius: 10px; padding: 14px; }
+  .brand-card small { color: #93a2b8; display: block; margin-bottom: 9px; font-size: 11px; }
+  .brand-chip { display: inline-flex; padding: 8px 12px; border-radius: 8px; font-weight: 650; font-size: 13px; border: 1px solid transparent; }
+
+  /* Every colour on this surface is one of its four slots. */
+  .sheet {
+    border-radius: 13px; padding: 18px;
+    background: var(--sheet-surface); color: var(--sheet-heading);
+    border: 1px solid var(--page-line);
+  }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+  .sheet h3 { margin: 0; font-size: 14px; letter-spacing: -.02em; }
+  .sheet-head p { margin: 4px 0 0; font-size: 11.5px; opacity: .72; }
+  .sheet-card {
+    border: 1px solid var(--sheet-accent); background: var(--sheet-card, rgba(255, 255, 255, .55));
+    border-radius: 10px; padding: 14px;
+  }
+  .sheet-card h4 { margin: 9px 0 5px; font-size: 13.5px; letter-spacing: -.01em; }
+  .sheet-card p { margin: 0; font-size: 12px; line-height: 1.55; opacity: .8; }
+  .sheet-tag {
+    display: inline-flex; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 650;
+    color: var(--sheet-accent); box-shadow: inset 0 0 0 1px var(--sheet-accent);
+  }
+  .sheet-link { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 650; color: var(--sheet-accent); }
+
+  .field-row {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px 10px; align-items: center; font-size: 12.5px;
+  }
+  .field-row input {
+    padding: 8px 10px; border: 1px solid var(--page-line); border-radius: 9px;
+    font: inherit; font-size: 12.5px; color: var(--page-ink); background: #fff;
+  }
+  .field-row input[aria-invalid="true"] { border-color: #dc2626; }
+  .field-row input:focus-visible { outline: 2px solid var(--page-accent); outline-offset: 1px; }
+  .field-preview {
+    padding: 15px; border-radius: 10px; font-weight: 650; font-size: 13.5px;
+  }
+
+  @media (max-width: 680px) {
+    body { padding: 14px 12px 40px; }
+    .panel { padding: 14px; }
+    .snippet { font-size: 11px; padding: 13px; }
+    .stage { padding: 13px; }
+    .pair { grid-template-columns: 1fr; }
+    .one-headline { font-size: 22px; }
+    .field-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1>Color Picker</h1>
+      <p>Each panel shows the setup call and then that very call running. Open a swatch, pick a colour —
+        the surface under the snippet repaints as you drag.</p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="panel-no">01</span>One colour — the default</h2>
+      <p>No <code>slots</code>: one slot named <code>color</code>, one trigger, one preset grid and no tab
+        row. <code>colors.color</code> is the only value to paint.</p>
+    </div>
+    <p class="label">Setup</p>
+    <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
+
+const oneHeadline = document.getElementById('oneHeadline');
+
+const onePicker = new ColorPicker({
+  triggers: '#oneTriggers',
+  initialColors: { color: '#0F766E' },
+  onChange: (colors) => { oneHeadline.style.color = colors.color; },
+});
+
+oneHeadline.style.color = onePicker.getColors().color;</code></pre>
+    <p class="label">Live</p>
+    <div class="stage">
+      <div class="stage-bar">
+        <p class="stage-hint">One swatch, one popup, no tabs.</p>
+        <div id="oneTriggers"></div>
+      </div>
+      <h3 class="one-headline" id="oneHeadline">Painted by colors.color</h3>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="panel-no">02</span>A pair — text over panel</h2>
+      <p>Two slots, so there is a tab per slot. <code>contrastPair</code> turns on the suggestions panel:
+        it offers colours that keep the pair readable, and it is a choice — no pair, no suggestions.</p>
+    </div>
+    <p class="label">Setup</p>
+    <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
+
+const pairTag = document.getElementById('pairTag');
+const pairPanel = document.getElementById('pairPanel');
+
+const paintPair = (colors) => {
+  pairTag.style.color = colors.text;
+  pairTag.style.background = colors.background;
+  pairPanel.style.color = colors.text;
+  pairPanel.style.background = colors.background;
+};
+
+const pairPicker = new ColorPicker({
+  triggers: '#pairTriggers',
+  slots: [
+    { id: 'text', label: 'Text colour', symbol: 'Aa', presetSet: 'text' },
+    { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
+  ],
+  initialColors: { text: '#0F766E', background: '#CCFBF1' },
+  showContrastSuggestions: true,
+  contrastPair: ['text', 'background'],
+  onChange: paintPair,
+});
+
+paintPair(pairPicker.getColors());</code></pre>
+    <p class="label">Live</p>
+    <div class="stage">
+      <div class="stage-bar">
+        <p class="stage-hint">Both slots always paint; each tab edits its own.</p>
+        <div id="pairTriggers"></div>
+      </div>
+      <div class="pair">
+        <div class="pair-card">
+          <small>Text colour · High contrast</small>
+          <span class="pair-chip" id="pairTag">Readable label</span>
+        </div>
+        <div class="pair-card">
+          <small>Panel background · Low contrast</small>
+          <div class="pair-panel" id="pairPanel">A subtle panel background</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="panel-no">03</span>Brand palette — dark theme, own presets</h2>
+      <p>Three slots, and <code>presets</code> replaces a named category in each group instead of adding
+        one. <code>theme: 'dark'</code> swaps the panel and trigger tokens; the host still reads one key
+        per slot.</p>
+    </div>
+    <p class="label">Setup</p>
+    <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
+
+const brandChip = document.getElementById('brandChip');
+
+const paintBrand = (colors) => {
+  brandChip.style.color = colors.text;
+  brandChip.style.background = colors.background;
+  brandChip.style.borderColor = colors.accent;
+};
+
+const brandPicker = new ColorPicker({
+  triggers: '#brandTriggers',
+  container: '#brandRoot',
+  theme: 'dark',
+  showContrastSuggestions: true,
+  contrastPair: ['text', 'background'],
+  slots: [
+    { id: 'text', label: 'Brand text', symbol: 'Aa', presetSet: 'text' },
+    { id: 'background', label: 'Brand panel', symbol: '▰', presetSet: 'background' },
+    { id: 'accent', label: 'Accent', type: 'Accent', symbol: '✦', hint: 'Borders and links' },
+  ],
+  initialColors: { text: '#0B3D2E', background: '#FDE68A', accent: '#7C3AED' },
+  presets: {
+    text: { Brand: ['#0B3D2E', '#134E4A', '#1E3A5F', '#4C1D95'] },
+    background: { Brand: ['#FDE68A', '#FEF3C7', '#E0F2FE', '#FCE7F3'] },
+  },
+  onChange: paintBrand,
+});
+
+paintBrand(brandPicker.getColors());</code></pre>
+    <p class="label">Live</p>
+    <div class="stage">
+      <div class="stage-bar">
+        <p class="stage-hint">Dark popover, custom <code>Brand</code> category in both groups.</p>
+        <div id="brandTriggers"></div>
+      </div>
+      <div class="brand">
+        <div class="brand-head">
+          <div>
+            <h3>Brand palette</h3>
+            <p>Text, panel and the accent border — three slots, one popup.</p>
+          </div>
+        </div>
+        <div class="brand-card">
+          <small>Brand text on brand panel</small>
+          <span class="brand-chip" id="brandChip">Readable label</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="panel-no">04</span>Product section — four slots, one popup</h2>
+      <p>Two slots share <code>presetSet: 'background'</code>: a section surface and a card surface take
+        the same kind of palette and still get a tab each, told apart by <code>label</code>. Every colour
+        on the surface below is one of the four.</p>
+    </div>
+    <p class="label">Setup</p>
+    <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
+
+const sheet = document.getElementById('sheetSection');
+
+const paintSheet = (colors) => {
+  sheet.style.setProperty('--sheet-heading', colors.heading);
+  sheet.style.setProperty('--sheet-surface', colors.surface);
+  sheet.style.setProperty('--sheet-card', colors.card);
+  sheet.style.setProperty('--sheet-accent', colors.accent);
+};
+
+const sheetPicker = new ColorPicker({
+  triggers: '#sheetTriggers',
+  container: '#sheetRoot',
+  theme: 'light',
+  showContrastSuggestions: true,
+  contrastPair: ['heading', 'surface'],
+  slots: [
+    { id: 'heading', label: 'Heading', symbol: 'Aa', presetSet: 'text' },
+    { id: 'surface', label: 'Section bg', symbol: '▰', presetSet: 'background' },
+    { id: 'card', label: 'Card bg', symbol: '▰', presetSet: 'background' },
+    { id: 'accent', label: 'Accent', type: 'Accent', symbol: '✦', hint: 'Links, borders, tags' },
+  ],
+  initialColors: { heading: '#1E293B', surface: '#EEF2FF', card: '#FFFFFF', accent: '#7C3AED' },
+  onChange: paintSheet,
+});
+
+paintSheet(sheetPicker.getColors());</code></pre>
+    <p class="label">Live</p>
+    <div class="stage">
+      <div class="stage-bar">
+        <p class="stage-hint">Heading, two backgrounds, accent — one tab each.</p>
+        <div id="sheetTriggers"></div>
+      </div>
+      <div class="sheet" id="sheetSection">
+        <div class="sheet-head">
+          <div>
+            <h3>Ship the palette you picked</h3>
+            <p>Four slots read by one section.</p>
+          </div>
+        </div>
+        <div class="sheet-card">
+          <span class="sheet-tag">New</span>
+          <h4>Heading text, section and card surfaces</h4>
+          <p>Heading, section background, card background and the accent below all read the four slots
+            of a single picker — no second dialog, no per-element wiring.</p>
+          <a class="sheet-link" href="#">Read the docs</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="panel-no">05</span>Your own inputs — Coloris style</h2>
+      <p>Point <code>fields</code> at inputs that already exist: each one becomes a slot named by
+        <code>data-slot</code>, then its <code>id</code>, and the field itself is the trigger — no bar to
+        mount. Values are written back as HEX with a native <code>input</code> event, so a framework bound
+        to the field sees the change.</p>
+    </div>
+    <p class="label">Setup</p>
+    <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
+
+const fieldPreview = document.getElementById('fieldPreview');
+
+const fieldPicker = new ColorPicker({
+  fields: '[data-color-picker]',        // selector, element or NodeList
+  onChange: (colors) => {
+    fieldPreview.style.color = colors.ink;
+    fieldPreview.style.background = colors.wash;
+  },
+});
+
+fieldPreview.style.color = fieldPicker.getColors().ink;
+fieldPreview.style.background = fieldPicker.getColors().wash;</code></pre>
+    <p class="label">Live</p>
+    <div class="stage">
+      <div class="stage-bar">
+        <p class="stage-hint">Click a field to open the picker on that slot; typing a HEX commits it.</p>
+      </div>
+      <div class="field-row">
+        <label for="inkField">Ink</label>
+        <input id="inkField" type="text" data-color-picker data-slot="ink" value="#0F766E">
+        <label for="washField">Wash</label>
+        <input id="washField" type="text" data-color-picker data-slot="wash" value="#CCFBF1">
+      </div>
+      <div class="field-preview" id="fieldPreview">The two fields, painted</div>
+    </div>
+  </section>
+</main>
+
+<div id="brandRoot"></div>
+<div id="sheetRoot"></div>
+
+<script type="module">
+  import ColorPicker from './src/color-picker.js';
+
+  /* Each block below is the <pre> above it, run for real — keep them in sync. */
+
+  // 01 — one colour.
+  const oneHeadline = document.getElementById('oneHeadline');
+  const onePicker = new ColorPicker({
+    triggers: '#oneTriggers',
+    initialColors: { color: '#0F766E' },
+    onChange: (colors) => { oneHeadline.style.color = colors.color; },
+  });
+  oneHeadline.style.color = onePicker.getColors().color;
+  window.onePicker = onePicker;
+
+  // 02 — the pair.
+  const pairTag = document.getElementById('pairTag');
+  const pairPanel = document.getElementById('pairPanel');
+  const paintPair = (colors) => {
+    pairTag.style.color = colors.text;
+    pairTag.style.background = colors.background;
+    pairPanel.style.color = colors.text;
+    pairPanel.style.background = colors.background;
+  };
+  const pairPicker = new ColorPicker({
+    triggers: '#pairTriggers',
+    slots: [
+      { id: 'text', label: 'Text colour', symbol: 'Aa', presetSet: 'text' },
+      { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
+    ],
+    initialColors: { text: '#0F766E', background: '#CCFBF1' },
+    showContrastSuggestions: true,
+    contrastPair: ['text', 'background'],
+    onChange: paintPair,
+  });
+  paintPair(pairPicker.getColors());
+  window.pairPicker = pairPicker;
+
+  // 03 — dark theme, three slots, own presets.
+  const brandChip = document.getElementById('brandChip');
+  const paintBrand = (colors) => {
+    brandChip.style.color = colors.text;
+    brandChip.style.background = colors.background;
+    brandChip.style.borderColor = colors.accent;
+  };
+  const brandPicker = new ColorPicker({
+    triggers: '#brandTriggers',
+    container: '#brandRoot',
+    theme: 'dark',
+    showContrastSuggestions: true,
+    contrastPair: ['text', 'background'],
+    slots: [
+      { id: 'text', label: 'Brand text', symbol: 'Aa', presetSet: 'text' },
+      { id: 'background', label: 'Brand panel', symbol: '▰', presetSet: 'background' },
+      { id: 'accent', label: 'Accent', type: 'Accent', symbol: '✦', hint: 'Borders and links' },
+    ],
+    initialColors: { text: '#0B3D2E', background: '#FDE68A', accent: '#7C3AED' },
+    presets: {
+      text: { Brand: ['#0B3D2E', '#134E4A', '#1E3A5F', '#4C1D95'] },
+      background: { Brand: ['#FDE68A', '#FEF3C7', '#E0F2FE', '#FCE7F3'] },
+    },
+    onChange: paintBrand,
+  });
+  paintBrand(brandPicker.getColors());
+  window.brandPicker = brandPicker;
+
+  // 04 — four slots on one section.
+  const sheet = document.getElementById('sheetSection');
+  const paintSheet = (colors) => {
+    sheet.style.setProperty('--sheet-heading', colors.heading);
+    sheet.style.setProperty('--sheet-surface', colors.surface);
+    sheet.style.setProperty('--sheet-card', colors.card);
+    sheet.style.setProperty('--sheet-accent', colors.accent);
+  };
+  const sheetPicker = new ColorPicker({
+    triggers: '#sheetTriggers',
+    container: '#sheetRoot',
+    theme: 'light',
+    showContrastSuggestions: true,
+    contrastPair: ['heading', 'surface'],
+    slots: [
+      { id: 'heading', label: 'Heading', symbol: 'Aa', presetSet: 'text' },
+      { id: 'surface', label: 'Section bg', symbol: '▰', presetSet: 'background' },
+      { id: 'card', label: 'Card bg', symbol: '▰', presetSet: 'background' },
+      { id: 'accent', label: 'Accent', type: 'Accent', symbol: '✦', hint: 'Links, borders, tags' },
+    ],
+    initialColors: { heading: '#1E293B', surface: '#EEF2FF', card: '#FFFFFF', accent: '#7C3AED' },
+    onChange: paintSheet,
+  });
+  paintSheet(sheetPicker.getColors());
+  window.sheetPicker = sheetPicker;
+
+  // 05 — the host's own inputs are the controls.
+  const fieldPreview = document.getElementById('fieldPreview');
+  const fieldPicker = new ColorPicker({
+    fields: '[data-color-picker]',
+    onChange: (colors) => {
+      fieldPreview.style.color = colors.ink;
+      fieldPreview.style.background = colors.wash;
+    },
+  });
+  fieldPreview.style.color = fieldPicker.getColors().ink;
+  fieldPreview.style.background = fieldPicker.getColors().wash;
+  window.fieldPicker = fieldPicker;
+</script>
+</body>
+</html>
