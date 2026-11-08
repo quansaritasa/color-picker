@@ -350,6 +350,7 @@ points at both demo pages.
 
 ### Changed
 **[1] - `README.md` Development section** — the server line now names both pages and a paragraph says what each shows.
+**[2] - The readout swatches are controls, not decoration.** Each dot is a `button` that opens the picker on the tab that owns that colour (`setActiveTab` then `open`), with `aria-label` carrying the current hex, a hover/focus ring, and a one-line hint under the readout — clicking the text dot opens High Contrast, the panel dot opens Low Contrast.
 
 ### Verification
 - `node --test` → **25/25 pass** (no library file changed by this iteration).

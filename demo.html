@@ -71,7 +71,14 @@
     display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--page-muted);
     font-variant-numeric: tabular-nums;
   }
-  .swatch i { width: 26px; height: 26px; border-radius: 8px; box-shadow: inset 0 0 0 1px #00000014; display: block; }
+  .swatch i, .swatch .dot { width: 26px; height: 26px; border-radius: 8px; box-shadow: inset 0 0 0 1px #00000014; display: block; }
+  .dot {
+    padding: 0; border: 0; background: #fff; cursor: pointer;
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  .dot:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px #00000024, 0 3px 8px #0f172a1f; }
+  .dot:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 9px; }
+  .hint { font-size: 11px; color: var(--page-muted); }
 
   @media (max-width: 680px) {
     body { padding: 14px; }
@@ -109,12 +116,14 @@
       <span class="pill" id="levelPill" data-level="AA">…</span>
       <span id="ratioText">measuring…</span>
       <span class="swatches">
-        <span class="swatch"><i id="fgDot"></i><span id="fgValue">…</span></span>
-        <span class="swatch"><i id="bgDot"></i><span id="bgValue">…</span></span>
+        <button type="button" class="swatch dot" id="fgDot" aria-label="Edit the text colour" title="Edit the text colour"></button>
+        <span class="swatch"><span id="fgValue">…</span></span>
+        <button type="button" class="swatch dot" id="bgDot" aria-label="Edit the panel background" title="Edit the panel background"></button>
+        <span class="swatch"><span id="bgValue">…</span></span>
       </span>
     </div>
     <p class="small">Ratio is measured live with the library's own WCAG code: 4.5:1 for normal text,
-      3:1 for large text, 7:1 for AAA.</p>
+      3:1 for large text, 7:1 for AAA. <span class="hint">Click a swatch to open the picker on that tab.</span></p>
   </section>
 </main>
 
@@ -138,6 +147,8 @@
     bgValue.textContent = colors.lowContrast;
     fgDot.style.background = colors.highContrast;
     bgDot.style.background = colors.lowContrast;
+    fgDot.setAttribute('aria-label', `Edit the text colour, currently ${colors.highContrast}`);
+    bgDot.setAttribute('aria-label', `Edit the panel background, currently ${colors.lowContrast}`);
 
     const fg = parseHex(colors.highContrast);
     const bg = parseHex(colors.lowContrast);
@@ -167,6 +178,16 @@
   paint(picker.getColors());
 
   document.getElementById('openPicker').addEventListener('click', () => picker.open());
+
+  // The swatches are controls too: click (or Enter/Space, since they are buttons)
+  // opens the picker on the tab that owns that colour.
+  const openOn = (tab) => {
+    picker.setActiveTab(tab);
+    picker.open();
+  };
+  fgDot.addEventListener('click', () => openOn('highContrast'));
+  bgDot.addEventListener('click', () => openOn('lowContrast'));
+
   document.getElementById('resetColors').addEventListener('click', () => {
     picker.setColors({ highContrast: '#0F766E', lowContrast: '#CCFBF1' });
     paint(picker.getColors());
