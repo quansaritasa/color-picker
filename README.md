@@ -324,12 +324,22 @@ new ColorPicker({
 
 The shipped palettes, if you want to replace one of them: `text` holds the six
 spec categories (`Cool`, `Blue`, `Hot`, `Purple`, `Green`, `Neutral`) · `background`
-holds the 60-colour badge palette from sprints-planner, split at chroma .08 into
-`Vivid` (46) and `Dusty` (14 — that app's label-chip colours). Those are mid-light
-inks, not pale washes: they read against dark text, and none of them clears 4.5:1
-against a mid-tone text like `#0F766E`, so contrast suggestions stay empty for such
-a pair. Pass your own pale categories in `background` when the picker is choosing
-surfaces for mid-tone text.
+holds the 46 vivid inks from sprints-planner's badge palette, their 14-colour deep
+tier, and `Pale` (39), the pale washes this group shipped before plus five more.
+
+`Vivid` is two lightnesses of one idea: the app's own mid-light chips (46 entries
+at oklch L .72–.76, chroma .09–.16) and a deep tier this library adds (14 entries,
+one per hue at L .64 with chroma at the sRGB ceiling, up to .28). The app's
+low-chroma tail — its 14 Jira label-chip inks — is not shipped: same hues and
+lightness as the entries above, so as a category it was washed copies in the grid.
+
+None of those 60 inks is a surface for mid-tone text: 60 of 60 clear 4.5:1 against
+a near-black like `#111827`, none of them against `#0F766E`. That is what `Pale`
+is for — the contrast suggestions rank partners out of this palette, so without a
+pale category a mid-tone text colour would get an empty suggestions panel. Pale
+stops at 39 for the same reason it exists: a wash light enough to clear 4.5:1
+against `#0F766E` has almost no chroma left, so further additions land within
+dE00 2.6 of one already in the list.
 
 Categories replace by name: a category the config names takes the place of the
 shipped palette of that name (`Cool`, `Vivid`, …) and keeps its position in the
