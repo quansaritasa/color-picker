@@ -58,8 +58,8 @@ the modal open.
 | `initialColors` | `{ highContrast, lowContrast }` | `#0F766E`, `#CCFBF1` | Normalized on construction; also the target of Reset |
 | `activeTab` | `'highContrast' \| 'lowContrast'` | `'highContrast'` | Tab shown first |
 | `showAlpha` | `boolean` | `true` | Hide the opacity slider when `false` |
-| `showContrastSuggestions` | `boolean` | `false` | Reserved for the suggestions panel |
-| `theme` | `'light' \| 'dark'` | `'light'` | Written to `data-theme` on the root |
+| `showContrastSuggestions` | `boolean` | `false` | Show the collapsible contrast panel under the presets |
+| `theme` | `'light' \| 'dark'` | `'light'` | Written to `data-theme` on the root; the dark theme only swaps tokens |
 | `presets` | `object` | built-in palettes | Adds custom categories to the shipped palettes; a name that already exists is ignored |
 | `classNames` | `string` | `''` | Extra classes on the root element |
 | `labels` | `object` | English | Override `title`, `close`, `reset`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `textPresets`, `panelPresets`, `textHint`, `panelHint`, and `tabs.highContrast` / `tabs.lowContrast` (`{ title, hint }`) |
@@ -106,6 +106,39 @@ new ColorPicker({
 Categories are additive: a custom name that already exists (`Cool`, `Blue`, …) is
 ignored, so a config typo cannot replace a shipped palette.
 
+## Contrast suggestions
+
+```js
+new ColorPicker({ showContrastSuggestions: true });
+```
+
+Adds a collapsed `<details>` panel under the presets. Its summary carries the
+current pair's ratio and a WCAG badge; opening it lists up to three readable
+partners with their own ratios.
+
+- Selecting a **High Contrast** color suggests **Low Contrast** backgrounds, and
+  the other way round, from the loaded palettes.
+- WCAG AA is 4.5:1 for normal text, AA for large text is 3:1 (shown as a second
+  `AA-large` badge when the pair fails normal text), AAA is 7:1.
+- The panel **never** changes the color you are editing. Picking a partner sets
+  the *other* tab's color, so the pair improves while your choice stays put.
+
+The math is exportable on its own — no DOM, no side effects:
+
+```js
+import { contrastRatio, wcagLevel, suggestPartners, parseHex } from './src/contrast.js';
+
+contrastRatio(parseHex('#0F766E'), parseHex('#CCFBF1')); // 4.857…
+wcagLevel(4.5);                 // 'AA'
+wcagLevel(3, { largeText: true }); // 'AA-large'
+suggestPartners(parseHex('#0F766E'), ['#F7FEE7', '#111827']); // best first, ≥ 4.5:1 only
+```
+
+A translucent color is composited over the color it sits on before measuring —
+`#00000080` over `#FFFFFF` is measured as the `#7F7F7F` it actually renders as.
+That is the only defensible reading of "the ratio of a transparent color", and
+it matches what a browser paints.
+
 ## Theming
 
 All component styles are scoped under `.cp-root` and driven by custom properties:
@@ -122,6 +155,10 @@ All component styles are scoped under `.cp-root` and driven by custom properties
 }
 ```
 
+`theme: 'dark'` sets `data-theme="dark"` and swaps the same tokens, so a custom
+theme and the dark theme compose. Below 680px the modal becomes a bottom sheet:
+full width, rounded top corners, one preset column, sticky footer.
+
 Multiple instances are independent: each owns its own root element, state, and
 listeners, so two pickers on one page never share colors.
 
@@ -129,9 +166,9 @@ listeners, so two pickers on one page never share colors.
 
 ```bash
 python3.12 -m http.server 8000   # demo page
-node --test                      # color math tests
+node --test                      # color math + contrast math
 ```
 
 `test/smoke.html` is a browser harness for the component itself — open it through
 the local server and it prints PASS/FAIL per behaviour (tabs, HEX, drag, footer
-actions, two instances).
+actions, presets, suggestions, dark theme, focus trap, two instances).
