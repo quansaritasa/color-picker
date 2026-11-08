@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern Color Picker</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-soft: #eff6ff;
+    --ink: #172033;
+    --muted: #667085;
+    --line: #e5e9f0;
+    --surface: #ffffff;
+    --canvas: #f4f6fa;
+    --radius: 18px;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--ink);
+    background: radial-gradient(circle at 50% 0%, #eaf0ff 0, var(--canvas) 48%, #f7f8fb 100%);
+    display: grid; place-items: center; padding: 28px;
+  }
+  button, input { font: inherit; }
+  button { cursor: pointer; }
+  .demo { width: min(100%, 980px); display: grid; gap: 18px; }
+  .demo-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .demo-head h1 { margin:0; font-size:20px; letter-spacing:-.03em; }
+  .demo-head p { margin:5px 0 0; color:var(--muted); font-size:13px; }
+  .open-btn, .primary-btn {
+    border:0; border-radius:11px; background:var(--accent); color:white;
+    padding:11px 17px; font-weight:650; box-shadow:0 4px 12px #2563eb25;
+  }
+  .preview {
+    display:grid; grid-template-columns:1fr 1fr; gap:14px;
+  }
+  .preview-card { border:1px solid var(--line); background:white; border-radius:14px; padding:18px; }
+  .preview-card small { color:var(--muted); display:block; margin-bottom:10px; }
+  .sample-chip { display:inline-flex; padding:9px 13px; border-radius:9px; font-weight:650; }
+  .sample-panel { min-height:76px; border-radius:10px; padding:15px; display:flex; align-items:center; }
+  .picker {
+    width:min(100%, 940px); background:var(--surface); border:1px solid #e7eaf0;
+    border-radius:22px; box-shadow:0 24px 70px #1d2a441c, 0 3px 12px #1d2a440a;
+    overflow:hidden;
+  }
+  .picker-header { display:flex; align-items:center; justify-content:space-between; padding:22px 26px 18px; }
+  .heading { display:flex; align-items:center; gap:13px; }
+  .app-icon { width:42px; height:42px; border-radius:13px; display:grid; place-items:center; color:white; background:var(--accent); font-size:22px; }
+  .picker-header h2 { margin:0; font-size:21px; letter-spacing:-.035em; }
+  .close-btn { width:36px; height:36px; border:0; background:transparent; color:#738096; border-radius:9px; font-size:25px; line-height:1; }
+  .close-btn:hover { background:#f1f4f8; }
+  .tabs { margin:0 26px; padding:4px; display:grid; grid-template-columns:1fr 1fr; gap:4px; background:#f5f7fa; border:1px solid var(--line); border-radius:14px; }
+  .tab { border:0; background:transparent; border-radius:11px; padding:12px 15px; display:flex; align-items:center; gap:12px; text-align:left; color:#667085; min-width:0; }
+  .tab.active { background:white; color:var(--ink); box-shadow:0 1px 4px #17203312; outline:1px solid #e7ebf2; }
+  .tab-symbol { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center; border-radius:50%; background:#e9edf5; color:#667085; font-weight:750; font-size:16px; }
+  .tab.active .tab-symbol { background:var(--accent); color:white; }
+  .tab strong { display:block; font-size:14px; font-weight:700; }
+  .tab small { display:block; margin-top:3px; font-size:12px; color:#8791a3; }
+  .editor { display:grid; grid-template-columns:minmax(0, 1.55fr) minmax(210px, .9fr); gap:22px; padding:22px 26px 20px; }
+  .sv-wrap { position:relative; min-height:205px; }
+  .sv {
+    position:absolute; inset:0; border-radius:13px; overflow:hidden; cursor:crosshair;
+    background-color:hsl(174, 82%, 35%);
+    background-image:linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent);
+    border:1px solid #d8dee8; touch-action:none;
+  }
+  .sv-thumb { position:absolute; width:19px; height:19px; border:2px solid white; border-radius:50%; box-shadow:0 1px 4px #0005; transform:translate(-50%,-50%); left:70%; top:25%; pointer-events:none; }
+  .editor-side { display:flex; flex-direction:column; gap:14px; }
+  .hex-row { display:flex; align-items:center; gap:12px; }
+  .color-preview { width:54px; height:54px; flex:0 0 54px; border-radius:12px; border:1px solid #00000012; }
+  .hex-input { width:100%; min-width:0; height:48px; border:1px solid #d8dee8; border-radius:11px; padding:0 13px; color:var(--ink); font-weight:650; letter-spacing:.02em; outline:none; }
+  .hex-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px #2563eb18; }
+  .range-block { display:grid; gap:7px; }
+  .range-label { display:flex; justify-content:space-between; color:#697586; font-size:11px; font-weight:650; }
+  input[type="range"] { appearance:none; width:100%; height:13px; border-radius:99px; outline:none; margin:4px 0; }
+  #hue { background:linear-gradient(90deg,red,#ff0,#0f0,#0ff,#00f,#f0f,red); }
+  #alpha { background:linear-gradient(90deg, transparent, #1475ef), repeating-conic-gradient(#d9dee7 0 25%,white 0 50%) 0/12px 12px; }
+  input[type="range"]::-webkit-slider-thumb { appearance:none; width:20px; height:20px; border:3px solid white; border-radius:50%; background:var(--accent); box-shadow:0 1px 5px #17203355; }
+  input[type="range"]::-moz-range-thumb { width:15px; height:15px; border:3px solid white; border-radius:50%; background:var(--accent); box-shadow:0 1px 5px #17203355; }
+  .divider { height:1px; background:var(--line); margin:0 26px; }
+  .presets { display:grid; grid-template-columns:1fr 1fr; padding:20px 26px 24px; gap:24px; }
+  .preset-section + .preset-section { border-left:1px solid var(--line); padding-left:24px; }
+  .section-title { display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .section-icon { width:30px; height:30px; border-radius:10px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); font-size:14px; font-weight:800; }
+  .section-title strong { font-size:14px; letter-spacing:-.02em; }
+  .category-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .category { border:1px solid #e3e8f0; background:#f7f8fb; color:#536075; border-radius:9px; padding:7px 10px; font-size:11px; font-weight:600; }
+  .category.active { background:var(--accent-soft); color:var(--accent); border-color:#bfd3ff; }
+  .swatches { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:9px; }
+  .swatch { aspect-ratio:1; min-width:0; border-radius:9px; border:1px solid #0000000d; position:relative; box-shadow:inset 0 0 0 1px #ffffff35; }
+  .swatch:hover { transform:translateY(-1px); }
+  .swatch.selected { outline:2px solid var(--accent); outline-offset:2px; }
+  .swatch.selected::after { content:"✓"; position:absolute; inset:0; display:grid; place-items:center; color:var(--check-color,white); font-size:17px; font-weight:800; text-shadow:0 1px 3px #0006; }
+  .section-hint { margin:11px 0 0; color:#929bab; font-size:10px; }
+  .footer { border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; padding:16px 26px 20px; }
+  .reset-btn { border:0; background:transparent; color:#758197; padding:9px 0; font-size:13px; font-weight:600; }
+  .actions { display:flex; gap:9px; }
+  .secondary-btn { background:white; border:1px solid #dce2eb; color:#344054; border-radius:10px; padding:10px 19px; font-weight:600; }
+  .primary-btn { border-radius:10px; padding:10px 22px; }
+  .hidden { display:none !important; }
+  .status { color:#8993a4; font-size:11px; margin:0 26px 13px; min-height:14px; }
+  @media (max-width:680px) {
+    body { padding:12px; align-items:start; }
+    .picker { border-radius:17px; }
+    .picker-header { padding:17px 17px 14px; }
+    .tabs { margin:0 14px; }
+    .tab { padding:10px 8px; gap:8px; }
+    .tab-symbol { width:32px; height:32px; flex-basis:32px; }
+    .tab strong { font-size:12px; }
+    .tab small { font-size:10px; }
+    .editor { grid-template-columns:1fr; padding:17px 16px; gap:15px; }
+    .sv-wrap { min-height:180px; }
+    .editor-side { display:grid; grid-template-columns:1fr 1fr; align-items:center; }
+    .hex-row { grid-column:1 / -1; }
+    .presets { grid-template-columns:1fr; padding:18px 16px; gap:22px; }
+    .preset-section + .preset-section { border-left:0; border-top:1px solid var(--line); padding:18px 0 0; }
+    .divider { margin:0 16px; }
+    .footer { padding:14px 16px 17px; }
+    .swatches { grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; }
+  }
+</style>
+</head>
+<body>
+<main class="demo">
+  <div class="demo-head">
+    <div><h1>Color system preview</h1><p>Explore foreground and background colors together.</p></div>
+    <button class="open-btn" id="openPicker">Choose colors</button>
+  </div>
+  <div class="preview">
+    <div class="preview-card">
+      <small>Text color · High contrast</small>
+      <span class="sample-chip" id="sampleChip" style="color:#0F766E;background:#CCFBF1">Readable label</span>
+    </div>
+    <div class="preview-card">
+      <small>Panel background · Low contrast</small>
+      <div class="sample-panel" id="samplePanel" style="color:#0F766E;background:#CCFBF1">A subtle panel background</div>
+    </div>
+  </div>
+
+  <section class="picker" id="picker" aria-label="Choose color">
+    <header class="picker-header">
+      <div class="heading"><div class="app-icon">◉</div><h2>Choose Color</h2></div>
+      <button class="close-btn" id="closePicker" aria-label="Close">×</button>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Color type">
+      <button class="tab active" id="tabHigh" role="tab" aria-selected="true" data-tab="highContrast">
+        <span class="tab-symbol">Aa</span><span><strong>High Contrast</strong><small>For text color</small></span>
+      </button>
+      <button class="tab" id="tabLow" role="tab" aria-selected="false" data-tab="lowContrast">
+        <span class="tab-symbol">▰</span><span><strong>Low Contrast</strong><small>For panel background</small></span>
+      </button>
+    </div>
+
+    <section class="editor" aria-label="Custom color editor">
+      <div class="sv-wrap" id="svWrap"><div class="sv" id="sv" role="slider" aria-label="Saturation and brightness" tabindex="0"><span class="sv-thumb" id="svThumb"></span></div></div>
+      <div class="editor-side">
+        <div class="hex-row">
+          <div class="color-preview" id="colorPreview"></div>
+          <input class="hex-input" id="hexInput" value="#0F766E" aria-label="Hex color value" spellcheck="false">
+        </div>
+        <div class="range-block">
+          <div class="range-label"><span>Hue</span><span id="hueValue">174°</span></div>
+          <input type="range" id="hue" min="0" max="360" value="174" aria-label="Hue">
+        </div>
+        <div class="range-block">
+          <div class="range-label"><span>Opacity</span><span id="alphaValue">100%</span></div>
+          <input type="range" id="alpha" min="0" max="100" value="100" aria-label="Opacity">
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+    <section class="presets">
+      <div class="preset-section" id="highSection">
+        <div class="section-title"><span class="section-icon">Aa</span><strong>Text Color Presets</strong></div>
+        <div class="category-row" id="highCategories"></div>
+        <div class="swatches" id="highSwatches"></div>
+        <p class="section-hint">Designed for text, icons, and foreground elements.</p>
+      </div>
+      <div class="preset-section" id="lowSection">
+        <div class="section-title"><span class="section-icon">▰</span><strong>Panel Color Presets</strong></div>
+        <div class="category-row" id="lowCategories"></div>
+        <div class="swatches" id="lowSwatches"></div>
+        <p class="section-hint">Soft colors for panels, chips, and badges.</p>
+      </div>
+    </section>
+    <p class="status" id="status" aria-live="polite"></p>
+    <footer class="footer">
+      <button class="reset-btn" id="reset">↶ &nbsp; Reset</button>
+      <div class="actions">
+        <button class="secondary-btn" id="cancel">Cancel</button>
+        <button class="primary-btn" id="apply">OK</button>
+      </div>
+    </footer>
+  </section>
+</main>
+
+<script>
+(() => {
+  const presets = {
+    highContrast: {
+      Cool: ['#111827','#1F2937','#334155','#475569','#64748B','#0F766E','#115E59'],
+      Blue: ['#1E3A8A','#1D4ED8','#2563EB','#1E40AF','#0369A1','#075985','#0C4A6E'],
+      Hot: ['#991B1B','#DC2626','#E11D48','#BE123C','#C2410C','#EA580C','#9A3412'],
+      Purple: ['#581C87','#7E22CE','#9333EA','#6B21A8','#6D28D9','#5B21B6'],
+      Green: ['#14532D','#166534','#15803D','#047857','#0F766E','#065F46','#3F6212'],
+      Neutral: ['#000000','#262626','#404040','#525252','#737373','#A3A3A3','#FFFFFF']
+    },
+    lowContrast: {
+      Cool: ['#F0FDFA','#CCFBF1','#99F6E4','#E6FFFB','#D1FAE5','#ECFDF5'],
+      Blue: ['#EFF6FF','#DBEAFE','#BFDBFE','#E0F2FE','#BAE6FD','#F0F9FF'],
+      Warm: ['#FFF7ED','#FFEDD5','#FED7AA','#FEF3C7','#FDE68A','#FFFBEB'],
+      Neutral: ['#F9FAFB','#F3F4F6','#E5E7EB','#D1D5DB','#FAFAFA','#F5F5F5'],
+      Pastel: ['#FCE7F3','#FBCFE8','#F3E8FF','#EDE9FE','#FFE4E6','#FCE7F3'],
+      Green: ['#F0FDF4','#DCFCE7','#BBF7D0','#D1FAE5','#ECFCCB','#F7FEE7']
+    }
+  };
+
+  const $ = id => document.getElementById(id);
+  const state = {
+    colors: { highContrast:'#0F766E', lowContrast:'#CCFBF1' },
+    initial: { highContrast:'#0F766E', lowContrast:'#CCFBF1' },
+    activeTab:'highContrast',
+    categories:{ highContrast:'Cool', lowContrast:'Cool' },
+    hue:174, saturation:87, value:46, alpha:1
+  };
+  const picker = $('picker');
+
+  function hexToRgba(hex) {
+    let h = hex.replace('#','').trim();
+    if (![3,4,6,8].includes(h.length)) return null;
+    if (h.length <= 4) h = [...h].map(c=>c+c).join('');
+    if (h.length === 6) h += 'FF';
+    return { r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16), a:parseInt(h.slice(6,8),16)/255 };
+  }
+  function rgbaToHex(c) {
+    const hex = n => Math.round(n).toString(16).padStart(2,'0');
+    const base = '#' + hex(c.r) + hex(c.g) + hex(c.b);
+    return c.a < .999 ? base + hex(c.a*255) : base;
+  }
+  function rgbToHsv({r,g,b}) {
+    r/=255;g/=255;b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+    let h=0;
+    if(d){ if(max===r) h=((g-b)/d)%6; else if(max===g) h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; if(h<0)h+=360; }
+    return {h,s:max===0?0:d/max*100,v:max*100};
+  }
+  function hsvToRgb(h,s,v) {
+    s/=100;v/=100;
+    const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;
+    let r=0,g=0,b=0;
+    if(h<60)[r,g,b]=[c,x,0]; else if(h<120)[r,g,b]=[x,c,0];
+    else if(h<180)[r,g,b]=[0,c,x]; else if(h<240)[r,g,b]=[0,x,c];
+    else if(h<300)[r,g,b]=[x,0,c]; else [r,g,b]=[c,0,x];
+    return {r:(r+m)*255,g:(g+m)*255,b:(b+m)*255};
+  }
+  function activeColor() { return state.colors[state.activeTab]; }
+  function setColor(hex, updatePreview=true) {
+    const rgba=hexToRgba(hex); if(!rgba) return false;
+    state.colors[state.activeTab]=rgbaToHex(rgba);
+    const hsv=rgbToHsv(rgba); state.hue=hsv.h; state.saturation=hsv.s; state.value=hsv.v; state.alpha=rgba.a;
+    renderEditor();
+    if(updatePreview) renderSamples();
+    return true;
+  }
+  function renderEditor() {
+    const rgb=hsvToRgb(state.hue,state.saturation,state.value);
+    const color=`rgba(${rgb.r},${rgb.g},${rgb.b},${state.alpha})`;
+    $('sv').style.backgroundColor=`hsl(${state.hue},100%,50%)`;
+    $('svThumb').style.left=state.saturation+'%';
+    $('svThumb').style.top=(100-state.value)+'%';
+    $('colorPreview').style.background=color;
+    $('hexInput').value=activeColor();
+    $('hue').value=state.hue;
+    $('alpha').value=Math.round(state.alpha*100);
+    $('hueValue').textContent=Math.round(state.hue)+'°';
+    $('alphaValue').textContent=Math.round(state.alpha*100)+'%';
+    $('alpha').style.background=`linear-gradient(90deg, transparent, ${rgbaToHex({...rgb,a:1})}), repeating-conic-gradient(#d9dee7 0 25%,white 0 50%) 0/12px 12px`;
+  }
+  function renderSamples() {
+    const fg=state.colors.highContrast, bg=state.colors.lowContrast;
+    $('sampleChip').style.color=fg; $('sampleChip').style.background=bg;
+    $('samplePanel').style.color=fg; $('samplePanel').style.background=bg;
+  }
+  function renderPresets(tab) {
+    const categories=$(tab==='highContrast'?'highCategories':'lowCategories');
+    const swatches=$(tab==='highContrast'?'highSwatches':'lowSwatches');
+    categories.innerHTML=''; swatches.innerHTML='';
+    Object.entries(presets[tab]).forEach(([name,colors])=>{
+      const b=document.createElement('button'); b.className='category'+(state.categories[tab]===name?' active':'');
+      b.textContent=name; b.type='button'; b.addEventListener('click',()=>{state.categories[tab]=name;renderPresets(tab);});
+      categories.appendChild(b);
+    });
+    (presets[tab][state.categories[tab]]||[]).forEach(hex=>{
+      const b=document.createElement('button'); b.type='button'; b.className='swatch';
+      b.style.background=hex; b.setAttribute('aria-label',hex); b.title=hex;
+      if(hex.toLowerCase()===state.colors[tab].toLowerCase()) {
+        b.classList.add('selected');
+        const c=hexToRgba(hex); b.style.setProperty('--check-color', (c.r*.299+c.g*.587+c.b*.114)>150?'#172033':'white');
+      }
+      b.addEventListener('click',()=>{state.activeTab=tab;syncTabs();setColor(hex);renderPresets(tab);});
+      swatches.appendChild(b);
+    });
+  }
+  function renderAllPresets(){renderPresets('highContrast');renderPresets('lowContrast');}
+  function syncTabs() {
+    document.querySelectorAll('.tab').forEach(t=>{
+      const active=t.dataset.tab===state.activeTab;
+      t.classList.toggle('active',active); t.setAttribute('aria-selected',String(active));
+    });
+  }
+  function switchTab(tab) { state.activeTab=tab; syncTabs(); setColor(state.colors[tab]); renderAllPresets(); }
+  function open() {
+    state.initial={...state.colors};
+    picker.classList.remove('hidden');
+    $('status').textContent='';
+  }
+  function close() { picker.classList.add('hidden'); }
+  function reset() {
+    state.colors={...state.initial};
+    setColor(state.colors[state.activeTab]); renderAllPresets(); renderSamples();
+  }
+  function apply() {
+    state.initial={...state.colors}; renderSamples(); close();
+    $('status').textContent='Colors applied.';
+  }
+  function cancel() {
+    state.colors={...state.initial}; renderSamples(); close();
+    $('status').textContent='Changes discarded.';
+  }
+  function pointerUpdate(e) {
+    const rect=$('sv').getBoundingClientRect();
+    const x=Math.min(1,Math.max(0,(e.clientX-rect.left)/rect.width));
+    const y=Math.min(1,Math.max(0,(e.clientY-rect.top)/rect.height));
+    state.saturation=x*100; state.value=(1-y)*100;
+    const rgb=hsvToRgb(state.hue,state.saturation,state.value);
+    setColor(rgbaToHex({...rgb,a:state.alpha}));
+    renderAllPresets();
+  }
+  let dragging=false;
+  $('sv').addEventListener('pointerdown',e=>{dragging=true;$('sv').setPointerCapture(e.pointerId);pointerUpdate(e);});
+  $('sv').addEventListener('pointermove',e=>{if(dragging)pointerUpdate(e);});
+  $('sv').addEventListener('pointerup',()=>dragging=false);
+  $('sv').addEventListener('pointercancel',()=>dragging=false);
+  $('hue').addEventListener('input',e=>{
+    state.hue=Number(e.target.value);
+    const rgb=hsvToRgb(state.hue,state.saturation,state.value);
+    setColor(rgbaToHex({...rgb,a:state.alpha})); renderAllPresets();
+  });
+  $('alpha').addEventListener('input',e=>{
+    state.alpha=Number(e.target.value)/100;
+    const rgb=hsvToRgb(state.hue,state.saturation,state.value);
+    setColor(rgbaToHex({...rgb,a:state.alpha})); renderAllPresets();
+  });
+  $('hexInput').addEventListener('change',e=>{
+    if(!setColor(e.target.value)){e.target.value=activeColor();$('status').textContent='Enter a valid HEX value.';}
+    else {renderAllPresets();$('status').textContent='';}
+  });
+  $('hexInput').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur();});
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+  $('openPicker').addEventListener('click',open);
+  $('closePicker').addEventListener('click',cancel);
+  $('cancel').addEventListener('click',cancel);
+  $('apply').addEventListener('click',apply);
+  $('reset').addEventListener('click',reset);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!picker.classList.contains('hidden'))cancel();});
+  // Start open as a live design preview; hide this line to initialize as a popover.
+  renderAllPresets(); renderEditor(); renderSamples();
+})();
+</script>
+</body>
+</html>
