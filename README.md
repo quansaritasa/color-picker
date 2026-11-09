@@ -269,7 +269,7 @@ sheet owns the box.
 | `draggable` | `boolean` | `true` | Drag the panel by its header to move it aside; double-click the header to re-centre. `false` pins a fixed, centered modal. Works in both modes — a dragged popover stops following its trigger until the next open |
 | `resizable` | `boolean` | `true` | Corner grip writes an explicit width/height, clamped to the viewport. `false` drops the grip; the maximize toggle stays |
 | `theme` | `'light' \| 'dark'` | `'light'` | Written to `data-theme` on the root; the dark theme only swaps tokens |
-| `presets` | `{ text?: object, background?: object }` | built-in palettes | Per palette group, the shipped palette with your categories merged in: a name that already exists (`Cool`, `Blue`, …) **replaces** that palette, a new name is added after the shipped ones. Each category must be an array of hex strings — anything else throws a `TypeError` |
+| `presets` | `{ text?: object, background?: object }` | built-in palettes | Per palette group, the shipped palette with your categories merged in: a name that already exists (`Normal`, `Heading`, …) **replaces** that palette, a new name is added after the shipped ones. Each category must be an array of hex strings — anything else throws a `TypeError` |
 | `triggers` | `HTMLElement \| string` | `null` | Host element (or selector) for the trigger bar, one trigger per slot. Setting it switches `mode` to `popover` |
 | `fields` | `string \| HTMLElement \| NodeList` | `null` | Inputs that **are** the controls — one slot each, named by `data-slot`, then the `id`, then `color`/`color2`. Setting it switches `mode` to `popover` and rules out `slots` |
 | `mode` | `'auto' \| 'modal' \| 'popover'` | `'auto'` | `'auto'` = `popover` when a trigger is rendered, `modal` otherwise; an unknown value warns and is treated as `'auto'`. A popover hides `OK`/`Cancel`, and `⌘`/`Ctrl`+`Enter` closes it instead of committing |
@@ -322,10 +322,15 @@ new ColorPicker({
 });
 ```
 
-The shipped palettes, if you want to replace one of them: `text` holds the six
-spec categories (`Cool`, `Blue`, `Hot`, `Purple`, `Green`, `Neutral`) · `background`
+The shipped palettes, if you want to replace one of them: `text` is grouped by
+role: `Normal` (24) for body copy, `Heading` (26, mostly blue and green) for
+headings and section titles, `Highlight` (33) for colourful emphasis. Every
+colour clears 4.5:1 on white or on `#111827`; the light ones at the end of
+`Normal` and `Highlight` are for dark surfaces · `background`
 holds the 46 vivid inks from sprints-planner's badge palette, their 14-colour deep
 tier, and `Pale` (39), the pale washes this group shipped before plus five more.
+Every category is ordered so similar colours sit together: one tint family
+at a time for `Normal`, hue order everywhere else.
 
 `Vivid` is two lightnesses of one idea: the app's own mid-light chips (46 entries
 at oklch L .72–.76, chroma .09–.16) and a deep tier this library adds (14 entries,
@@ -342,7 +347,7 @@ against `#0F766E` has almost no chroma left, so further additions land within
 dE00 2.6 of one already in the list.
 
 Categories replace by name: a category the config names takes the place of the
-shipped palette of that name (`Cool`, `Vivid`, …) and keeps its position in the
+shipped palette of that name (`Normal`, `Vivid`, …) and keeps its position in the
 row; a new name is appended after the shipped ones. The shipped tables are never
 mutated, so two instances with different `presets` do not affect each other.
 

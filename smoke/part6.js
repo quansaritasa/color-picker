@@ -33,7 +33,7 @@ check('the tab grid is told how many slots there are', three.root.style.getPrope
   three.root.style.getPropertyValue('--cp-slots'));
 // palettes belong to the two groups, whatever the slot count
 check('the palettes stay the two groups',
-  Object.keys(three.palettes).join(',') === 'text,background' && 'Pale' in three.palettes.background && !('Hot' in three.palettes.background),
+  Object.keys(three.palettes).join(',') === 'text,background' && 'Pale' in three.palettes.background && !('Highlight' in three.palettes.background),
   Object.keys(three.palettes).join(','));
 check('colors are keyed by slot id',
   JSON.stringify(three.getColors()) === JSON.stringify({ text: '#0F766E', background: '#70B1ED', accent: '#7C3AED' }),
@@ -140,16 +140,16 @@ check('every section leads with an All pill',
   pillsOf('text')[0].textContent === 'All' && pillsOf('background')[0].textContent === 'All',
   pillsOf('text').map((p) => p.textContent).join(','));
 check('a section still opens on its first category',
-  hexesOf('text').length === PRESET_SETS.text.Cool.length && hexesOf('background').length === PRESET_SETS.background.Vivid.length,
+  hexesOf('text').length === PRESET_SETS.text.Normal.length && hexesOf('background').length === PRESET_SETS.background.Vivid.length,
   `${hexesOf('text').length},${hexesOf('background').length}`);
 check('no All pill is active on open',
-  pillsOf('text').filter((p) => p.classList.contains('cp-is-active')).map((p) => p.textContent).join(',') === 'Cool',
+  pillsOf('text').filter((p) => p.classList.contains('cp-is-active')).map((p) => p.textContent).join(',') === 'Normal',
   pillsOf('text').filter((p) => p.classList.contains('cp-is-active')).map((p) => p.textContent).join(','));
 
 pillNamed('text', 'All').click();
 const textAll = hexesOf('text');
 check('All shows the whole text palette',
-  textAll.length === allColors(PRESET_SETS.text).length && textAll.length > PRESET_SETS.text.Cool.length,
+  textAll.length === allColors(PRESET_SETS.text).length && textAll.length > PRESET_SETS.text.Normal.length,
   `${textAll.length} of ${allColors(PRESET_SETS.text).length}`);
 check('All shows each colour once',
   new Set(textAll.map((hex) => hex.toUpperCase())).size === textAll.length,
@@ -170,9 +170,9 @@ check('the picked swatch is the selected one',
     gridOf('text').querySelectorAll('.cp-is-selected').length === 1,
   String(gridOf('text').querySelectorAll('.cp-is-selected').length));
 
-pillNamed('text', 'Blue').click();
+pillNamed('text', 'Heading').click();
 check('a named category narrows the grid again',
-  hexesOf('text').length === PRESET_SETS.text.Blue.length && !gridOf('text').classList.contains('cp-is-all'),
+  hexesOf('text').length === PRESET_SETS.text.Heading.length && !gridOf('text').classList.contains('cp-is-all'),
   String(hexesOf('text').length));
 
 pillNamed('text', 'All').click();

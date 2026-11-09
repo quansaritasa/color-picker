@@ -11,7 +11,7 @@ check('group pills match their palettes plus the All pill',
   lowSection.querySelectorAll('.cp-category').length === Object.keys(picker.palettes.background).length + 1,
   `${highSection.querySelectorAll('.cp-category').length}/${lowSection.querySelectorAll('.cp-category').length}`);
 check('group swatches match the first category',
-  highSection.querySelectorAll('.cp-swatch').length === picker.palettes.text.Cool.length &&
+  highSection.querySelectorAll('.cp-swatch').length === picker.palettes.text.Normal.length &&
   lowSection.querySelectorAll('.cp-swatch').length === picker.palettes.background.Vivid.length,
   `${highSection.querySelectorAll('.cp-swatch').length}/${lowSection.querySelectorAll('.cp-swatch').length}`);
 check('the first category pill is active in both groups',
@@ -22,7 +22,10 @@ check('the first category pill is active in both groups',
 check("the active slot's group is emphasised",
   highSection.classList.contains('cp-is-emphasis') && !lowSection.classList.contains('cp-is-emphasis'));
 
-// 16. selection state marks the active colour wherever it appears
+// 16. selection state marks the active colour wherever it appears.
+// The fixture's #0F766E is a heading colour, so its category is opened first.
+const pillOf = (section, name) => [...section.querySelectorAll('.cp-category')].find((n) => n.textContent === name);
+pillOf(highSection, 'Heading').click();
 check('the active colour is marked in its own group',
   highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 1,
   String(highSection.querySelectorAll('.cp-swatch.cp-is-selected').length));
@@ -35,6 +38,7 @@ check('selected swatch has an aria-pressed state', marked && marked.getAttribute
 check('check color adapts to luminance',
   marked.style.getPropertyValue('--cp-check-color').trim().length > 0,
   marked.style.getPropertyValue('--cp-check-color'));
+pillOf(highSection, 'Normal').click();
 
 // 17. swatch click drives colors, editor and preview
 const changeBefore = events.filter(([n]) => n === 'change').length;
@@ -43,16 +47,16 @@ coolSwatch.click();
 check('swatch click updates the color', picker.getColors().text === '#111827', picker.getColors().text);
 check('swatch click updates the hex field', q(picker, '.cp-hex-input').value === '#111827', q(picker, '.cp-hex-input').value);
 check('swatch click emits onChange', events.filter(([n]) => n === 'change').length === changeBefore + 1);
-check('swatch click moves the checkmark', coolSwatch.classList.contains('cp-is-selected') && !marked.classList.contains('cp-is-selected'));
+check('swatch click moves the checkmark', coolSwatch.classList.contains('cp-is-selected') &&
+  highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 1);
 
 // 18. category pills swap the grid
-const pillOf = (section, name) => [...section.querySelectorAll('.cp-category')].find((n) => n.textContent === name);
-pillOf(highSection, 'Blue').click();
+pillOf(highSection, 'Heading').click();
 check('pill click activates the category',
-  pillOf(highSection, 'Blue').classList.contains('cp-is-active') &&
-  !pillOf(highSection, 'Cool').classList.contains('cp-is-active'));
+  pillOf(highSection, 'Heading').classList.contains('cp-is-active') &&
+  !pillOf(highSection, 'Normal').classList.contains('cp-is-active'));
 check('pill click swaps the swatch set',
-  highSection.querySelectorAll('.cp-swatch').length === picker.palettes.text.Blue.length);
+  highSection.querySelectorAll('.cp-swatch').length === picker.palettes.text.Heading.length);
 check('color survives a category change', picker.getColors().text === '#111827');
 check('a color outside the category marks no swatch',
   highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 0,
@@ -62,7 +66,7 @@ check('the All pill shows every category at once',
   highSection.querySelectorAll('.cp-swatch').length ===
     new Set(Object.values(picker.palettes.text).flat().map((h) => h.toUpperCase())).size,
   String(highSection.querySelectorAll('.cp-swatch').length));
-pillOf(highSection, 'Cool').click();
+pillOf(highSection, 'Normal').click();
 
 // 19. a palette is a suggestion: it writes the active slot, never its own
 const bgSwatch = [...lowSection.querySelectorAll('.cp-swatch')]
@@ -90,7 +94,8 @@ check('the checkmark follows the colour, not the group',
   highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 0 &&
   lowSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 1);
 
-// 20. reset restores the checkmarks
+// 20. reset restores the checkmarks (#0F766E lives in Heading)
+pillOf(highSection, 'Heading').click();
 picker.root.querySelector('.cp-reset-btn').click();
 check('reset restores the active slot checkmark',
   highSection.querySelector('.cp-swatch.cp-is-selected').dataset.hex === '#0F766E' &&
@@ -99,6 +104,7 @@ picker.setActiveSlot('background');
 check('the background group marks the reset background colour',
   lowSection.querySelector('.cp-swatch.cp-is-selected').dataset.hex === '#70B1ED');
 picker.setActiveSlot('text');
+pillOf(highSection, 'Normal').click();
 picker.close();
 
 // 21. two instances are independent
