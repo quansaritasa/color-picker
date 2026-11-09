@@ -242,7 +242,9 @@ The picker renders as a centered modal appended to `document.body` — or, with
 `triggers`, as a popover anchored to the square you clicked. Call `open()` to
 show it; in modal mode `OK` commits and closes, `Cancel` restores the values that
 were active when it opened and closes. `Reset` is the `↺` icon beside `×` in the
-header: it restores `initialColors` on every slot and keeps the panel open. A
+header: it restores `initialColors` on every slot and keeps the panel open. The
+compact toggle next to it hides the palettes and the contrast band, leaving the
+editor alone; press it again to bring them back. A
 popover renders no footer at all — there is nothing to apply or discard.
 
 The HEX field carries a copy button on its right: it writes the active slot's
@@ -280,7 +282,7 @@ sheet owns the box.
 | `fields` | `string \| HTMLElement \| NodeList` | `null` | Inputs that **are** the controls — one slot each, named by `data-slot`, then the `id`, then `color`/`color2`. Setting it switches `mode` to `popover` and rules out `slots` |
 | `mode` | `'auto' \| 'modal' \| 'popover'` | `'auto'` | `'auto'` = `popover` when a trigger is rendered, `modal` otherwise; an unknown value warns and is treated as `'auto'`. A popover hides `OK`/`Cancel`, and `⌘`/`Ctrl`+`Enter` closes it instead of committing |
 | `classNames` | `string` | `''` | Extra classes on the root element |
-| `labels` | `object` | English | Override `title`, `close`, `reset`, `copy`, `maximize`, `restore`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `svHint`, `slotsLabel` (the tablist name), `tabs[id]` (`{ title, type, hint }`), and the trigger bar — `triggersLabel` plus `triggers[id]` for a trigger's name (the same names label a bound field) |
+| `labels` | `object` | English | Override `title`, `close`, `reset`, `copy`, `compact`, `maximize`, `restore`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `svHint`, `slotsLabel` (the tablist name), `tabs[id]` (`{ title, type, hint }`), and the trigger bar — `triggersLabel` plus `triggers[id]` for a trigger's name (the same names label a bound field) |
 
 ## API
 

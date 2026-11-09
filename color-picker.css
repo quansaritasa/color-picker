@@ -824,6 +824,7 @@
 }
 
 /* Same metrics as `↺` and `×`; the glyph is drawn, so it needs its own box. */
+.cp-root .cp-compact-btn,
 .cp-root .cp-maximize-btn {
   width: 28px;
   height: 28px;
@@ -836,15 +837,27 @@
   padding: 0;
 }
 
+.cp-root .cp-compact-btn:hover,
 .cp-root .cp-maximize-btn:hover {
   background: var(--cp-hover);
   color: var(--cp-ink);
 }
 
+.cp-root .cp-compact-btn svg,
 .cp-root .cp-maximize-btn svg {
   width: 15px;
   height: 15px;
   display: block;
+}
+
+.cp-root .cp-compact-btn[aria-pressed="true"] {
+  background: var(--cp-hover);
+  color: var(--cp-accent);
+}
+
+/* Compact view: the editor alone, no palettes and no contrast band. */
+.cp-root .cp-picker.cp-is-compact :is(.cp-divider, .cp-presets, .cp-suggestions-band) {
+  display: none;
 }
 
 /* One button, two glyphs: maximized shows the way back. */
@@ -935,6 +948,7 @@
 
 .cp-root .cp-close-btn:focus-visible,
 .cp-root .cp-reset-btn:focus-visible,
+.cp-root .cp-compact-btn:focus-visible,
 .cp-root .cp-maximize-btn:focus-visible,
 .cp-root .cp-secondary-btn:focus-visible,
 .cp-root .cp-primary-btn:focus-visible,

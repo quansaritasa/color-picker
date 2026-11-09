@@ -167,3 +167,17 @@ const protoName = protoHost.querySelector('.cp-trigger-name').textContent;
 check('a slot named constructor keeps its own trigger name', protoName === 'constructor', protoName);
 proto.destroy();
 protoHost.remove();
+
+// compact view: the header toggle hides the palettes and the contrast band
+const compactPicker = mk({ showContrastSuggestions: true });
+compactPicker.open();
+const compactBtn = compactPicker.root.querySelector('.cp-compact-btn');
+const shown = (sel) => compactPicker.root.querySelector(sel).getClientRects().length > 0;
+const tallBefore = compactPicker.refs.panel.getBoundingClientRect().height;
+compactBtn.click();
+check('compact hides the palettes and keeps the editor',
+  !shown('.cp-presets') && shown('.cp-editor') && compactBtn.getAttribute('aria-pressed') === 'true');
+check('compact shrinks the panel', compactPicker.refs.panel.getBoundingClientRect().height < tallBefore);
+compactBtn.click();
+check('compact toggles back', shown('.cp-presets') && compactBtn.getAttribute('aria-pressed') === 'false');
+compactPicker.destroy();

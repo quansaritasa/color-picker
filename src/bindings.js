@@ -43,6 +43,11 @@ export function bindShell(picker) {
   refs.cancel.addEventListener('click', () => picker.dismiss());
   refs.apply.addEventListener('click', () => picker.apply());
   refs.reset.addEventListener('click', () => picker.reset());
+  /* Compact keeps the editor and drops the palettes: a view, so reset leaves it. */
+  refs.compact.addEventListener('click', () => {
+    const on = refs.panel.classList.toggle('cp-is-compact');
+    refs.compact.setAttribute('aria-pressed', String(on));
+  });
 
   /**
    * Escape belongs to the picker on top. Every instance listens on `document`,

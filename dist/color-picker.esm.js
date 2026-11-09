@@ -101,7 +101,8 @@ var LABELS = {
   slotsLabel: "Color type",
   copy: "Copy HEX",
   maximize: "Maximize",
-  restore: "Restore"
+  restore: "Restore",
+  compact: "Compact view"
 };
 function buildTemplate({ slots = [], groups = [], showAlpha = true, labels = {} } = {}) {
   const L = { ...LABELS, ...labels };
@@ -116,9 +117,11 @@ function buildTemplate({ slots = [], groups = [], showAlpha = true, labels = {} 
     icon("M10 2.5h3.5V6M13.5 2.5 9.5 6.5M6 13.5H2.5V10M2.5 13.5 6.5 9.5", "cp-icon-expand"),
     icon("M13.5 9.5H10V6M10 9.5 13.5 6M2.5 6.5H6V10M6 6.5 2.5 10", "cp-icon-collapse")
   );
+  const compact = button("cp-compact-btn", void 0, { "aria-label": L.compact, title: L.compact, "aria-pressed": "false" });
+  compact.append(icon("M8 1.5v4M6 3.5l2 2 2-2M8 14.5v-4M6 12.5l2-2 2 2M2.5 8h11", "cp-icon-compact"));
   const close = button("cp-close-btn", "\xD7", { "aria-label": L.close, title: L.close });
   const headerActions = el("div", "cp-header-actions");
-  headerActions.append(reset, maximize, close);
+  headerActions.append(reset, compact, maximize, close);
   const header = el("header", "cp-picker-header");
   header.append(heading, headerActions);
   let tabs = null;
@@ -208,6 +211,7 @@ function buildTemplate({ slots = [], groups = [], showAlpha = true, labels = {} 
     body,
     header,
     grip,
+    compact,
     maximize,
     sv,
     svThumb,
@@ -1665,6 +1669,10 @@ function bindShell(picker) {
   refs.cancel.addEventListener("click", () => picker.dismiss());
   refs.apply.addEventListener("click", () => picker.apply());
   refs.reset.addEventListener("click", () => picker.reset());
+  refs.compact.addEventListener("click", () => {
+    const on = refs.panel.classList.toggle("cp-is-compact");
+    refs.compact.setAttribute("aria-pressed", String(on));
+  });
   const isTopmostOpen = (root) => {
     const roots = [...document.querySelectorAll(".cp-root")];
     for (let i = roots.indexOf(root) + 1; i < roots.length; i += 1) {

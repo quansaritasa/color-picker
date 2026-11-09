@@ -29,6 +29,7 @@ export const LABELS = {
   copy: 'Copy HEX',
   maximize: 'Maximize',
   restore: 'Restore',
+  compact: 'Compact view',
 };
 
 export function buildTemplate({ slots = [], groups = [], showAlpha = true, labels = {} } = {}) {
@@ -48,9 +49,12 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
     icon('M10 2.5h3.5V6M13.5 2.5 9.5 6.5M6 13.5H2.5V10M2.5 13.5 6.5 9.5', 'cp-icon-expand'),
     icon('M13.5 9.5H10V6M10 9.5 13.5 6M2.5 6.5H6V10M6 6.5 2.5 10', 'cp-icon-collapse'),
   );
+  /* A toggle: `aria-pressed` carries its state, `bindings.js` flips it. */
+  const compact = button('cp-compact-btn', undefined, { 'aria-label': L.compact, title: L.compact, 'aria-pressed': 'false' });
+  compact.append(icon('M8 1.5v4M6 3.5l2 2 2-2M8 14.5v-4M6 12.5l2-2 2 2M2.5 8h11', 'cp-icon-compact'));
   const close = button('cp-close-btn', '×', { 'aria-label': L.close, title: L.close });
   const headerActions = el('div', 'cp-header-actions');
-  headerActions.append(reset, maximize, close);
+  headerActions.append(reset, compact, maximize, close);
   const header = el('header', 'cp-picker-header');
   header.append(heading, headerActions);
 
@@ -166,6 +170,7 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
     body,
     header,
     grip,
+    compact,
     maximize,
     sv,
     svThumb,
