@@ -1,5 +1,5 @@
 /**
- * Trigger bar: one colour square per slot, mounted in the host's own layout.
+ * Trigger bar: one color square per slot, mounted in the host's own layout.
  * The square is the control — clicking it opens the picker on that slot,
  * anchored to the square. Reads `picker.colors`, never writes them.
  */
@@ -19,7 +19,7 @@ export function createTriggers({ picker, target, slots, labels = {} }) {
   bar.className = 'cp-triggers';
   bar.dataset.theme = picker.options.theme;
   bar.setAttribute('role', 'group');
-  bar.setAttribute('aria-label', labels.triggersLabel || 'Colours');
+  bar.setAttribute('aria-label', labels.triggersLabel || 'Colors');
 
   const buttons = {};
   for (const slot of slots) {

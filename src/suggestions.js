@@ -2,7 +2,7 @@
  * Contrast suggestions: a collapsed panel under the presets that measures the
  * current pair and lists readable partners from the *other* slot's palette.
  *
- * It never writes the active colour — spec §6 — a pick sets the other slot of
+ * It never writes the active color — spec §6 — a pick sets the other slot of
  * `contrastPair` instead, so the pair improves without the user's choice
  * moving. Without a declared pair there is nothing to measure, so the whole
  * panel stays hidden.
@@ -14,7 +14,7 @@ import { OTHER_GROUP } from './presets.js';
 
 const CAPACITY = 3;
 
-/** Every colour of one palette, deduplicated, parsed once: `{ r, g, b, a, hex }`. */
+/** Every color of one palette, deduplicated, parsed once: `{ r, g, b, a, hex }`. */
 function candidatesOf(palette) {
   const seen = new Set();
   const out = [];
@@ -143,7 +143,7 @@ export function createSuggestions({ mount, slots = [], pair = null, palettes = {
       ratioOut.textContent = formatRatio(ratio);
 
       /* Partners come from the opposite palette group: the quiet one when the
-         edited slot is a text colour, the strong one when it is a surface. */
+         edited slot is a text color, the strong one when it is a surface. */
       const ranked = suggestPartners(base, candidatesFor(OTHER_GROUP[group]), { limit: CAPACITY });
       partners.forEach((slot, i) => paintSlot(slot, ranked[i], other));
       empty.hidden = ranked.length > 0;

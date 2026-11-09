@@ -13,6 +13,7 @@ import { createSuggestions } from './suggestions.js';
 import { createTriggers } from './triggers.js';
 import { createFields } from './fields.js';
 import { createPopover } from './popover.js';
+import { parseHex } from './color.js';
 
 export function assemble(picker) {
   const { options, slots } = picker;
@@ -39,10 +40,12 @@ export function assemble(picker) {
   /* One column per slot: the CSS cannot count them, so the template tells it. */
   picker.root.style.setProperty('--cp-slots', String(slots.length));
   if (options.mode === 'popover') picker.root.classList.add('cp-popover');
+  if (options.mode === 'inline') picker.root.classList.add('cp-inline');
   host.append(picker.root);
 
   picker.editor = createEditor(picker.refs, {
     showAlpha: options.showAlpha,
+    format: options.format,
     onChange: (rgba) => picker.commit(rgba),
     onStatus: (message) => picker.setStatus(message),
   });
@@ -50,7 +53,7 @@ export function assemble(picker) {
   picker.copy = createCopy({
     button: picker.refs.copy,
     label: options.labels.copy,
-    getValue: () => picker.colors[picker.activeSlot],
+    getValue: () => picker.editor.getText(parseHex(picker.colors[picker.activeSlot])),
     onStatus: (message) => picker.setStatus(message),
   });
 

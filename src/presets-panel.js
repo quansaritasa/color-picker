@@ -4,9 +4,9 @@
  *
  * Both groups are always mounted. A swatch is a *suggestion*: clicking it writes
  * the slot the editor is showing, never a slot the palette "owns", so a pale
- * background colour can be applied to text when that is what the host wants.
+ * background color can be applied to text when that is what the host wants.
  *
- * The grid is built once per (group, category) and repainted on colour change,
+ * The grid is built once per (group, category) and repainted on color change,
  * so dragging the SV area never rebuilds DOM.
  */
 
@@ -159,7 +159,7 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
         const pills = ref.categories;
         (pills.querySelector('.cp-is-active') || pills.firstElementChild)?.focus();
       } else if (items[to]) {
-        /* Moving previews: the colour is written as focus lands on it. */
+        /* Moving previews: the color is written as focus lands on it. */
         items[to].focus();
         if (typeof onSelect === 'function') onSelect(items[to].dataset.hex);
       }

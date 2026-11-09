@@ -1,4 +1,4 @@
-import { ColorPicker, check, mk } from './harness.js';
+import { ColorPicker, check, mk, q } from './harness.js';
 
 // 38. two tabs may share one preset group: the tab name tells them apart
 const host4 = document.createElement('div');
@@ -49,7 +49,7 @@ check('both tabs of one group emphasise that group',
 shared.setActiveSlot('page');
 check('switching between two tabs of one group keeps the emphasis',
   sharedBackground.classList.contains('cp-is-emphasis') && shared.activeSlot === 'page');
-check('each of the shared tabs kept its own colour',
+check('each of the shared tabs kept its own color',
   shared.getColors().page === '#F9FAFB' && shared.getColors().card === sharedHex,
   JSON.stringify(shared.getColors()));
 
@@ -89,7 +89,7 @@ mount.remove();
 const fieldWrap = document.createElement('div');
 fieldWrap.innerHTML = '<label for="smokeInk">Ink</label>'
   + '<input id="smokeInk" type="text" data-smoke-field value="#0F766E">'
-  + '<input type="text" data-smoke-field data-slot="wash" value="not-a-colour">';
+  + '<input type="text" data-smoke-field data-slot="wash" value="not-a-color">';
 document.body.append(fieldWrap);
 const fieldEvents = [];
 const fieldPicker = new ColorPicker({
@@ -121,11 +121,11 @@ check('a second click on the field closes it', !fieldPicker.isOpen);
 
 ink.value = '#B91C1C';
 ink.dispatchEvent(new Event('change', { bubbles: true }));
-check('typing a colour commits it', fieldPicker.getColors().smokeInk === '#B91C1C', fieldPicker.getColors().smokeInk);
+check('typing a color commits it', fieldPicker.getColors().smokeInk === '#B91C1C', fieldPicker.getColors().smokeInk);
 check('the commit reaches the host once', fieldEvents.length === 1, String(fieldEvents.length));
 ink.value = 'nope';
 ink.dispatchEvent(new Event('change', { bubbles: true }));
-check('a typed non-colour is refused and the field restored',
+check('a typed non-color is refused and the field restored',
   fieldPicker.getColors().smokeInk === '#B91C1C'
     && ink.value === '#B91C1C' && ink.getAttribute('aria-invalid') === 'true',
   `${ink.value} / ${ink.getAttribute('aria-invalid')}`);
@@ -142,8 +142,8 @@ fieldWrap.remove();
 // 41. bad input is refused where it enters, not discovered later
 const keep = mk({ initialColors: { text: '#111827', background: '#FFFFFF' } });
 keep.setColors({ text: '#B91C1C' });
-keep.setColors({ text: 'not-a-colour' });
-check('an invalid setColors value keeps the current colour', keep.getColors().text === '#B91C1C', keep.getColors().text);
+keep.setColors({ text: 'not-a-color' });
+check('an invalid setColors value keeps the current color', keep.getColors().text === '#B91C1C', keep.getColors().text);
 keep.destroy();
 
 const badHosts = [];
@@ -181,3 +181,18 @@ check('compact shrinks the panel', compactPicker.refs.panel.getBoundingClientRec
 compactBtn.click();
 check('compact toggles back', shown('.cp-presets') && compactBtn.getAttribute('aria-pressed') === 'false');
 compactPicker.destroy();
+
+// 40. the format dropdown changes how the field shows and parses colors
+const fmtPicker = mk({ initialColors: { text: '#0F766E' } });
+fmtPicker.open();
+const fmtSel = q(fmtPicker, '.cp-format-select');
+const fmtHex = q(fmtPicker, '.cp-hex-input');
+check('format defaults to HEX', fmtSel.value === 'hex' && fmtHex.value === '#0F766E', fmtHex.value);
+fmtSel.value = 'rgb';
+fmtSel.dispatchEvent(new Event('change', { bubbles: true }));
+check('RGB shows rgb()', fmtHex.value === 'rgb(15, 118, 110)', fmtHex.value);
+fmtHex.value = 'hsl(0, 100%, 50%)';
+fmtHex.dispatchEvent(new Event('change', { bubbles: true }));
+check('an HSL string is accepted under RGB', fmtPicker.getColors().text === '#FF0000' && fmtHex.value === 'rgb(255, 0, 0)',
+  `${fmtPicker.getColors().text} ${fmtHex.value}`);
+fmtPicker.destroy();

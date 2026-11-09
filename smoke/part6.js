@@ -53,7 +53,7 @@ const accentSwatch = [...backgroundSection.querySelectorAll('.cp-swatch')]
   .find((n) => n.dataset.hex !== three.getColors().accent);
 const accentHex = accentSwatch.dataset.hex;
 accentSwatch.click();
-check('a third slot can take a background preset colour', three.getColors().accent === accentHex, three.getColors().accent);
+check('a third slot can take a background preset color', three.getColors().accent === accentHex, three.getColors().accent);
 check('a preset click leaves the other slots alone',
   three.getColors().text === '#0F766E' && three.getColors().background === '#70B1ED');
 check('a third slot can be emphasised in either group',
@@ -102,9 +102,9 @@ await new Promise((resolve) => setTimeout(resolve, 0));
 check('copy follows the active slot', copied[1] === '#70B1ED', copied[1]);
 copyPicker.destroy();
 
-// 36. the shipped default is one colour: no tablist, nothing to pair
+// 36. the shipped default is one color: no tablist, nothing to pair
 const solo = new ColorPicker({});
-check('the default slot is a single colour',
+check('the default slot is a single color',
   JSON.stringify(solo.getColors()) === JSON.stringify({ color: '#0F766E' }), JSON.stringify(solo.getColors()));
 check('a single slot renders no tablist', solo.root.querySelector('.cp-tabs') === null);
 check('a single slot still offers both palettes',
@@ -113,7 +113,7 @@ check('a single slot still offers both palettes',
 check('both palettes survive the slot count',
   Object.keys(solo.palettes).join(',') === 'text,background', Object.keys(solo.palettes).join(','));
 solo.open();
-check('opening a single-slot picker focuses the colour area',
+check('opening a single-slot picker focuses the color area',
   solo.isOpen && document.activeElement === solo.refs.sv, document.activeElement && document.activeElement.className);
 const pairSized = mk({});
 pairSized.open();
@@ -151,7 +151,7 @@ const textAll = hexesOf('text');
 check('All shows the whole text palette',
   textAll.length === allColors(PRESET_SETS.text).length && textAll.length > PRESET_SETS.text.Normal.length,
   `${textAll.length} of ${allColors(PRESET_SETS.text).length}`);
-check('All shows each colour once',
+check('All shows each color once',
   new Set(textAll.map((hex) => hex.toUpperCase())).size === textAll.length,
   `${textAll.length} swatches, ${new Set(textAll.map((hex) => hex.toUpperCase())).size} unique`);
 check('All marks itself active and the grid as a union',
@@ -162,7 +162,7 @@ check('the other section keeps its own category',
 
 const pickedFromAll = gridOf('text').children[12];
 pickedFromAll.click();
-check('a colour picked from the All grid writes the active slot',
+check('a color picked from the All grid writes the active slot',
   allPicker.getColors().text === pickedFromAll.dataset.hex && allPicker.activeSlot === 'text',
   allPicker.getColors().text);
 check('the picked swatch is the selected one',

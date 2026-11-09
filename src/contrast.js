@@ -16,7 +16,7 @@ const linear = (value) => {
 };
 
 /* Channels are whole numbers 0-255, so the `**` is paid once for the 256 values
-   instead of three times per colour on every drag move. */
+   instead of three times per color on every drag move. */
 const LINEAR = Array.from({ length: 256 }, (_, value) => linear(value));
 const channel = (value) => LINEAR[value] ?? linear(value);
 

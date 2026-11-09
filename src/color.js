@@ -129,3 +129,52 @@ export function channelDelta(a, b) {
     Math.abs(a.b - b.b),
   );
 }
+
+/** Display formats, in dropdown order. */
+export const FORMATS = ['hex', 'rgb', 'hsl', 'hsv'];
+
+const trim = (n) => String(Math.round(n * 100) / 100);
+
+/** Format `{ r, g, b, a }` as `hex`, `rgb(a)`, `hsl(a)` or `hsv(a)`; alpha is omitted at a >= 0.999. */
+export function formatColor(color, format = 'hex') {
+  if (format === 'hex' || !FORMATS.includes(format)) return formatHex(color);
+  const { r, g, b, a = 1 } = color;
+  let parts;
+  if (format === 'rgb') parts = [round255(r), round255(g), round255(b)].map(String);
+  else {
+    const m = format === 'hsl' ? rgbToHsl({ r, g, b }) : rgbToHsv({ r, g, b });
+    parts = [Math.round(m.h), ...[m.s, m.l ?? m.v].map((n) => `${Math.round(n)}%`)].map(String);
+  }
+  const alpha = a < 0.999;
+  if (alpha) parts.push(trim(a));
+  return `${format}${alpha ? 'a' : ''}(${parts.join(', ')})`;
+}
+
+const FN_RE = /^(rgb|hsl|hsv|hsb)a?\(([^)]*)\)$/i;
+
+/**
+ * Parse any accepted color string: hex, or `rgb()`/`hsl()`/`hsv()` (`hsb` and the
+ * `a` suffix are aliases), comma or space separated, alpha as 4th value or after `/`.
+ * Returns `{ r, g, b, a }` or `null`.
+ */
+export function parseColor(value) {
+  if (typeof value !== 'string') return null;
+  const fn = FN_RE.exec(value.trim());
+  if (!fn) return parseHex(value);
+  const args = fn[2].split(/[\s,/]+/).filter(Boolean);
+  if (args.length !== 3 && args.length !== 4) return null;
+  const nums = args.map((s) => (/^[+-]?(\d+\.?\d*|\.\d+)(%|deg)?$/i.test(s) ? { n: parseFloat(s), pct: s.endsWith('%') } : null));
+  if (nums.some((x) => !x)) return null;
+  const kind = fn[1].toLowerCase();
+  const alphaArg = nums[3];
+  const a = alphaArg ? clamp(alphaArg.pct ? alphaArg.n / 100 : alphaArg.n, 0, 1) : 1;
+  let rgb;
+  if (kind === 'rgb') {
+    rgb = nums.slice(0, 3).map((x) => (x.pct ? x.n * 2.55 : x.n));
+    rgb = { r: rgb[0], g: rgb[1], b: rgb[2] };
+  } else {
+    const [h, s, x] = nums;
+    rgb = (kind === 'hsl' ? hslToRgb : hsvToRgb)(h.n, s.n, x.n);
+  }
+  return { r: round255(rgb.r), g: round255(rgb.g), b: round255(rgb.b), a };
+}

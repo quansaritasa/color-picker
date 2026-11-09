@@ -2,10 +2,11 @@
  * DOM template for the picker shell. Structure and class names mirror
  * `reference/modern-color-picker.html:141-196`; no state, no behaviour.
  * Tabs and preset sections are built from `slots`, so one template serves any
- * number of colours; `presets-panel.js` fills the sections.
+ * number of colors; `presets-panel.js` fills the sections.
  */
 
 import { attr, button, el, icon } from './dom.js';
+import { FORMATS } from './color.js';
 
 /** Ids must be unique per instance: two pickers can share a page, and so can two
     copies of this module (src and dist), each with its own counter. */
@@ -21,6 +22,7 @@ export const LABELS = {
   cancel: 'Cancel',
   apply: 'OK',
   hex: 'Hex color value',
+  format: 'Color format',
   hue: 'Hue',
   opacity: 'Opacity',
   sv: 'Saturation and brightness',
@@ -52,9 +54,15 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
   /* A toggle: `aria-pressed` carries its state, `bindings.js` flips it. */
   const compact = button('cp-compact-btn', undefined, { 'aria-label': L.compact, title: L.compact, 'aria-pressed': 'false' });
   compact.append(icon('M8 1.5v4M6 3.5l2 2 2-2M8 14.5v-4M6 12.5l2-2 2 2M2.5 8h11', 'cp-icon-compact'));
+  const format = attr(el('select', 'cp-format-select'), { 'aria-label': L.format });
+  for (const name of FORMATS) {
+    const option = el('option', null, name.toUpperCase());
+    option.value = name;
+    format.append(option);
+  }
   const close = button('cp-close-btn', '×', { 'aria-label': L.close, title: L.close });
   const headerActions = el('div', 'cp-header-actions');
-  headerActions.append(reset, compact, maximize, close);
+  headerActions.append(format, reset, compact, maximize, close);
   const header = el('header', 'cp-picker-header');
   header.append(heading, headerActions);
 
@@ -69,7 +77,7 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
       tab.dataset.slot = slot.id;
       /* The hint is a tooltip, not a line: the visible second line carries the
          slot's type, so two tabs of one group differ by name and still read as
-         the same kind of colour. */
+         the same kind of color. */
       if (slot.hint) tab.title = slot.hint;
       const body = el('span', 'cp-tab-body');
       body.append(el('strong', null, slot.label));
@@ -128,7 +136,7 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
 
   const presets = el('section', 'cp-presets');
   const sections = {};
-  /* One section per palette group — both always rendered, so a pale colour is
+  /* One section per palette group — both always rendered, so a pale color is
      always one click away even while composing text. */
   for (const group of groups) {
     const sectionTitle = el('div', 'cp-section-title');
@@ -179,6 +187,7 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
     svThumb,
     preview,
     hex,
+    format,
     hue: hue.input,
     hueValue: hue.value,
     alpha: alpha.input,

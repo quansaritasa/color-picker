@@ -1,13 +1,13 @@
 # color-picker
 
-A dependency-free color picker in vanilla ES modules. It edits **named colour
-slots** and always offers **both preset palettes** — text colours and background
-colours — because a dimmed background tone is a legitimate text colour. A swatch
+A dependency-free color picker in vanilla ES modules. It edits **named color
+slots** and always offers **both preset palettes** — text colors and background
+colors — because a dimmed background tone is a legitimate text color. A swatch
 writes the slot the editor is showing; the palette is a suggestion, never an
 owner. Each palette leads with an **`All`** pill that puts its whole union in one
-grid, so you can scan all 83 text colours without clicking through three categories.
+grid, so you can scan all 83 text colors without clicking through three categories.
 
-Out of the box it is a **single-colour picker**: one slot, `color`, no tab row.
+Out of the box it is a **single-color picker**: one slot, `color`, no tab row.
 A host that paints two things declares two slots (`text` + `background`,
 `accent`, …) and gets a tab per slot. No build step.
 
@@ -60,7 +60,7 @@ A complete page, saved in the same folder you copied into:
   <link rel="stylesheet" href="./color-picker.css">
 </head>
 <body>
-  <p id="ink">This paragraph takes the colour you pick.</p>
+  <p id="ink">This paragraph takes the color you pick.</p>
   <div id="triggerHost"></div>
 
   <script type="module">
@@ -83,7 +83,7 @@ Serve the folder — ES modules are blocked on `file://`:
 python3.12 -m http.server 8000   # then open http://localhost:8000/
 ```
 
-You should see one square labelled `Colour`, its HEX beside it. Click the
+You should see one square labelled `Color`, its HEX beside it. Click the
 square: the panel opens under it, on that slot, and dragging the SV area
 repaints the paragraph while you drag. `Escape`, `×`, a click outside or a second
 click on the square closes it; `↺` puts every slot back to `initialColors`.
@@ -96,6 +96,7 @@ you need from here.
 | the library draws your triggers | `triggers: '#host'` | [Triggers](#triggers--the-default-shape) |
 | your existing inputs are the controls | `fields: '[data-color-picker]'` | [Fields — your own inputs](#fields--your-own-inputs) |
 | a centred dialog with `OK`/`Cancel` | nothing, or `mode: 'modal'` | [Basic usage — modal](#basic-usage--modal) |
+| a panel docked in your own layout | `mode: 'inline', container: '#slot'` | [Inline](#inline--docked-in-your-layout) |
 
 `index.html` and `demo.html` in this repo are that same install, so diffing them
 against the page above is the fastest way to see a shape wired end to end.
@@ -124,14 +125,14 @@ clicked. With the default single slot there is one square and no tab row:
 `onChange` hands back the whole slot map on every edit, so read the keys you
 paint and ignore the rest — nothing else is written by an edit to one slot.
 
-That renders a square (`Colour`) with its current HEX, and switches the picker to
+That renders a square (`Color`) with its current HEX, and switches the picker to
 **popover mode**: the panel opens anchored under the square you clicked, on that
 square's slot, with no scrim and no `OK`/`Cancel`
 and no bottom strip — every edit is painted live, so there is nothing to apply
 or discard. It closes on `Escape`, on `⌘`/`Ctrl`+`Enter`, on the `×`, on a click
 outside, and on a second click of the same square; `↺` in the header resets every
 slot. Below 680px the popover becomes a bottom sheet capped at `78vh`, so the
-page it is recolouring stays visible above it.
+page it is recoloring stays visible above it.
 
 While it is open the panel's **top edge does not move**: switching a preset
 section to `All` (or opening the suggestions block) makes a taller panel, and
@@ -151,7 +152,25 @@ A popover never fires `onCancel` or `onApply`; use `onChange` while it is open
 and `onClose` when it goes away. Anything that still needs a transaction can
 pass `mode: 'modal'`.
 
-## Slots — any number of named colours
+## Inline — docked in your layout
+
+`mode: 'inline'` mounts the panel in `container` as an ordinary block and leaves
+it there: shown from construction, with no scrim, no close, no maximize, no
+`OK`/`Cancel`, no drag or resize, and no focus trap. `open()`, `close()` and
+`dismiss()` do nothing. Keyboard shortcuts (`Escape`, `c`, `m`, `Page Up`/`Down`)
+are heard only while focus is inside the panel, since the panel is always open.
+
+```js
+const picker = new ColorPicker({
+  mode: 'inline',
+  container: '#colorSlot',
+  initialColors: { color: '#0F766E' },
+  onChange: (colors) => paint(colors.color),
+});
+picker.setColors({ color: '#7C3AED' });   // point it at another value; fires onChange
+```
+
+## Slots — any number of named colors
 
 One slot is the default. Declare more when the host paints more:
 
@@ -171,11 +190,11 @@ new ColorPicker({
 | --- | --- | --- |
 | `id` | `string` | **Required.** The key in `initialColors`, `getColors()` and every callback; must match `/^[A-Za-z][\w-]*$/` and be unique |
 | `label` | `string` | Tab name; defaults to the shipped name, else the id |
-| `type` | `string` | Small line under the tab name — the kind of colour it is. Defaults to the preset group's short name (`Text` / `Background`); override it when the palette hint does not describe the slot (`Accent`, `Border`, …) |
+| `type` | `string` | Small line under the tab name — the kind of color it is. Defaults to the preset group's short name (`Text` / `Background`); override it when the palette hint does not describe the slot (`Accent`, `Border`, …) |
 | `symbol` | `string` | The glyph in the tab; defaults to the id's first letter |
 | `hint` | `string` | Tooltip on the tab; not a visible line, so a long sentence never costs tab height |
 | `presetSet` | `'text' \| 'background'` | Which palette group is **emphasised** while this slot is active. Nothing emphasises `background`; anything else warns and does the same. Both groups stay on screen either way |
-| `color` | `string` | Fallback colour when `initialColors` has none for this id. Must be a hex string — anything else throws a `TypeError` |
+| `color` | `string` | Fallback color when `initialColors` has none for this id. Must be a hex string — anything else throws a `TypeError` |
 
 Palettes are not per slot: `presets` is keyed by group (`text`, `background`) and both
 groups are always rendered. Clicking a swatch writes the slot the editor is
@@ -183,7 +202,7 @@ showing.
 
 A tab per slot (two or more), and both palette groups under the editor. Two
 slots may share one `presetSet` — a section surface and a card surface are both
-background colours — and get two tabs that differ by `label`; the shared type line
+background colors — and get two tabs that differ by `label`; the shared type line
 says they take the same kind of palette. A slot not named in `contrastPair`
 simply shows no suggestions.
 
@@ -191,7 +210,7 @@ simply shows no suggestions.
 
 Point `fields` at inputs that already exist and each one becomes a slot named
 after the field: `data-slot`, then the `id`, then `color`/`color2`. No trigger
-bar is drawn — the field itself is the control, and its value is the colour.
+bar is drawn — the field itself is the control, and its value is the color.
 
 ```html
 <label for="ink">Ink</label>
@@ -211,7 +230,7 @@ bar is drawn — the field itself is the control, and its value is the colour.
 Each field carries `aria-haspopup="dialog"` and `aria-expanded`, opens on click
 or `Enter`, and is written back as normalized HEX with a native `input` event, so
 a framework bound to the field sees the change. A typed value that is not a
-colour is rejected visibly: `aria-invalid="true"` and the previous value
+color is rejected visibly: `aria-invalid="true"` and the previous value
 restored. `fields` and `slots` cannot be combined — the fields name the slots.
 
 Nothing scans the page at import time: the attribute is a marker for the
@@ -249,9 +268,16 @@ popover renders no footer at all — there is nothing to apply or discard.
 
 The HEX field carries a copy button on its right: it writes the active slot's
 current value to the clipboard, flips to `✓` for a moment, and announces
-`Copied #0F766E.` on the live region. It copies the colour the editor is
+`Copied #0F766E.` on the live region. It copies the color the editor is
 showing, so switching tabs changes what the next click copies. `labels.copy`
 renames it.
+
+A format dropdown beside the field switches how the color is shown and copied:
+`HEX`, `RGB`, `HSL` or `HSV` (`#0F766E`, `rgb(15, 118, 110)`,
+`hsl(175, 77%, 26%)`, `hsv(175, 87%, 46%)`; translucent colors become
+`rgba(…)`, `hsla(…)`, `hsva(…)`). The field accepts any of them whatever the
+dropdown says — paste `hsl(0 100% 50%)` or `rgb(0 0 0 / 50%)` and it lands.
+The `format` option sets the starting format; events and `getColors()` stay HEX.
 
 The panel is compact by design — it covers a fraction of the page, and the
 scrim is light — so the surface you are recoloring stays visible while you
@@ -272,10 +298,11 @@ row (`↑` from the top row goes back to the tabs) and `←`/`→` by one; each 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `container` | `HTMLElement \| string` | `document.body` | Where the root element is mounted; a selector is resolved once, at construction. A selector that matches nothing, or a value that is neither, warns and mounts on `document.body` |
-| `slots` | `Array<object \| string>` | one slot, `color` | The named colours to edit; see the Slot table above |
+| `slots` | `Array<object \| string>` | one slot, `color` | The named colors to edit; see the Slot table above |
 | `initialColors` | `{ [slotId]: string }` | `#0F766E` for `color` | Normalized on construction; also the target of Reset. A missing or invalid value falls back per slot |
 | `activeSlot` | `string` | first slot | Tab shown first |
 | `contrastPair` | `[id, id]` | `null` | The two slots suggestions measure against each other. Required for `showContrastSuggestions` — there is no guessing which pair you meant |
+| `format` | `'hex' | 'rgb' | 'hsl' | 'hsv'` | `'hex'` | Format the editor field shows and Copy writes; the user can switch it with the dropdown |
 | `showAlpha` | `boolean` | `true` | Opacity slider. When `false` the slider is hidden and alpha is forced to `1`, so an 8-digit HEX cannot leave a translucent color behind |
 | `showContrastSuggestions` | `boolean` | `false` | Show the collapsible contrast panel under the presets |
 | `draggable` | `boolean` | `true` | Drag the panel by its header to move it aside; double-click the header to re-centre. `false` pins a fixed, centered modal. Works in both modes — a dragged popover stops following its trigger until the next open |
@@ -286,7 +313,7 @@ row (`↑` from the top row goes back to the tabs) and `←`/`→` by one; each 
 | `fields` | `string \| HTMLElement \| NodeList` | `null` | Inputs that **are** the controls — one slot each, named by `data-slot`, then the `id`, then `color`/`color2`. Setting it switches `mode` to `popover` and rules out `slots` |
 | `mode` | `'auto' \| 'modal' \| 'popover'` | `'auto'` | `'auto'` = `popover` when a trigger is rendered, `modal` otherwise; an unknown value warns and is treated as `'auto'`. A popover hides `OK`/`Cancel`, and `⌘`/`Ctrl`+`Enter` closes it instead of committing |
 | `classNames` | `string` | `''` | Extra classes on the root element |
-| `labels` | `object` | English | Override `title`, `close`, `reset`, `copy`, `compact`, `maximize`, `restore`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `svHint`, `slotsLabel` (the tablist name), `tabs[id]` (`{ title, type, hint }`), and the trigger bar — `triggersLabel` plus `triggers[id]` for a trigger's name (the same names label a bound field) |
+| `labels` | `object` | English | Override `title`, `close`, `reset`, `copy`, `format` (the dropdown's name), `compact`, `maximize`, `restore`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `svHint`, `slotsLabel` (the tablist name), `tabs[id]` (`{ title, type, hint }`), and the trigger bar — `triggersLabel` plus `triggers[id]` for a trigger's name (the same names label a bound field) |
 
 ## API
 
@@ -297,7 +324,7 @@ row (`↑` from the top row goes back to the tabs) and `←`/`→` by one; each 
 | `dismiss()` | `void` | The path the shell uses for `×`, `Escape` and (in a popover) `⌘`/`Ctrl`+`Enter`: a popover closes and keeps its edits, a modal restores the snapshot (`cancel()`) |
 | `destroy()` | `void` | Removes listeners, the root element and the trigger bar |
 | `getColors()` | `{ [slotId]: string }` | Fresh copy of normalized HEX strings; alpha is appended only when `a < 1` |
-| `setColors(partial)` | `void` | Applies any subset of slots, fires `onChange` when something changed. An invalid value is ignored and the slot keeps its current colour |
+| `setColors(partial)` | `void` | Applies any subset of slots, fires `onChange` when something changed. An invalid value is ignored and the slot keeps its current color |
 | `setActiveSlot(id)` | `void` | Switches the editor to a slot; each slot keeps its own color |
 
 `getColors()` always returns a copy, so mutating the result never touches the
@@ -336,12 +363,12 @@ new ColorPicker({
 
 The shipped palettes, if you want to replace one of them: `text` is grouped by
 role: `Normal` (24) for body copy, `Heading` (26, mostly blue and green) for
-headings and section titles, `Highlight` (33) for colourful emphasis. Every
-colour clears 4.5:1 on white or on `#111827`; the light ones at the end of
+headings and section titles, `Highlight` (33) for colorful emphasis. Every
+color clears 4.5:1 on white or on `#111827`; the light ones at the end of
 `Normal` and `Highlight` are for dark surfaces · `background`
-holds the 46 vivid inks from sprints-planner's badge palette, their 14-colour deep
+holds the 46 vivid inks from sprints-planner's badge palette, their 14-color deep
 tier, and `Pale` (39), the pale washes this group shipped before plus five more.
-Every category is ordered so similar colours sit together: one tint family
+Every category is ordered so similar colors sit together: one tint family
 at a time for `Normal`, hue order everywhere else.
 
 `Vivid` is two lightnesses of one idea: the app's own mid-light chips (46 entries
@@ -353,7 +380,7 @@ lightness as the entries above, so as a category it was washed copies in the gri
 None of those 60 inks is a surface for mid-tone text: 60 of 60 clear 4.5:1 against
 a near-black like `#111827`, none of them against `#0F766E`. That is what `Pale`
 is for — the contrast suggestions rank partners out of this palette, so without a
-pale category a mid-tone text colour would get an empty suggestions panel. Pale
+pale category a mid-tone text color would get an empty suggestions panel. Pale
 stops at 39 for the same reason it exists: a wash light enough to clear 4.5:1
 against `#0F766E` has almost no chroma left, so further additions land within
 dE00 2.6 of one already in the list.
@@ -373,7 +400,7 @@ opens on its first shipped category. `categoriesWithAll()` and `allColors()` in
 ```js
 new ColorPicker({
   slots: [
-    { id: 'text', label: 'Text colour', symbol: 'Aa', presetSet: 'text' },
+    { id: 'text', label: 'Text color', symbol: 'Aa', presetSet: 'text' },
     { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
   ],
   showContrastSuggestions: true,
@@ -381,7 +408,7 @@ new ColorPicker({
 });
 ```
 
-A ratio needs two colours, so suggestions require two declared slots plus the
+A ratio needs two colors, so suggestions require two declared slots plus the
 `contrastPair`; with the default single slot the panel stays hidden.
 
 Adds a collapsed `<details>` panel under the presets. Its summary carries the
@@ -390,7 +417,7 @@ partners with their own ratios.
 
 - Suggestions only appear on the two slots named in `contrastPair`; any other
   slot hides the panel rather than guessing a partner.
-- Selecting one slot's colour suggests partners for the *other* slot, from that
+- Selecting one slot's color suggests partners for the *other* slot, from that
   slot's loaded palette.
 - WCAG AA is 4.5:1 for normal text, AA for large text is 3:1 (shown as a second
   `AA-large` badge when the pair fails normal text), AAA is 7:1.
@@ -444,7 +471,7 @@ listeners, so two pickers on one page never share colors.
 
 ```bash
 python3.12 -m http.server 8000   # then open /index.html or /demo.html
-node --test                      # colour math, preset merging, slot resolution
+node --test                      # color math, preset merging, slot resolution
 npm install && npm run build     # bundle and minify into dist/
 ```
 
@@ -461,13 +488,13 @@ The bundles carry `ColorPicker` only; the contrast helpers stay importable from
 `src/contrast.js`.
 
 `index.html` is five panels, each one setup call printed above the instance it
-builds: the default single colour, the text/panel pair with contrast
+builds: the default single color, the text/panel pair with contrast
 suggestions, a dark-theme three-slot brand picker with its own `Brand`
 category, a four-slot light-theme section that repaints heading, two surfaces
 and accent from one popup, and a `fields` instance whose controls are the host's
 own inputs. Each snippet is the call its panel runs, so the page doubles as the
 API reference. `demo.html` paints an
-entire page — the headline and body copy take the `text` colour, the panel takes
+entire page — the headline and body copy take the `text` color, the panel takes
 `background`, and a live ratio pill (the library's own WCAG code) says whether
 the pair still passes AA. Both drive the picker from its trigger bar, so there is
 no "open" button anywhere.

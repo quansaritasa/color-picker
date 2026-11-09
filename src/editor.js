@@ -4,12 +4,13 @@
  * so re-rendering from a HEX value never shifts the hue of a gray.
  */
 
-import { formatHex, hsvToRgb, parseHex, rgbToHsv } from './color.js';
+import { FORMATS, formatColor, formatHex, hsvToRgb, parseColor, rgbToHsv } from './color.js';
 
 const clamp01 = (n) => Math.min(1, Math.max(0, n));
 const round = (n) => Math.min(255, Math.max(0, Math.round(n)));
 
-export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}) {
+export function createEditor(refs, { showAlpha = true, format = 'hex', onChange, onStatus } = {}) {
+  let mode = FORMATS.includes(format) ? format : 'hex';
   const state = { h: 174, s: 87, v: 46, a: 1 };
   let current = { r: 15, g: 118, b: 110, a: 1 };
   let dragging = false;
@@ -30,13 +31,13 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
     refs.svThumb.style.left = `${state.s}%`;
     refs.svThumb.style.top = `${100 - state.v}%`;
     refs.preview.style.background = `rgba(${round(rgb.r)}, ${round(rgb.g)}, ${round(rgb.b)}, ${state.a})`;
-    if (document.activeElement !== refs.hex) refs.hex.value = formatHex(current);
+    if (document.activeElement !== refs.hex) refs.hex.value = formatColor(current, mode);
     refs.hue.value = String(Math.round(state.h));
     refs.hueValue.textContent = `${Math.round(state.h)}°`;
     if (showAlpha) {
       refs.alpha.value = String(Math.round(state.a * 100));
       refs.alphaValue.textContent = `${Math.round(state.a * 100)}%`;
-      /* Only the opaque colour shows in the track, so an alpha drag leaves it alone. */
+      /* Only the opaque color shows in the track, so an alpha drag leaves it alone. */
       if (opaque !== paintedOpaque) {
         paintedOpaque = opaque;
         refs.alpha.style.background =
@@ -121,12 +122,12 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
     apply();
   };
   const commitHex = (event) => {
-    const parsed = parseHex(event.target.value);
+    const parsed = parseColor(event.target.value);
     if (!parsed) {
-      refs.hex.value = formatHex(current);
+      refs.hex.value = formatColor(current, mode);
       // The message region is screen-reader only, so the field marks itself too.
       refs.hex.setAttribute('aria-invalid', 'true');
-      if (onStatus) onStatus('Enter a valid HEX value.');
+      if (onStatus) onStatus('Enter a valid color value.');
       return;
     }
     refs.hex.removeAttribute('aria-invalid');
@@ -134,6 +135,16 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
     setColor(parsed, { silent: false });
   };
   const onHexChange = (event) => commitHex(event);
+  const onFormat = () => {
+    mode = refs.format.value;
+    refs.hex.removeAttribute('aria-invalid');
+    render();
+  };
+  const setFormat = (next) => {
+    if (!FORMATS.includes(next)) return;
+    refs.format.value = next;
+    onFormat();
+  };
   const onHexKey = (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -150,11 +161,16 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
   refs.alpha.addEventListener('input', onAlpha);
   refs.hex.addEventListener('change', onHexChange);
   refs.hex.addEventListener('keydown', onHexKey);
+  refs.format.addEventListener('change', onFormat);
+  refs.format.value = mode;
 
   render();
 
   return {
     setColor,
+    setFormat,
+    /** The color as the field shows it: what Copy puts on the clipboard. */
+    getText: (rgba = current) => formatColor(rgba, mode),
     getColor: () => ({ ...current }),
     destroy() {
       refs.sv.removeEventListener('pointerdown', onPointerDown);
@@ -166,6 +182,7 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
       refs.alpha.removeEventListener('input', onAlpha);
       refs.hex.removeEventListener('change', onHexChange);
       refs.hex.removeEventListener('keydown', onHexKey);
+      refs.format.removeEventListener('change', onFormat);
     },
   };
 }

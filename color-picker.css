@@ -40,7 +40,7 @@
   place-items: center;
   padding: 16px;
   /* 24% scrim, not 45: the panel is small and movable, and the page under it is
-     the thing being re-coloured — a heavy veil made every edit unreadable. */
+     the thing being re-colored — a heavy veil made every edit unreadable. */
   background: #1018283d;
   color: var(--cp-ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -96,7 +96,7 @@
 }
 
 .cp-root .cp-picker {
-  /* Small on purpose: the surface being recoloured must stay visible around it. */
+  /* Small on purpose: the surface being recolored must stay visible around it. */
   width: min(100%, 500px);
   max-height: calc(100vh - 32px);
   /* The panel does not scroll — `.cp-picker-body` does — so the resize grip can
@@ -125,7 +125,7 @@
 }
 
 /* Thin themed scrollbar: Firefox/Chrome 121+ read the standard pair, older
-   WebKit/Blink the pseudo-elements. Colours come from tokens, so dark follows. */
+   WebKit/Blink the pseudo-elements. Colors come from tokens, so dark follows. */
 .cp-root .cp-picker-body {
   scrollbar-width: thin;
   scrollbar-color: var(--cp-field) transparent;
@@ -156,7 +156,7 @@
   flex-shrink: 0;
 }
 
-/* The colour area is the surface that benefits from a bigger box. */
+/* The color area is the surface that benefits from a bigger box. */
 .cp-root .cp-picker-body > .cp-editor {
   flex-grow: 1;
 }
@@ -316,10 +316,10 @@
 
 .cp-root .cp-editor {
   display: grid;
-  /* The side column's floor holds the HEX value: below 176px a nine-character
-     value (#RRGGBBAA) is clipped by the copy button laid over the field's right edge. Only
+  /* The side column's floor holds the longest value ("hsla(175, 77%, 26%, 0.55)"): below 232px it
+     is clipped by the copy button laid over the field's right edge. Only
      a narrow box reaches the floor; a full-width panel is sized by the ratio. */
-  grid-template-columns: minmax(0, 1.35fr) minmax(176px, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(232px, 0.8fr);
   gap: 12px;
   padding: 11px 14px;
 }
@@ -352,6 +352,13 @@
   pointer-events: none;
 }
 
+/* Maximized: the box is the screen, so cap the side column at 30% of its width. */
+@media (min-width: 681px) {
+  .cp-root .cp-picker.cp-is-maximized .cp-editor {
+    grid-template-columns: minmax(0, 1fr) minmax(232px, 30vw);
+  }
+}
+
 .cp-root .cp-editor-side {
   display: flex;
   flex-direction: column;
@@ -372,6 +379,98 @@
   border: 1px solid #00000012;
   background-image: repeating-conic-gradient(#d9dee7 0 25%, #fff 0 50%);
   background-size: 10px 10px;
+}
+
+/* Format dropdown (HEX / RGB / HSL / HSV) in the header, beside the icon buttons. */
+.cp-root .cp-format-select {
+  flex: 0 0 auto;
+  height: 28px;
+  border: 1px solid var(--cp-field);
+  border-radius: 8px;
+  padding: 0 2px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  color: inherit;
+  background: var(--cp-surface);
+  outline: none;
+  cursor: pointer;
+}
+
+.cp-root .cp-format-select:focus-visible {
+  border-color: var(--cp-accent);
+  box-shadow: 0 0 0 3px #2563eb18;
+}
+
+/* Browsers without customizable selects keep the native list; at least match the theme. */
+.cp-root .cp-format-select option {
+  background: var(--cp-surface);
+  color: var(--cp-ink);
+}
+
+/* Customizable select (Chromium 135+): the list itself is styled. It lives in
+   the top layer, but `::picker` inherits custom properties from the select. */
+@supports (appearance: base-select) {
+  .cp-root .cp-format-select,
+  .cp-root .cp-format-select::picker(select) {
+    appearance: base-select;
+  }
+
+  .cp-root .cp-format-select {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 7px 0 9px;
+    transition: border-color 0.12s, background 0.12s;
+  }
+
+  .cp-root .cp-format-select:hover {
+    background: var(--cp-hover);
+  }
+
+  .cp-root .cp-format-select::picker-icon {
+    font-size: 8px;
+    color: var(--cp-subtle);
+    transition: rotate 0.15s;
+  }
+
+  .cp-root .cp-format-select:open::picker-icon {
+    rotate: 180deg;
+  }
+
+  .cp-root .cp-format-select::picker(select) {
+    min-width: anchor-size(width);
+    margin-top: 4px;
+    padding: 4px;
+    border: 1px solid var(--cp-line);
+    border-radius: 10px;
+    background: var(--cp-surface);
+    color: var(--cp-ink);
+    box-shadow: var(--cp-shadow);
+  }
+
+  .cp-root .cp-format-select option {
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .cp-root .cp-format-select option:hover,
+  .cp-root .cp-format-select option:focus-visible {
+    background: var(--cp-hover);
+    outline: none;
+  }
+
+  .cp-root .cp-format-select option:checked {
+    background: var(--cp-accent-soft);
+    color: var(--cp-accent-strong);
+  }
+
+  .cp-root .cp-format-select option::checkmark {
+    display: none;
+  }
 }
 
 /* The positioning context for the copy button, which sits inside the field. */
@@ -619,8 +718,9 @@
 
 .cp-root .cp-swatches {
   display: grid;
-  /* Swatches keep a usable size as the panel narrows: rows wrap instead of shrinking. */
-  grid-template-columns: repeat(auto-fill, minmax(26px, 1fr));
+  /* Fixed size, identical in every section: rows wrap as the panel narrows. */
+  grid-template-columns: repeat(auto-fill, 26px);
+  justify-content: start;
   gap: 5px;
 }
 
@@ -1154,13 +1254,42 @@
 }
 
 /* Below 680px the popover becomes the same bottom sheet as the modal, but
-   shorter: the page it is recolouring has to stay visible above it. */
+   shorter: the page it is recoloring has to stay visible above it. */
 @media (max-width: 680px) {
   .cp-root.cp-popover .cp-picker {
     inset: auto 0 0 0;
     width: 100%;
     max-height: 78vh;
   }
+}
+
+/* ── Inline mode ───────────────────────────────────────── */
+
+/* Docked in the host's own layout: a block in the flow, not a layer over it.
+   There is no scrim, no close, no maximize and no OK/Cancel — nothing to
+   dismiss, apply or discard. */
+.cp-root.cp-inline {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  display: block;
+  padding: 0;
+  background: transparent;
+}
+
+.cp-root.cp-inline .cp-picker {
+  width: 100%;
+  max-height: none;
+  border-radius: 0;
+  border-width: 0 0 1px;
+  box-shadow: none;
+}
+
+.cp-root.cp-inline .cp-close-btn,
+.cp-root.cp-inline .cp-maximize-btn,
+.cp-root.cp-inline .cp-resize-grip,
+.cp-root.cp-inline .cp-footer {
+  display: none;
 }
 
 /* ── Triggers ──────────────────────────────────────────── */
@@ -1222,7 +1351,7 @@
   outline-offset: 2px;
 }
 
-/* The fill is a gradient layer *over* a checker: an opaque colour hides the
+/* The fill is a gradient layer *over* a checker: an opaque color hides the
    checker completely, a translucent one lets it through. `--cpt-fill` is the
    only thing the script writes, so both layers survive every repaint. */
 .cp-triggers .cp-trigger-chip {

@@ -101,12 +101,12 @@ test('preset sets are uppercase 6-digit hex in spec shape', () => {
 
 test('background preset tables', () => {
   /* The background set is the sprints-planner badge palette (46 high-chroma
-     colours, sRGB of its oklch triples) plus this library's deep tier at L .64,
+     colors, sRGB of its oklch triples) plus this library's deep tier at L .64,
      sorted by hue. The deep tier is pinned whole because it is the part this
      library authored; the union is checked for duplicates below. */
   const background = PRESET_SETS.background;
   assert.equal(background.Vivid.length, 60);
-  assert.equal(background.Vivid[0], '#70B1ED', 'the default background colour leads');
+  assert.equal(background.Vivid[0], '#70B1ED', 'the default background color leads');
   for (const hex of [
     '#FA0C86', '#FE2832', '#D76807', '#B88007', '#9B8F08', '#6C9E08', '#0BA75D',
     '#0BA28F', '#0A9DB2', '#0A96D6', '#3189FD', '#8075FD', '#B94BFD', '#E70CD0',
@@ -115,20 +115,20 @@ test('background preset tables', () => {
      entries above, so it was washed copies in the grid. */
   assert.ok(!('Dusty' in background));
   /* The pale washes, merged into one category and de-duplicated, so the contrast
-     suggestions still have partners for a mid-tone text colour; five of them are
+     suggestions still have partners for a mid-tone text color; five of them are
      the additions in the hue gaps the merged set left empty. */
   assert.equal(background.Pale.length, 60);
   for (const hex of ['#FBF6AE', '#E6F0D3', '#D5F9BA', '#A8FAFF', '#CDF5FF']) assert.ok(background.Pale.includes(hex), hex);
   assert.deepEqual(background.Pale.slice(-6), ['#FAFAFA', '#F9FAFB', '#F5F5F5', '#F3F4F6', '#E5E7EB', '#D1D5DB'], 'greys last');
-  assert.equal(new Set(background.Pale).size, 60, 'no colour twice in Pale');
+  assert.equal(new Set(background.Pale).size, 60, 'no color twice in Pale');
 });
 
-test('the badge palette is 60 distinct colours across its two categories', () => {
+test('the badge palette is 60 distinct colors across its two categories', () => {
   const { Vivid, Pale } = PRESET_SETS.background;
-  assert.equal(new Set(Vivid).size, 60, 'Vivid repeats no colour');
+  assert.equal(new Set(Vivid).size, 60, 'Vivid repeats no color');
   assert.deepEqual(allColors(PRESET_SETS.background).slice(0, 60), Vivid, 'All starts with Vivid');
   assert.equal(allColors(PRESET_SETS.background).length, 120, 'All is the 60 vivid plus the 60 pale washes');
-  assert.equal(new Set([...Vivid, ...Pale]).size, 120, 'the two categories share no colour');
+  assert.equal(new Set([...Vivid, ...Pale]).size, 120, 'the two categories share no color');
 });
 
 test('mergePalette replaces a named category and adds new ones', () => {
@@ -145,10 +145,10 @@ test('mergePalette replaces a named category and adds new ones', () => {
   // every other shipped category survives
   assert.deepEqual(merged.Heading, PRESET_SETS.text.Heading);
   // the shipped tables are never mutated
-  assert.equal(PRESET_SETS.text.Normal.length, 27);
+  assert.equal(PRESET_SETS.text.Normal.length, 39);
   assert.ok(!('Brand' in PRESET_SETS.text));
   merged.Heading.push('#000000');
-  assert.equal(PRESET_SETS.text.Heading.length, 27);
+  assert.equal(PRESET_SETS.text.Heading.length, 38);
 });
 
 test('palette merging keeps shipped categories and adds new ones', () => {
@@ -172,7 +172,7 @@ test('the All pill leads every palette, without becoming a category of it', () =
 test('allColors unions a palette in category order, de-duplicated', () => {
   const text = allColors(PRESET_SETS.text);
   assert.equal(text.length, new Set(text.map((hex) => hex.toUpperCase())).size);
-  // a colour two categories share appears once, at its first position
+  // a color two categories share appears once, at its first position
   assert.deepEqual(allColors({ A: ['#111111', '#222222'], B: ['#222222', '#333333'] }), ['#111111', '#222222', '#333333']);
   assert.ok(text.length > PRESET_SETS.text.Normal.length);
   assert.deepEqual(allColors({}), []);
@@ -182,4 +182,28 @@ test('allColors unions a palette in category order, de-duplicated', () => {
   const { Vivid, Pale } = PRESET_SETS.background;
   assert.deepEqual(background, [...Vivid, ...Pale]);
   assert.deepEqual(background.slice(0, Vivid.length), Vivid);
+});
+
+test('formatColor writes hex, rgb, hsl and hsv, with alpha when translucent', async () => {
+  const { formatColor } = await import('../src/color.js');
+  const c = { r: 15, g: 118, b: 110, a: 1 };
+  assert.equal(formatColor(c, 'hex'), '#0F766E');
+  assert.equal(formatColor(c, 'rgb'), 'rgb(15, 118, 110)');
+  assert.equal(formatColor(c, 'hsl'), 'hsl(175, 77%, 26%)');
+  assert.equal(formatColor(c, 'hsv'), 'hsv(175, 87%, 46%)');
+  assert.equal(formatColor({ ...c, a: 0.5 }, 'rgb'), 'rgba(15, 118, 110, 0.5)');
+  assert.equal(formatColor(c, 'nope'), '#0F766E');
+});
+
+test('parseColor reads hex, rgb, hsl and hsv, and rejects junk', async () => {
+  const { parseColor } = await import('../src/color.js');
+  assert.deepEqual(parseColor('#0f766e'), { r: 15, g: 118, b: 110, a: 1 });
+  assert.deepEqual(parseColor('rgb(15, 118, 110)'), { r: 15, g: 118, b: 110, a: 1 });
+  assert.deepEqual(parseColor('rgba(15 118 110 / 50%)'), { r: 15, g: 118, b: 110, a: 0.5 });
+  assert.deepEqual(parseColor('hsl(0, 100%, 50%)'), { r: 255, g: 0, b: 0, a: 1 });
+  assert.deepEqual(parseColor('hsv(120, 100%, 100%)'), { r: 0, g: 255, b: 0, a: 1 });
+  assert.deepEqual(parseColor('hsb(240deg 100% 100%)'), { r: 0, g: 0, b: 255, a: 1 });
+  for (const bad of ['rgb(1,2)', 'rgb(a,b,c)', 'foo(1,2,3)', 'rgb(1,2,3,4,5)', '', null]) {
+    assert.equal(parseColor(bad), null, String(bad));
+  }
 });

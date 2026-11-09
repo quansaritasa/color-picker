@@ -1,7 +1,7 @@
 /**
  * Field triggers: the host's own inputs are the control, one slot each.
  * `<input data-color-picker>` is the whole wiring — the input's value *is* the
- * colour, so the host keeps its form, its name and its submit payload.
+ * color, so the host keeps its form, its name and its submit payload.
  *
  * Same adapter shape as `createTriggers`, so the class does not care which one
  * it is holding.

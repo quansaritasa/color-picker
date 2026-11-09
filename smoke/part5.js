@@ -15,10 +15,10 @@ const pop = mk({
 const triggers = [...triggerHost.querySelectorAll('.cp-trigger')];
 check('one trigger per tab', triggers.length === 2, String(triggers.length));
 check('a trigger is a popup button', triggers.every((b) => b.getAttribute('aria-haspopup') === 'dialog'));
-check('the trigger chip carries its colour',
+check('the trigger chip carries its color',
   triggers[0].querySelector('.cp-trigger-chip').style.getPropertyValue('--cpt-fill') === '#0F766E',
   triggers[0].querySelector('.cp-trigger-chip').style.getPropertyValue('--cpt-fill'));
-check('the trigger is named with its colour',
+check('the trigger is named with its color',
   (triggers[1].getAttribute('aria-label') || '').includes('#70B1ED'), triggers[1].getAttribute('aria-label'));
 check('triggers pick the popover by default', pop.options.mode === 'popover', pop.options.mode);
 check('a popover is movable like any other panel',

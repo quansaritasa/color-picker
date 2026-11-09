@@ -22,14 +22,14 @@ check('the first category pill is active in both groups',
 check("the active slot's group is emphasised",
   highSection.classList.contains('cp-is-emphasis') && !lowSection.classList.contains('cp-is-emphasis'));
 
-// 16. selection state marks the active colour wherever it appears.
-// The fixture's #0F766E is a heading colour, so its category is opened first.
+// 16. selection state marks the active color wherever it appears.
+// The fixture's #0F766E is a heading color, so its category is opened first.
 const pillOf = (section, name) => [...section.querySelectorAll('.cp-category')].find((n) => n.textContent === name);
 pillOf(highSection, 'Heading').click();
-check('the active colour is marked in its own group',
+check('the active color is marked in its own group',
   highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 1,
   String(highSection.querySelectorAll('.cp-swatch.cp-is-selected').length));
-check('the other group marks only swatches of that same colour',
+check('the other group marks only swatches of that same color',
   lowSection.querySelectorAll('.cp-swatch.cp-is-selected').length ===
     [...lowSection.querySelectorAll('.cp-swatch')].filter((n) => n.dataset.hex === '#0F766E').length);
 const marked = highSection.querySelector('.cp-swatch.cp-is-selected');
@@ -85,12 +85,12 @@ check('switching slots keeps both groups mounted',
 check('switching slots moves the emphasis to the other group',
   lowSection.classList.contains('cp-is-emphasis') && !highSection.classList.contains('cp-is-emphasis'));
 const bgMarked = lowSection.querySelectorAll('.cp-swatch.cp-is-selected');
-check("switching slots marks that slot's own colour, not the last one edited",
+check("switching slots marks that slot's own color, not the last one edited",
   bgMarked.length === 1 && bgMarked[0].dataset.hex === '#70B1ED',
   `${bgMarked.length}:${bgMarked[0] && bgMarked[0].dataset.hex}`);
 picker.setActiveSlot('text');
-check('returning to the slot shows its colour again', q(picker, '.cp-hex-input').value === tappedHex, q(picker, '.cp-hex-input').value);
-check('the checkmark follows the colour, not the group',
+check('returning to the slot shows its color again', q(picker, '.cp-hex-input').value === tappedHex, q(picker, '.cp-hex-input').value);
+check('the checkmark follows the color, not the group',
   highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 0 &&
   lowSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 1);
 
@@ -101,7 +101,7 @@ check('reset restores the active slot checkmark',
   highSection.querySelector('.cp-swatch.cp-is-selected').dataset.hex === '#0F766E' &&
   lowSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 0);
 picker.setActiveSlot('background');
-check('the background group marks the reset background colour',
+check('the background group marks the reset background color',
   lowSection.querySelector('.cp-swatch.cp-is-selected').dataset.hex === '#70B1ED');
 picker.setActiveSlot('text');
 pillOf(highSection, 'Normal').click();

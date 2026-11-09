@@ -80,7 +80,7 @@
   .brand-card small { color: #93a2b8; display: block; margin-bottom: 9px; font-size: 11px; }
   .brand-chip { display: inline-flex; padding: 8px 12px; border-radius: 8px; font-weight: 650; font-size: 13px; border: 1px solid transparent; }
 
-  /* Every colour on this surface is one of its four slots. */
+  /* Every color on this surface is one of its four slots. */
   .sheet {
     border-radius: 13px; padding: 18px;
     background: var(--sheet-surface); color: var(--sheet-heading);
@@ -131,14 +131,14 @@
   <div class="page-head">
     <div>
       <h1>Color Picker</h1>
-      <p>Each panel shows the setup call and then that very call running. Open a swatch, pick a colour —
+      <p>Each panel shows the setup call and then that very call running. Open a swatch, pick a color —
         the surface under the snippet repaints as you drag.</p>
     </div>
   </div>
 
   <section class="panel">
     <div class="panel-head">
-      <h2><span class="panel-no">01</span>One colour — the default</h2>
+      <h2><span class="panel-no">01</span>One color — the default</h2>
       <p>No <code>slots</code>: one slot named <code>color</code>, one trigger, one preset grid and no tab
         row. <code>colors.color</code> is the only value to paint.</p>
     </div>
@@ -168,7 +168,7 @@ oneHeadline.style.color = onePicker.getColors().color;</code></pre>
     <div class="panel-head">
       <h2><span class="panel-no">02</span>A pair — text over panel</h2>
       <p>Two slots, so there is a tab per slot. <code>contrastPair</code> turns on the suggestions panel:
-        it offers colours that keep the pair readable, and it is a choice — no pair, no suggestions.</p>
+        it offers colors that keep the pair readable, and it is a choice — no pair, no suggestions.</p>
     </div>
     <p class="label">Setup</p>
     <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
@@ -186,7 +186,7 @@ const paintPair = (colors) => {
 const pairPicker = new ColorPicker({
   triggers: '#pairTriggers',
   slots: [
-    { id: 'text', label: 'Text colour', symbol: 'Aa', presetSet: 'text' },
+    { id: 'text', label: 'Text color', symbol: 'Aa', presetSet: 'text' },
     { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
   ],
   initialColors: { text: '#0F766E', background: '#CCFBF1' },
@@ -204,7 +204,7 @@ paintPair(pairPicker.getColors());</code></pre>
       </div>
       <div class="pair">
         <div class="pair-card">
-          <small>Text colour · High contrast</small>
+          <small>Text color · High contrast</small>
           <span class="pair-chip" id="pairTag">Readable label</span>
         </div>
         <div class="pair-card">
@@ -278,7 +278,7 @@ paintBrand(brandPicker.getColors());</code></pre>
     <div class="panel-head">
       <h2><span class="panel-no">04</span>Product section — four slots, one popup</h2>
       <p>Two slots share <code>presetSet: 'background'</code>: a section surface and a card surface take
-        the same kind of palette and still get a tab each, told apart by <code>label</code>. Every colour
+        the same kind of palette and still get a tab each, told apart by <code>label</code>. Every color
         on the surface below is one of the four.</p>
     </div>
     <p class="label">Setup</p>
@@ -381,7 +381,7 @@ fieldPreview.style.background = fieldPicker.getColors().wash;</code></pre>
 
   /* Each block below is the <pre> above it, run for real — keep them in sync. */
 
-  // 01 — one colour.
+  // 01 — one color.
   const oneHeadline = document.getElementById('oneHeadline');
   const onePicker = new ColorPicker({
     triggers: '#oneTriggers',
@@ -403,7 +403,7 @@ fieldPreview.style.background = fieldPicker.getColors().wash;</code></pre>
   const pairPicker = new ColorPicker({
     triggers: '#pairTriggers',
     slots: [
-      { id: 'text', label: 'Text colour', symbol: 'Aa', presetSet: 'text' },
+      { id: 'text', label: 'Text color', symbol: 'Aa', presetSet: 'text' },
       { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
     ],
     initialColors: { text: '#0F766E', background: '#CCFBF1' },

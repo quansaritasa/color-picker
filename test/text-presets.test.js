@@ -19,25 +19,25 @@ const SPEC_TEXT = [
 
 test('the text set is grouped by role', () => {
   assert.deepEqual(Object.keys(text), ['Normal', 'Heading', 'Highlight']);
-  assert.equal(text.Normal.length, 27);
-  assert.equal(text.Heading.length, 27);
-  assert.equal(text.Highlight.length, 36);
+  assert.equal(text.Normal.length, 39);
+  assert.equal(text.Heading.length, 38);
+  assert.equal(text.Highlight.length, 63);
 });
 
-test('the text set keeps every colour the spec shipped, once', () => {
+test('the text set keeps every color the spec shipped, once', () => {
   const all = Object.values(text).flat();
-  assert.equal(new Set(all).size, all.length, 'no colour in two categories');
+  assert.equal(new Set(all).size, all.length, 'no color in two categories');
   for (const hex of SPEC_TEXT) assert.ok(all.includes(hex), `${hex} kept`);
 });
 
 test('the text set carries pure black and pure white for body copy', () => {
   /* Black leads: `options.js` hands the first entry to a text slot with no
-     colour of its own, so the order is a default, not only a layout. */
+     color of its own, so the order is a default, not only a layout. */
   assert.equal(text.Normal[0], '#000000');
   assert.ok(text.Normal.includes('#FFFFFF'));
 });
 
-test('every text colour reads on a light or a dark surface', () => {
+test('every text color reads on a light or a dark surface', () => {
   const light = parseHex('#FFFFFF');
   const dark = parseHex('#111827');
   for (const [name, list] of Object.entries(text)) {

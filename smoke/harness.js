@@ -22,7 +22,7 @@ export const q = (picker, sel) => picker.root.querySelector(sel);
 /* Most checks need the pair; only the default-slot check takes the shipped
    single slot, so the helper declares the pair unless the caller overrides. */
 export const PAIR = [
-  { id: 'text', label: 'Text colour', symbol: 'Aa', presetSet: 'text' },
+  { id: 'text', label: 'Text color', symbol: 'Aa', presetSet: 'text' },
   { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
 ];
 export const mk = (options = {}) => new ColorPicker(Object.assign({ slots: PAIR }, options));

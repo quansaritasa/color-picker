@@ -34,6 +34,12 @@ export default class ColorPicker {
     assemble(this);
     bindShell(this);
     syncTabs(this.refs, this.activeSlot);
+    /* Inline is part of the page: shown from the start, never closed, so it
+       skips `open()` and its focus capture. */
+    if (this.options.mode === 'inline') {
+      this.isOpen = true;
+      this.root.classList.remove('cp-hidden');
+    }
     this.refresh();
   }
 
@@ -148,7 +154,7 @@ export default class ColorPicker {
   }
 
   close() {
-    if (!this.isOpen) return;
+    if (!this.isOpen || this.options.mode === 'inline') return;
     this.isOpen = false;
     this.anchor = null;
     this.root.classList.add('cp-hidden');
@@ -164,6 +170,7 @@ export default class ColorPicker {
    * modal restores the snapshot it opened with.
    */
   dismiss() {
+    if (this.options.mode === 'inline') return;
     if (this.options.mode === 'popover') this.close();
     else this.cancel();
   }
@@ -176,7 +183,7 @@ export default class ColorPicker {
   }
 
   cancel() {
-    if (!this.isOpen) return;
+    if (!this.isOpen || this.options.mode === 'inline') return;
     this.colors = { ...this.snapshot };
     this.refresh();
     this.setStatus('Changes discarded.');
@@ -185,6 +192,7 @@ export default class ColorPicker {
   }
 
   apply() {
+    if (this.options.mode === 'inline') return;
     this.snapshot = { ...this.colors };
     this.setStatus('Colors applied.');
     this.emit('onApply');

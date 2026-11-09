@@ -49,7 +49,7 @@ test('a field list is both the slot list and the trigger', () => {
   assert.equal(options.mode, 'popover');
   assert.deepEqual(options.slots.map((slot) => slot.id), ['brand', 'accent']);
   assert.deepEqual(options.startColors, { brand: '#0F766E', accent: 'nope' });
-  // the field's own value seeds the colour; an invalid one falls back per slot
+  // the field's own value seeds the color; an invalid one falls back per slot
   const slots = resolveSlots(options.slots, options.labels);
   assert.deepEqual(resolveColors(options.startColors, slots), { brand: '#0F766E', accent: '#000000' });
   assert.throws(() => resolveOptions({ fields: '#x', slots: ['a'] }, fields), /drop `slots`/);
@@ -66,10 +66,10 @@ test('a popover is movable and resizable like a modal', () => {
   assert.equal(resolveOptions({ resizable: 0 }).resizable, false);
 });
 
-test('no slots means a single colour slot', () => {
+test('no slots means a single color slot', () => {
   const slots = resolveSlots();
   assert.deepEqual(slots.map((slot) => slot.id), ['color']);
-  assert.equal(slots[0].label, 'Colour');
+  assert.equal(slots[0].label, 'Color');
   assert.equal(slots[0].presetSet, 'text');
   assert.equal(slots[0].color, '#0F766E');
   assert.equal(resolveSlots(null).length, 1);
@@ -82,7 +82,7 @@ test('a slot that names no preset set borrows the background palette', () => {
   assert.equal(accent.presetSet, 'background');
   assert.equal(accent.label, 'accent');
   assert.equal(accent.symbol, 'A');
-  // the palette's first colour is the fallback, not text's — and the background
+  // the palette's first color is the fallback, not text's — and the background
   // palette now opens on the badge inks, so its first entry is a mid blue
   assert.equal(accent.color, '#70B1ED');
   assert.equal(resolveSlots([{ id: 'ink', presetSet: 'text' }])[0].color, '#000000');
@@ -161,4 +161,11 @@ test('resolveColors keys by slot id, per-slot fallback, alpha honoured', () => {
   assert.deepEqual(resolveColors({ text: '#ABCDEF80' }, slots, false), { text: '#ABCDEF', accent: '#123456' });
   // a key no slot declared is dropped, never carried into getColors()
   assert.deepEqual(Object.keys(resolveColors({ ghost: '#000000' }, slots)), ['text', 'accent']);
+});
+
+test("mode 'inline' is kept, and drops move and resize", () => {
+  const options = resolveOptions({ mode: 'inline', draggable: true, resizable: true });
+  assert.equal(options.mode, 'inline');
+  assert.equal(options.draggable, false);
+  assert.equal(options.resizable, false);
 });

@@ -8,7 +8,7 @@ suggPicker.close();
 opener.focus();
 suggPicker.open();
 check('open moves focus into the dialog', suggPicker.root.contains(document.activeElement));
-const focusables = [...suggPicker.root.querySelectorAll('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+const focusables = [...suggPicker.root.querySelectorAll('button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
   .filter((node) => node.getClientRects().length > 0);
 const lastFocusable = focusables[focusables.length - 1];
 lastFocusable.focus();
@@ -82,7 +82,7 @@ check('showAlpha:false clamps alpha on setColors',
 check('showAlpha:false leaves the rendered hex opaque too',
   opaqueHex.value === '#00FF00', opaqueHex.value);
 opaque.selectColor('#0000FF33', { source: 'preset' });
-check('showAlpha:false clamps alpha on a preset colour',
+check('showAlpha:false clamps alpha on a preset color',
   opaque.getColors().text === '#0000FF', opaque.getColors().text);
 let applied = null;
 const opaqueApply = mk({
@@ -110,7 +110,7 @@ const staleHex = stale.root.querySelector('.cp-hex-input');
 staleHex.value = '#GGGGGG';
 staleHex.dispatchEvent(new Event('change', { bubbles: true }));
 const staleStatus = stale.root.querySelector('.cp-status');
-check('invalid hex raises a status message', staleStatus.textContent === 'Enter a valid HEX value.', staleStatus.textContent);
+check('invalid hex raises a status message', staleStatus.textContent === 'Enter a valid color value.', staleStatus.textContent);
 const staleSv = stale.root.querySelector('.cp-sv');
 const staleBox = staleSv.getBoundingClientRect();
 const staleOpts = { bubbles: true, pointerId: 7, clientX: staleBox.left + staleBox.width * 0.3, clientY: staleBox.top + staleBox.height * 0.7 };

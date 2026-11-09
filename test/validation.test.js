@@ -31,7 +31,7 @@ test('an unknown mode is named and falls back to auto', () => {
   assert.deepEqual(warnings(() => resolveOptions({ mode: 'popover' })), []);
 });
 
-test('a slot colour must be hex, and is normalized', () => {
+test('a slot color must be hex, and is normalized', () => {
   assert.throws(() => resolveSlots([{ id: 'a', color: 'red' }]), /slot "a" color must be a hex string, got "red"/);
   assert.throws(() => resolveSlots([{ id: 'a', color: 'url(x)' }]), /color must be a hex string/);
   assert.throws(() => resolveSlots([{ id: 'a', color: 42 }]), /color must be a hex string/);
@@ -47,7 +47,7 @@ test('an unknown presetSet is named and falls back to background', () => {
   assert.deepEqual(warnings(() => resolveSlots([{ id: 'a', presetSet: 'text' }])), []);
 });
 
-test('an invalid write keeps the current colour, not the declared one', () => {
+test('an invalid write keeps the current color, not the declared one', () => {
   const slots = resolveSlots([{ id: 'a', color: '#111111' }]);
   const current = { a: '#222222' };
   assert.deepEqual(resolveColors({ a: 'nope' }, slots, true, current), { a: '#222222' });
@@ -61,9 +61,9 @@ test('a slot named after an Object.prototype key reads only its own values', () 
   assert.deepEqual(resolveColors({ toString: 'nope' }, slots, true, {}), { toString: '#111111', constructor: '#70B1ED' });
 });
 
-test('preset overrides must be arrays of hex colours', () => {
+test('preset overrides must be arrays of hex colors', () => {
   assert.throws(() => mergePalette({}, { X: 'abc' }), /"X" must be an array/);
   assert.throws(() => mergePalette({}, { X: 5 }), /"X" must be an array/);
-  assert.throws(() => mergePalette({}, { X: ['url(http://e)'] }), /"X" has an invalid colour "url\(http:\/\/e\)"/);
+  assert.throws(() => mergePalette({}, { X: ['url(http://e)'] }), /"X" has an invalid color "url\(http:\/\/e\)"/);
   assert.deepEqual(mergePalette({}, { X: ['#abc', '#7c3aed'] }), { X: ['#AABBCC', '#7C3AED'] });
 });

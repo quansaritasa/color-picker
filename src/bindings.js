@@ -61,7 +61,8 @@ export function bindShell(picker) {
   const toggleCompact = () => {
     const on = refs.panel.classList.toggle('cp-is-compact');
     refs.compact.setAttribute('aria-pressed', String(on));
-    if (window.matchMedia(SHEET).matches) return;
+    /* An inline panel's width is its container's, and it has no height to fit. */
+    if (picker.options.mode === 'inline' || window.matchMedia(SHEET).matches) return;
     const style = refs.panel.style;
     if (on) {
       restoreBox = { width: style.width, height: style.height };
@@ -89,6 +90,9 @@ export function bindShell(picker) {
   picker.onDocumentKey = (event) => {
     if (!picker.isOpen) return;
     if (!isTopmostOpen(picker.root)) return;
+    /* An inline panel is always open, so a document-wide key would act on every
+       press anywhere on the page: it only hears keys from inside itself. */
+    if (picker.options.mode === 'inline' && !picker.root.contains(event.target)) return;
     if (event.key === 'Escape') {
       picker.dismiss();
       return;
@@ -113,7 +117,7 @@ export function bindShell(picker) {
       else picker.setActiveSlot(next);
       return;
     }
-    /* `m` toggles the box. Typing a colour keeps its own letters, and a
+    /* `m` toggles the box. Typing a color keeps its own letters, and a
        modified `m` belongs to the browser (`⌘M` minimises the window). */
     if ((event.key === 'm' || event.key === 'M') && !event.metaKey && !event.ctrlKey
       && !event.altKey && !event.repeat && !isTextEntry(event.target)) {
@@ -142,6 +146,7 @@ export function bindShell(picker) {
       if (!picker.isOpen) return;
       if (picker.root.contains(event.target)) return;
       if (picker.triggers && picker.triggers.contains(event.target)) return;
+      if (picker.anchor && picker.anchor.contains(event.target)) return; // a press on the anchor is its own toggle
       picker.dismiss();
     };
     document.addEventListener('pointerdown', picker.onDocumentPointer, true);

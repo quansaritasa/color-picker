@@ -3,14 +3,14 @@
  *
  * `text` is grouped by role, not hue: `Normal` for body copy (greys, slates,
  * stones), `Heading` for headings and section titles (mostly blue and green),
- * `Highlight` for colourful emphasis. It is a superset of the six hue categories
+ * `Highlight` for colorful emphasis. It is a superset of the six hue categories
  * `sop.md` §4 shipped. Every entry clears 4.5:1 against `#FFFFFF` or `#111827`,
  * so each one reads as body text on a light or a dark surface; the light rows
  * at the end of `Normal` and `Highlight` are the dark-surface ones.
  *
  * `background` is not the spec's §5 set any more: it is the badge palette from
  * the sprints-planner app (`src/renderer/modules/assignee-color.js`,
- * `BADGE_COLORS`), which is why the colours are mid-light inks rather than pale
+ * `BADGE_COLORS`), which is why the colors are mid-light inks rather than pale
  * washes. The app stores `[L, C, H]` oklch triples and paints those strings; a
  * picker only speaks hex (`parseHex`, the editor, the contrast maths), so each
  * entry here is the exact sRGB rendering of its triple.
@@ -20,10 +20,10 @@
  * chroma pushed to the sRGB ceiling: 4.53-5.66:1 against `#111827`, dE00 >= 6.3
  * from every badge ink). The app's low-chroma tail (14 label-chip inks) is not
  * shipped: those hues already appear at the same lightness, so as a category
- * they were washed copies of colours the grid already had.
+ * they were washed copies of colors the grid already had.
  *
  * Both background categories are sorted by oklch hue so neighbours look alike,
- * starting at `#70B1ED` (the first entry is the default background colour) and
+ * starting at `#70B1ED` (the first entry is the default background color) and
  * walking blue, violet, pink, red, orange, yellow, green, teal, cyan. `Pale`
  * ends with its greys (chroma below .011), lightest first.
  *
@@ -34,7 +34,7 @@
  * shape for that — see the note on the category itself.
  *
  * A set is only a *hint*: both sets are always on screen and a swatch writes the
- * slot the editor is showing, so any colour is valid for any slot.
+ * slot the editor is showing, so any color is valid for any slot.
  */
 
 import { normalizeHex } from './color.js';
@@ -44,27 +44,33 @@ export const PRESET_SETS = {
     /* Ordered so neighbours look alike: one tint family at a time, dark to light
        within it. `Normal` runs gray, slate, stone, neutral, then its light tail for
        dark surfaces; `#000000` leads it, and the first entry is what `options.js`
-       hands a text slot with no colour of its own. The two coloured tabs walk the
+       hands a text slot with no color of its own. The two colored tabs walk the
        hue wheel; `Highlight` ends with its dark-surface row in the same hue order. */
     Normal: [
       '#000000', '#111827', '#1F2937', '#374151', '#4B5563', '#6B7280',
       '#020617', '#0F172A', '#1E293B', '#334155', '#475569', '#64748B', '#94A3B8',
+      '#050A18', '#0A1128', '#0D1B2A', '#0B1B3A', '#111B33', '#14213D', '#1B263B', '#1B2A49',
+      '#1E2A44', '#22304A', '#2B3A55', '#364A6B',
       '#1C1917', '#292524', '#44403C', '#57534E',
       '#171717', '#262626', '#404040', '#525252', '#737373',
       '#A3A3A3', '#D1D5DB', '#E5E7EB', '#F3F4F6', '#FFFFFF',
     ],
     Heading: [
-      '#4C1D95', '#581C87', '#312E81', '#3730A3', '#172554', '#1E3A8A', '#1E40AF', '#1D4ED8',
-      '#2563EB', '#0C4A6E', '#075985', '#0369A1', '#164E63', '#155E75', '#0E7490',
-      '#134E4A', '#115E59', '#0F766E', '#064E3B', '#065F46', '#047857',
-      '#052E16', '#14532D', '#166534', '#15803D', '#365314', '#3F6212',
+      '#172554', '#1E3A5F', '#312E81', '#1E3A8A', '#3730A3', '#1E40AF', '#4338CA', '#1D4ED8',
+      '#2563EB', '#1E1B4B', '#2E1065', '#3B0764', '#4C1D95', '#581C87', '#052E16', '#1A2E05',
+      '#0F5132', '#14532D', '#365314', '#166534', '#3F6212', '#15803D', '#022C22', '#064E3B',
+      '#134E4A', '#065F46', '#115E59', '#047857', '#0F766E', '#042F2E', '#083344', '#0A3D62',
+      '#0C4A6E', '#164E63', '#075985', '#155E75', '#0369A1', '#0E7490',
     ],
     Highlight: [
-      '#991B1B', '#B91C1C', '#DC2626', '#9A3412', '#C2410C', '#EA580C', '#B45309', '#A16207',
-      '#CA8A04', '#4D7C0F', '#0D9488', '#0891B2', '#4F46E5', '#5B21B6', '#6D28D9', '#7C3AED',
-      '#6B21A8', '#7E22CE', '#9333EA', '#A21CAF', '#C026D3', '#BE185D', '#DB2777', '#BE123C',
-      '#E11D48', '#FDA4AF', '#F87171', '#FB923C', '#FBBF24', '#FACC15', '#A3E635', '#34D399',
-      '#22D3EE', '#60A5FA', '#A78BFA', '#F472B6',
+      '#4F46E5', '#818CF8', '#60A5FA', '#5B21B6', '#6B21A8', '#6D28D9', '#7E22CE', '#7C3AED',
+      '#9333EA', '#A78BFA', '#C084FC', '#701A75', '#86198F', '#A21CAF', '#C026D3', '#E879F9',
+      '#9D174D', '#BE185D', '#DB2777', '#F472B6', '#7F1D1D', '#881337', '#991B1B', '#9A3412',
+      '#B91C1C', '#BE123C', '#C2410C', '#DC2626', '#E11D48', '#EF4444', '#F87171', '#78350F',
+      '#92400E', '#854D0E', '#A16207', '#B45309', '#EA580C', '#F97316', '#FB923C', '#CA8A04',
+      '#F59E0B', '#4D7C0F', '#65A30A', '#22C55E', '#84CC16', '#0D9488', '#34D399', '#0891B2',
+      '#38BDF8', '#93C5FD', '#F9A8D4', '#FDA4AF', '#FDBA74', '#FBBF24', '#EAB308', '#FACC15',
+      '#FDE047', '#BEF264', '#A3E635', '#6EE7B7', '#2DD4BF', '#67E8F9', '#22D3EE',
     ],
   },
   background: {
@@ -84,7 +90,7 @@ export const PRESET_SETS = {
        badge inks clears 4.5:1 against a mid-tone text like #0F766E, so without a
        pale set the suggestions panel has nothing to offer for such a pair. The
        old six categories are merged and de-duplicated here, with five more washes
-       in the hue gaps and four across red and orange — 43 colours, then 17 more across every hue so it matches
+       in the hue gaps and four across red and orange — 43 colors, then 17 more across every hue so it matches
        `Vivid` at 60. Contrast against #0F766E is what caps the set: a wash light enough to stay useful
        there has little chroma left to spend, so the red/orange four sit at
        3.78-5.00:1, inside the range the merged washes already covered. */
@@ -109,25 +115,25 @@ export const PRESET_SETS = {
  * shipped tables nor the caller's config is mutated.
  *
  * Every entry is normalized to uppercase hex, and anything else throws: a
- * swatch paints its value into `style.background`, so a non-colour would
+ * swatch paints its value into `style.background`, so a non-color would
  * render a dead button at best and fetch a `url(...)` at worst.
  */
 export function mergePalette(base = {}, override = {}) {
   const merged = { ...base, ...override };
   return Object.fromEntries(Object.entries(merged).map(([name, colors]) => {
     if (!Array.isArray(colors)) {
-      throw new TypeError(`ColorPicker: preset category "${name}" must be an array of hex colours.`);
+      throw new TypeError(`ColorPicker: preset category "${name}" must be an array of hex colors.`);
     }
     return [name, colors.map((hex) => {
       const valid = normalizeHex(hex);
-      if (!valid) throw new TypeError(`ColorPicker: preset category "${name}" has an invalid colour ${JSON.stringify(hex)}.`);
+      if (!valid) throw new TypeError(`ColorPicker: preset category "${name}" has an invalid color ${JSON.stringify(hex)}.`);
       return valid;
     })];
   }));
 }
 
 /* Instances without a `presets` override all share one validated, frozen copy
-   of the shipped palette instead of each parsing and copying ~210 colours. */
+   of the shipped palette instead of each parsing and copying ~210 colors. */
 const shipped = {};
 export function shippedPalette(group) {
   if (!shipped[group]) {
@@ -141,18 +147,18 @@ export function shippedPalette(group) {
 /**
  * The two palettes the panel always offers. They are suggestions, not owners:
  * a swatch click writes whichever slot the editor is showing, so a pale panel
- * colour can be applied to text when that is what the host wants.
+ * color can be applied to text when that is what the host wants.
  */
 export const PRESET_GROUPS = {
   text: {
-    label: 'Text colour presets',
+    label: 'Text color presets',
     /* Short name a slot tab shows as its type; a slot may override it. */
     type: 'Text',
     symbol: 'Aa',
     hint: 'Body copy, headings and highlights, for text and icons.',
   },
   background: {
-    label: 'Background colour presets',
+    label: 'Background color presets',
     type: 'Background',
     symbol: '▰',
     hint: 'The badge inks and their deep tier, plus the pale washes.',
@@ -184,7 +190,7 @@ export function categoriesWithAll(palette = {}) {
 }
 
 /**
- * Every colour of one palette in category order, de-duplicated — the same hex
+ * Every color of one palette in category order, de-duplicated — the same hex
  * may be shipped in more than one category (a host palette can repeat one), and the
  * union grid must show it once.
  */
