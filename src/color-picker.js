@@ -29,7 +29,7 @@ export default class ColorPicker {
     this.root = document.createElement('div');
     this.root.className = `cp-root${this.options.classNames ? ` ${this.options.classNames}` : ''}`;
     this.root.dataset.theme = this.options.theme;
-    this.root.classList.add('hidden');
+    this.root.classList.add('cp-hidden');
 
     assemble(this);
     bindShell(this);
@@ -129,7 +129,7 @@ export default class ColorPicker {
     this.anchor = anchor || (this.triggers ? this.triggers.anchorFor(this.activeSlot) : null);
     this.snapshot = { ...this.colors };
     this.isOpen = true;
-    this.root.classList.remove('hidden');
+    this.root.classList.remove('cp-hidden');
     this.refresh();
     this.geometry.reset();
     if (this.popover) this.popover.place();
@@ -146,7 +146,7 @@ export default class ColorPicker {
     if (!this.isOpen) return;
     this.isOpen = false;
     this.anchor = null;
-    this.root.classList.add('hidden');
+    this.root.classList.add('cp-hidden');
     this.focusTrap.deactivate();
     if (this.triggers) this.triggers.sync(false);
     this.emit('onClose');

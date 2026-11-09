@@ -15,7 +15,7 @@ const shared = mk({
   contrastPair: ['ink', 'page'],
 });
 shared.open();
-const sharedTabs = [...shared.root.querySelectorAll('.tab')];
+const sharedTabs = [...shared.root.querySelectorAll('.cp-tab')];
 check('one tab per slot, whatever their groups',
   sharedTabs.length === 3 && shared.root.style.getPropertyValue('--cp-slots') === '3',
   `${sharedTabs.length} tabs`);
@@ -25,16 +25,16 @@ check('two slots of one group get two distinct tabs',
     sharedTabs[1].querySelector('strong').textContent === 'Card background',
   sharedTabs.map((t) => t.dataset.slot).join(','));
 check('both tabs of one group carry the same type',
-  sharedTabs[0].querySelector('.tab-type').textContent === 'Background' &&
-    sharedTabs[1].querySelector('.tab-type').textContent === 'Background',
-  sharedTabs.map((t) => t.querySelector('.tab-type').textContent).join(','));
+  sharedTabs[0].querySelector('.cp-tab-type').textContent === 'Background' &&
+    sharedTabs[1].querySelector('.cp-tab-type').textContent === 'Background',
+  sharedTabs.map((t) => t.querySelector('.cp-tab-type').textContent).join(','));
 
 sharedTabs[1].click();
 check('the second tab of a group is its own slot',
   shared.activeSlot === 'card' && shared.getColors().page === '#F9FAFB' && shared.getColors().card === '#FFFFFF',
   JSON.stringify(shared.getColors()));
 
-const sharedBackground = shared.root.querySelector('.preset-section[data-group="background"]');
+const sharedBackground = shared.root.querySelector('.cp-preset-section[data-group="background"]');
 const sharedSwatch = [...sharedBackground.querySelectorAll('.cp-swatch')]
   .find((n) => n.dataset.hex.toUpperCase() !== '#F9FAFB');
 const sharedHex = sharedSwatch.dataset.hex;
@@ -44,18 +44,18 @@ check('a swatch writes only the tab it is on',
     shared.getColors().ink === '#111827',
   JSON.stringify(shared.getColors()));
 check('both tabs of one group emphasise that group',
-  sharedBackground.classList.contains('is-emphasis') &&
-    !shared.root.querySelector('.preset-section[data-group="text"]').classList.contains('is-emphasis'));
+  sharedBackground.classList.contains('cp-is-emphasis') &&
+    !shared.root.querySelector('.cp-preset-section[data-group="text"]').classList.contains('cp-is-emphasis'));
 shared.setActiveSlot('page');
 check('switching between two tabs of one group keeps the emphasis',
-  sharedBackground.classList.contains('is-emphasis') && shared.activeSlot === 'page');
+  sharedBackground.classList.contains('cp-is-emphasis') && shared.activeSlot === 'page');
 check('each of the shared tabs kept its own colour',
   shared.getColors().page === '#F9FAFB' && shared.getColors().card === sharedHex,
   JSON.stringify(shared.getColors()));
 
 shared.setActiveSlot('card');
 check('a slot outside contrastPair hides the suggestions',
-  shared.refs.suggestions.hidden && sharedBackground.classList.contains('is-emphasis'));
+  shared.refs.suggestions.hidden && sharedBackground.classList.contains('cp-is-emphasis'));
 shared.destroy();
 host4.remove();
 

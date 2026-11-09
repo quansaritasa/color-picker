@@ -14,13 +14,13 @@ const lastFocusable = focusables[focusables.length - 1];
 lastFocusable.focus();
 lastFocusable.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
 check('Tab wraps from the last control to the first', document.activeElement === focusables[0], document.activeElement && document.activeElement.className);
-suggPicker.root.querySelector('.primary-btn').click();
+suggPicker.root.querySelector('.cp-primary-btn').click();
 check('closing returns focus to the opener', document.activeElement === opener, document.activeElement && document.activeElement.id);
 
 // 25. Home / End on the tablist
 suggPicker.open();
 suggPicker.setActiveSlot('background');
-const tabButtons = suggPicker.root.querySelectorAll('.tab');
+const tabButtons = suggPicker.root.querySelectorAll('.cp-tab');
 tabButtons[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
 check('Home selects the first tab', suggPicker.activeSlot === 'text', suggPicker.activeSlot);
 tabButtons[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
@@ -30,7 +30,7 @@ suggPicker.close();
 // 26. dialog semantics and the SV slider's value
 const a11y = mk({ initialColors: { text: '#0F766E', background: '#70B1ED' } });
 a11y.open();
-const shell = a11y.root.querySelector('.picker');
+const shell = a11y.root.querySelector('.cp-picker');
 const titleId = shell.getAttribute('aria-labelledby');
 check('shell is a modal dialog',
   shell.getAttribute('role') === 'dialog' && shell.getAttribute('aria-modal') === 'true',
@@ -39,7 +39,7 @@ check('dialog is named by its heading',
   !!titleId && !!document.getElementById(titleId)
     && document.getElementById(titleId).textContent === 'Choose Color',
   titleId);
-const svArea = a11y.root.querySelector('.sv');
+const svArea = a11y.root.querySelector('.cp-sv');
 const nowBefore = svArea.getAttribute('aria-valuenow');
 svArea.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
 check('sv slider carries its range',
@@ -68,9 +68,9 @@ upper.destroy();
 
 // 28. showAlpha: false turns alpha off instead of hiding it
 const opaque = mk({ showAlpha: false });
-check('showAlpha:false hides the opacity control', opaque.root.querySelector('.alpha-range').hidden);
+check('showAlpha:false hides the opacity control', opaque.root.querySelector('.cp-alpha-range').hidden);
 opaque.open();
-const opaqueHex = opaque.root.querySelector('.hex-input');
+const opaqueHex = opaque.root.querySelector('.cp-hex-input');
 opaqueHex.value = '#FF000080';
 opaqueHex.dispatchEvent(new Event('change', { bubbles: true }));
 check('showAlpha:false drops the alpha of an 8-digit hex',
@@ -106,12 +106,12 @@ opaque.destroy();
 // 29. an editor commit clears the error message the editor left behind
 const stale = mk({ initialColors: { text: '#0F766E', background: '#70B1ED' } });
 stale.open();
-const staleHex = stale.root.querySelector('.hex-input');
+const staleHex = stale.root.querySelector('.cp-hex-input');
 staleHex.value = '#GGGGGG';
 staleHex.dispatchEvent(new Event('change', { bubbles: true }));
-const staleStatus = stale.root.querySelector('.status');
+const staleStatus = stale.root.querySelector('.cp-status');
 check('invalid hex raises a status message', staleStatus.textContent === 'Enter a valid HEX value.', staleStatus.textContent);
-const staleSv = stale.root.querySelector('.sv');
+const staleSv = stale.root.querySelector('.cp-sv');
 const staleBox = staleSv.getBoundingClientRect();
 const staleOpts = { bubbles: true, pointerId: 7, clientX: staleBox.left + staleBox.width * 0.3, clientY: staleBox.top + staleBox.height * 0.7 };
 staleSv.dispatchEvent(new PointerEvent('pointerdown', staleOpts));

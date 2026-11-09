@@ -2,10 +2,10 @@ import { check, q, mk, events, picker, handoff } from './harness.js';
 
 // 15. preset panel renders both palette groups, always
 picker.open();
-const highSection = q(picker, '.preset-section[data-group="text"]');
-const lowSection = q(picker, '.preset-section[data-group="background"]');
+const highSection = q(picker, '.cp-preset-section[data-group="text"]');
+const lowSection = q(picker, '.cp-preset-section[data-group="background"]');
 check('both palette groups are rendered',
-  q(picker, '.presets').children.length === 2 && !!highSection && !!lowSection);
+  q(picker, '.cp-presets').children.length === 2 && !!highSection && !!lowSection);
 check('group pills match their palettes plus the All pill',
   highSection.querySelectorAll('.cp-category').length === Object.keys(picker.palettes.text).length + 1 &&
   lowSection.querySelectorAll('.cp-category').length === Object.keys(picker.palettes.background).length + 1,
@@ -16,20 +16,20 @@ check('group swatches match the first category',
   `${highSection.querySelectorAll('.cp-swatch').length}/${lowSection.querySelectorAll('.cp-swatch').length}`);
 check('the first category pill is active in both groups',
   highSection.querySelector('.cp-category').textContent === 'All' &&
-  highSection.querySelectorAll('.cp-category')[1].classList.contains('is-active') &&
-  lowSection.querySelectorAll('.cp-category')[1].classList.contains('is-active'),
+  highSection.querySelectorAll('.cp-category')[1].classList.contains('cp-is-active') &&
+  lowSection.querySelectorAll('.cp-category')[1].classList.contains('cp-is-active'),
   highSection.querySelectorAll('.cp-category')[1].textContent);
 check("the active slot's group is emphasised",
-  highSection.classList.contains('is-emphasis') && !lowSection.classList.contains('is-emphasis'));
+  highSection.classList.contains('cp-is-emphasis') && !lowSection.classList.contains('cp-is-emphasis'));
 
 // 16. selection state marks the active colour wherever it appears
 check('the active colour is marked in its own group',
-  highSection.querySelectorAll('.cp-swatch.is-selected').length === 1,
-  String(highSection.querySelectorAll('.cp-swatch.is-selected').length));
+  highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 1,
+  String(highSection.querySelectorAll('.cp-swatch.cp-is-selected').length));
 check('the other group marks only swatches of that same colour',
-  lowSection.querySelectorAll('.cp-swatch.is-selected').length ===
+  lowSection.querySelectorAll('.cp-swatch.cp-is-selected').length ===
     [...lowSection.querySelectorAll('.cp-swatch')].filter((n) => n.dataset.hex === '#0F766E').length);
-const marked = highSection.querySelector('.cp-swatch.is-selected');
+const marked = highSection.querySelector('.cp-swatch.cp-is-selected');
 check('marked swatch carries the hex', marked && marked.dataset.hex === '#0F766E', marked && marked.dataset.hex);
 check('selected swatch has an aria-pressed state', marked && marked.getAttribute('aria-pressed') === 'true');
 check('check color adapts to luminance',
@@ -41,22 +41,22 @@ const changeBefore = events.filter(([n]) => n === 'change').length;
 const coolSwatch = [...highSection.querySelectorAll('.cp-swatch')].find((n) => n.dataset.hex === '#111827');
 coolSwatch.click();
 check('swatch click updates the color', picker.getColors().text === '#111827', picker.getColors().text);
-check('swatch click updates the hex field', q(picker, '.hex-input').value === '#111827', q(picker, '.hex-input').value);
+check('swatch click updates the hex field', q(picker, '.cp-hex-input').value === '#111827', q(picker, '.cp-hex-input').value);
 check('swatch click emits onChange', events.filter(([n]) => n === 'change').length === changeBefore + 1);
-check('swatch click moves the checkmark', coolSwatch.classList.contains('is-selected') && !marked.classList.contains('is-selected'));
+check('swatch click moves the checkmark', coolSwatch.classList.contains('cp-is-selected') && !marked.classList.contains('cp-is-selected'));
 
 // 18. category pills swap the grid
 const pillOf = (section, name) => [...section.querySelectorAll('.cp-category')].find((n) => n.textContent === name);
 pillOf(highSection, 'Blue').click();
 check('pill click activates the category',
-  pillOf(highSection, 'Blue').classList.contains('is-active') &&
-  !pillOf(highSection, 'Cool').classList.contains('is-active'));
+  pillOf(highSection, 'Blue').classList.contains('cp-is-active') &&
+  !pillOf(highSection, 'Cool').classList.contains('cp-is-active'));
 check('pill click swaps the swatch set',
   highSection.querySelectorAll('.cp-swatch').length === picker.palettes.text.Blue.length);
 check('color survives a category change', picker.getColors().text === '#111827');
 check('a color outside the category marks no swatch',
-  highSection.querySelectorAll('.cp-swatch.is-selected').length === 0,
-  String(highSection.querySelectorAll('.cp-swatch.is-selected').length));
+  highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 0,
+  String(highSection.querySelectorAll('.cp-swatch.cp-is-selected').length));
 pillOf(highSection, 'All').click();
 check('the All pill shows every category at once',
   highSection.querySelectorAll('.cp-swatch').length ===
@@ -74,30 +74,30 @@ check('a background swatch leaves the other slot alone',
   picker.getColors().background === '#70B1ED', picker.getColors().background);
 check('a background swatch does not switch the active slot', picker.activeSlot === 'text', picker.activeSlot);
 check("the emphasis stays with the active slot's group",
-  highSection.classList.contains('is-emphasis') && !lowSection.classList.contains('is-emphasis'));
+  highSection.classList.contains('cp-is-emphasis') && !lowSection.classList.contains('cp-is-emphasis'));
 picker.setActiveSlot('background');
 check('switching slots keeps both groups mounted',
-  !!q(picker, '.preset-section[data-group="text"]') && !!q(picker, '.preset-section[data-group="background"]'));
+  !!q(picker, '.cp-preset-section[data-group="text"]') && !!q(picker, '.cp-preset-section[data-group="background"]'));
 check('switching slots moves the emphasis to the other group',
-  lowSection.classList.contains('is-emphasis') && !highSection.classList.contains('is-emphasis'));
-const bgMarked = lowSection.querySelectorAll('.cp-swatch.is-selected');
+  lowSection.classList.contains('cp-is-emphasis') && !highSection.classList.contains('cp-is-emphasis'));
+const bgMarked = lowSection.querySelectorAll('.cp-swatch.cp-is-selected');
 check("switching slots marks that slot's own colour, not the last one edited",
   bgMarked.length === 1 && bgMarked[0].dataset.hex === '#70B1ED',
   `${bgMarked.length}:${bgMarked[0] && bgMarked[0].dataset.hex}`);
 picker.setActiveSlot('text');
-check('returning to the slot shows its colour again', q(picker, '.hex-input').value === tappedHex, q(picker, '.hex-input').value);
+check('returning to the slot shows its colour again', q(picker, '.cp-hex-input').value === tappedHex, q(picker, '.cp-hex-input').value);
 check('the checkmark follows the colour, not the group',
-  highSection.querySelectorAll('.cp-swatch.is-selected').length === 0 &&
-  lowSection.querySelectorAll('.cp-swatch.is-selected').length === 1);
+  highSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 0 &&
+  lowSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 1);
 
 // 20. reset restores the checkmarks
-picker.root.querySelector('.reset-btn').click();
+picker.root.querySelector('.cp-reset-btn').click();
 check('reset restores the active slot checkmark',
-  highSection.querySelector('.cp-swatch.is-selected').dataset.hex === '#0F766E' &&
-  lowSection.querySelectorAll('.cp-swatch.is-selected').length === 0);
+  highSection.querySelector('.cp-swatch.cp-is-selected').dataset.hex === '#0F766E' &&
+  lowSection.querySelectorAll('.cp-swatch.cp-is-selected').length === 0);
 picker.setActiveSlot('background');
 check('the background group marks the reset background colour',
-  lowSection.querySelector('.cp-swatch.is-selected').dataset.hex === '#70B1ED');
+  lowSection.querySelector('.cp-swatch.cp-is-selected').dataset.hex === '#70B1ED');
 picker.setActiveSlot('text');
 picker.close();
 
@@ -110,7 +110,7 @@ check('two roots mounted', document.querySelectorAll('.cp-root').length === 2);
 // 16. keyboard on tablist
 picker.open();
 picker.setActiveSlot('text');
-picker.root.querySelectorAll('.tab')[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+picker.root.querySelectorAll('.cp-tab')[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
 check('arrow key moves tabs', picker.activeSlot === 'background', picker.activeSlot);
 picker.close();
 
@@ -123,7 +123,7 @@ const suggPicker = mk({
   contrastPair: ['text', 'background'],
 });
 suggPicker.open();
-const band = suggPicker.root.querySelector('.suggestions');
+const band = suggPicker.root.querySelector('.cp-suggestions-band');
 const details = band.querySelector('.cp-suggestions');
 const badge = details.querySelector('.cp-badge');
 const largeBadge = details.querySelector('.cp-badge-large');
@@ -155,8 +155,8 @@ check('a failing pair still lists only readable partners', shownPartners().every
 // 23. dark theme repaints through tokens
 const dark = mk({ theme: 'dark', showContrastSuggestions: true, contrastPair: ['text', 'background'] });
 check('dark theme lands on the root', dark.root.dataset.theme === 'dark');
-const lightSurface = getComputedStyle(suggPicker.root.querySelector('.picker')).backgroundColor;
-const darkSurface = getComputedStyle(dark.root.querySelector('.picker')).backgroundColor;
+const lightSurface = getComputedStyle(suggPicker.root.querySelector('.cp-picker')).backgroundColor;
+const darkSurface = getComputedStyle(dark.root.querySelector('.cp-picker')).backgroundColor;
 check('dark theme repaints the surface', darkSurface !== lightSurface, `${darkSurface} vs ${lightSurface}`);
 check('dark theme keeps the ink light',
   getComputedStyle(dark.root).color !== getComputedStyle(suggPicker.root).color,

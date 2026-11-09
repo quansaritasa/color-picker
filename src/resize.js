@@ -21,10 +21,10 @@ export function createResize({ panel, grip, mode, onStart, onChange }) {
   const onPointerDown = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     if (window.matchMedia(SHEET).matches) return;
-    if (panel.classList.contains('is-maximized')) return;
+    if (panel.classList.contains('cp-is-maximized')) return;
     const rect = panel.getBoundingClientRect();
     start = { x: event.clientX, y: event.clientY, width: rect.width, height: rect.height, rect };
-    panel.classList.add('is-resizing');
+    panel.classList.add('cp-is-resizing');
     /* A resized popover is a box the user owns: stop anchoring it. */
     if (onStart) onStart();
     try {
@@ -52,7 +52,7 @@ export function createResize({ panel, grip, mode, onStart, onChange }) {
   const onPointerUp = () => {
     if (!start) return;
     start = null;
-    panel.classList.remove('is-resizing');
+    panel.classList.remove('cp-is-resizing');
   };
 
   grip.addEventListener('pointerdown', onPointerDown);

@@ -119,13 +119,13 @@ function firstPresetHex(set) {
  * which palette group is emphasised for it — a hint, never a restriction.
  *
  * `type` is the small line under the tab name: the preset group's short name
- * by default (`Text` / `Panel`), overridable per slot or via `labels.tabs`.
+ * by default (`Text` / `Panel`), overridable per slot or via `labels.cp-tabs`.
  * Two slots may share one type — two panel backgrounds are two tabs, not a
  * conflict — so nothing here dedupes or validates it against `presetSet`.
  */
 export function resolveSlots(slots, labels = {}) {
   /* The shipped slot is the spec only when the caller named none — an explicit
-     `labels.tabs` must still be able to rename it. */
+     `labels.cp-tabs` must still be able to rename it. */
   const usingDefaults = !(Array.isArray(slots) && slots.length);
   const list = usingDefaults ? DEFAULT_SLOTS : slots;
   const tabLabels = labels.tabs || {};

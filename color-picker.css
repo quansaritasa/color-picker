@@ -48,7 +48,7 @@
   line-height: 1.4;
 }
 
-.cp-root.hidden {
+.cp-root.cp-hidden {
   display: none;
 }
 
@@ -95,11 +95,11 @@
   cursor: pointer;
 }
 
-.cp-root .picker {
+.cp-root .cp-picker {
   /* Small on purpose: the surface being recoloured must stay visible around it. */
   width: min(100%, 500px);
   max-height: calc(100vh - 32px);
-  /* The panel does not scroll — `.picker-body` does — so the resize grip can
+  /* The panel does not scroll — `.cp-picker-body` does — so the resize grip can
      sit in the corner of the box instead of travelling with the content. */
   display: flex;
   flex-direction: column;
@@ -113,7 +113,7 @@
      and a re-centre that eases would make the browser read a mid-flight value. */
 }
 
-.cp-root .picker-body {
+.cp-root .cp-picker-body {
   /* min-height 0 is what lets the body shrink below its content and scroll. */
   flex: 1 1 auto;
   min-height: 0;
@@ -125,24 +125,24 @@
 }
 
 /* Children keep their natural height: the box scrolls instead of squeezing. */
-.cp-root .picker-body > * {
+.cp-root .cp-picker-body > * {
   flex-shrink: 0;
 }
 
 /* The colour area is the surface that benefits from a bigger box. */
-.cp-root .picker-body > .editor {
+.cp-root .cp-picker-body > .cp-editor {
   flex-grow: 1;
 }
 
 /* Maximized: the box is the screen, so the corner grip has nothing to offer. */
-.cp-root .picker.is-maximized .resize-grip,
-.cp-root .picker:not(.is-resizable) .resize-grip {
+.cp-root .cp-picker.cp-is-maximized .cp-resize-grip,
+.cp-root .cp-picker:not(.cp-is-resizable) .cp-resize-grip {
   display: none;
 }
 
 /* ── Header ─────────────────────────────────────────────── */
 
-.cp-root .picker-header {
+.cp-root .cp-picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -150,28 +150,28 @@
 }
 
 /* The header is the drag handle: grab anywhere on it except its controls. */
-.cp-root .picker-header.is-draggable {
+.cp-root .cp-picker-header.cp-is-draggable {
   cursor: grab;
   touch-action: none;
   user-select: none;
 }
 
-.cp-root .picker.is-dragging .picker-header.is-draggable {
+.cp-root .cp-picker.cp-is-dragging .cp-picker-header.cp-is-draggable {
   cursor: grabbing;
 }
 
 /* A maximized box is the screen: the header is no longer a handle. */
-.cp-root .picker.is-maximized .picker-header.is-draggable {
+.cp-root .cp-picker.cp-is-maximized .cp-picker-header.cp-is-draggable {
   cursor: default;
 }
 
-.cp-root .heading {
+.cp-root .cp-heading {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.cp-root .app-icon {
+.cp-root .cp-app-icon {
   width: 26px;
   height: 26px;
   border-radius: 8px;
@@ -182,13 +182,13 @@
   font-size: 13px;
 }
 
-.cp-root .picker-header h2 {
+.cp-root .cp-picker-header h2 {
   margin: 0;
   font-size: 14px;
   letter-spacing: -0.03em;
 }
 
-.cp-root .close-btn {
+.cp-root .cp-close-btn {
   width: 26px;
   height: 26px;
   border: 0;
@@ -204,13 +204,13 @@
   padding: 0 0 3px;
 }
 
-.cp-root .close-btn:hover {
+.cp-root .cp-close-btn:hover {
   background: var(--cp-hover);
 }
 
 /* ── Tabs ───────────────────────────────────────────────── */
 
-.cp-root .tabs {
+.cp-root .cp-tabs {
   margin: 0 14px;
   padding: 3px;
   display: grid;
@@ -222,7 +222,7 @@
   border-radius: 11px;
 }
 
-.cp-root .tab {
+.cp-root .cp-tab {
   border: 0;
   background: transparent;
   border-radius: 8px;
@@ -238,7 +238,7 @@
 /* Name above, type below: two tabs of one group in a four-tab row may wrap
    their names to different line counts, and stretching the body keeps every
    type line on the same baseline instead of drifting with each label. */
-.cp-root .tab-body {
+.cp-root .cp-tab-body {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -246,14 +246,14 @@
   min-width: 0;
 }
 
-.cp-root .tab.active {
+.cp-root .cp-tab.cp-active {
   background: var(--cp-surface);
   color: var(--cp-ink);
   box-shadow: 0 1px 4px #17203312;
   outline: 1px solid var(--cp-line-soft);
 }
 
-.cp-root .tab-symbol {
+.cp-root .cp-tab-symbol {
   width: 22px;
   height: 22px;
   flex: 0 0 22px;
@@ -267,18 +267,18 @@
   font-size: 12px;
 }
 
-.cp-root .tab.active .tab-symbol {
+.cp-root .cp-tab.cp-active .cp-tab-symbol {
   background: var(--cp-accent-strong);
   color: #fff;
 }
 
-.cp-root .tab strong {
+.cp-root .cp-tab strong {
   display: block;
   font-size: 12px;
   font-weight: 700;
 }
 
-.cp-root .tab small {
+.cp-root .cp-tab small {
   display: block;
   margin-top: 1px;
   font-size: 10px;
@@ -287,19 +287,19 @@
 
 /* ── Editor ─────────────────────────────────────────────── */
 
-.cp-root .editor {
+.cp-root .cp-editor {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(148px, 1fr);
   gap: 12px;
   padding: 11px 14px;
 }
 
-.cp-root .sv-wrap {
+.cp-root .cp-sv-wrap {
   position: relative;
   min-height: 116px;
 }
 
-.cp-root .sv {
+.cp-root .cp-sv {
   position: absolute;
   inset: 0;
   border-radius: 10px;
@@ -311,7 +311,7 @@
   touch-action: none;
 }
 
-.cp-root .sv-thumb {
+.cp-root .cp-sv-thumb {
   position: absolute;
   width: 15px;
   height: 15px;
@@ -322,19 +322,19 @@
   pointer-events: none;
 }
 
-.cp-root .editor-side {
+.cp-root .cp-editor-side {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.cp-root .hex-row {
+.cp-root .cp-hex-row {
   display: flex;
   align-items: center;
   gap: 9px;
 }
 
-.cp-root .color-preview {
+.cp-root .cp-color-preview {
   width: 38px;
   height: 38px;
   flex: 0 0 38px;
@@ -344,7 +344,7 @@
   background-size: 10px 10px;
 }
 
-.cp-root .hex-input {
+.cp-root .cp-hex-input {
   width: 100%;
   min-width: 0;
   height: 38px;
@@ -357,26 +357,26 @@
   background: var(--cp-surface);
 }
 
-.cp-root .hex-input:focus {
+.cp-root .cp-hex-input:focus {
   border-color: var(--cp-accent);
   box-shadow: 0 0 0 3px #2563eb18;
 }
 
 /* The status line is screen-reader only now, so a rejected HEX marks the field
    itself. Cleared by the next valid commit. */
-.cp-root .hex-input[aria-invalid="true"] {
+.cp-root .cp-hex-input[aria-invalid="true"] {
   border-color: var(--cp-danger);
   box-shadow: 0 0 0 3px #b4231818;
 }
 
-.cp-root .hex-input[aria-invalid="true"]:focus {
+.cp-root .cp-hex-input[aria-invalid="true"]:focus {
   border-color: var(--cp-danger);
   box-shadow: 0 0 0 3px #b4231824;
 }
 
 /* Copy: same box as the header icon buttons, but it must not steal width from
    the HEX field, so it keeps a fixed slot at the end of the row. */
-.cp-root .copy-btn {
+.cp-root .cp-copy-btn {
   flex: 0 0 30px;
   width: 30px;
   height: 30px;
@@ -390,12 +390,12 @@
   transition: background 0.12s ease, color 0.12s ease;
 }
 
-.cp-root .copy-btn:hover {
+.cp-root .cp-copy-btn:hover {
   background: var(--cp-hover);
   color: var(--cp-ink);
 }
 
-.cp-root .copy-btn:focus-visible {
+.cp-root .cp-copy-btn:focus-visible {
   outline: 2px solid var(--cp-accent);
   outline-offset: 1px;
 }
@@ -407,31 +407,31 @@
   line-height: 1;
 }
 
-.cp-root .copy-btn[data-copied="true"] {
+.cp-root .cp-copy-btn[data-copied="true"] {
   color: var(--cp-accent-strong);
 }
 
 /* One glyph at a time: the SVG copy mark, or the confirmation tick. */
-.cp-root .copy-btn[data-copied="true"] svg {
+.cp-root .cp-copy-btn[data-copied="true"] svg {
   display: none;
 }
 
-.cp-root .copy-btn[data-copied="true"] .cp-copy-done {
+.cp-root .cp-copy-btn[data-copied="true"] .cp-copy-done {
   display: block;
 }
 
 /* ── Sliders ────────────────────────────────────────────── */
 
-.cp-root .range-block {
+.cp-root .cp-range-block {
   display: grid;
   gap: 7px;
 }
 
-.cp-root .range-block[hidden] {
+.cp-root .cp-range-block[hidden] {
   display: none;
 }
 
-.cp-root .range-label {
+.cp-root .cp-range-label {
   display: flex;
   justify-content: space-between;
   color: var(--cp-muted);
@@ -439,7 +439,7 @@
   font-weight: 650;
 }
 
-.cp-root .range-block input[type="range"] {
+.cp-root .cp-range-block input[type="range"] {
   appearance: none;
   width: 100%;
   height: 10px;
@@ -449,19 +449,19 @@
   background: var(--cp-track);
 }
 
-.cp-root .range-block input[type="range"]:focus-visible {
+.cp-root .cp-range-block input[type="range"]:focus-visible {
   box-shadow: 0 0 0 3px #2563eb33;
 }
 
-.cp-root .hue-range input[type="range"] {
+.cp-root .cp-hue-range input[type="range"] {
   background: linear-gradient(90deg, red, #ff0, #0f0, #0ff, #00f, #f0f, red);
 }
 
-.cp-root .alpha-range input[type="range"] {
+.cp-root .cp-alpha-range input[type="range"] {
   background: linear-gradient(90deg, transparent, #1475ef), repeating-conic-gradient(#d9dee7 0 25%, #fff 0 50%) 0/12px 12px;
 }
 
-.cp-root .range-block input[type="range"]::-webkit-slider-thumb {
+.cp-root .cp-range-block input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
   height: 16px;
@@ -471,7 +471,7 @@
   box-shadow: 0 1px 5px #17203355;
 }
 
-.cp-root .range-block input[type="range"]::-moz-range-thumb {
+.cp-root .cp-range-block input[type="range"]::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border: 2px solid #fff;
@@ -482,13 +482,13 @@
 
 /* ── Presets (rendered in iteration 3) ──────────────────── */
 
-.cp-root .divider {
+.cp-root .cp-divider {
   height: 1px;
   background: var(--cp-line);
   margin: 0 14px;
 }
 
-.cp-root .presets {
+.cp-root .cp-presets {
   display: grid;
   /* Both palette groups are always offered, whatever the slot count. */
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -496,15 +496,15 @@
   padding: 10px 14px 12px;
 }
 
-.cp-root .presets[hidden] {
+.cp-root .cp-presets[hidden] {
   display: none;
 }
 
-.cp-root .presets:empty {
+.cp-root .cp-presets:empty {
   display: none;
 }
 
-.cp-root .preset-section {
+.cp-root .cp-preset-section {
   min-width: 0;
 }
 
@@ -513,28 +513,28 @@
  * opacity 0.62 took the idle section's 10px hint to 2.44:1, under AA. Swatches
  * carry no text, so they are the only thing that can fade safely.
  */
-.cp-root .preset-section .swatches {
+.cp-root .cp-preset-section .cp-swatches {
   opacity: 1;
   transition: opacity 0.15s ease;
 }
 
-.cp-root .preset-section:not(.is-emphasis) .swatches {
+.cp-root .cp-preset-section:not(.cp-is-emphasis) .cp-swatches {
   opacity: 0.55;
 }
 
-.cp-root .preset-section + .preset-section {
+.cp-root .cp-preset-section + .cp-preset-section {
   border-left: 1px solid var(--cp-line);
   padding-left: 12px;
 }
 
-.cp-root .section-title {
+.cp-root .cp-section-title {
   display: flex;
   align-items: center;
   gap: 7px;
   margin-bottom: 8px;
 }
 
-.cp-root .section-icon {
+.cp-root .cp-section-icon {
   width: 22px;
   height: 22px;
   border-radius: 7px;
@@ -546,12 +546,12 @@
   font-weight: 800;
 }
 
-.cp-root .section-title strong {
+.cp-root .cp-section-title strong {
   font-size: 12px;
   letter-spacing: -0.02em;
 }
 
-.cp-root .category-row {
+.cp-root .cp-category-row {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
@@ -568,13 +568,13 @@
   font-weight: 600;
 }
 
-.cp-root .cp-category.is-active {
+.cp-root .cp-category.cp-is-active {
   background: var(--cp-accent-soft);
   color: var(--cp-accent);
   border-color: var(--cp-accent-line);
 }
 
-.cp-root .swatches {
+.cp-root .cp-swatches {
   display: grid;
   /* Swatches keep a usable size as the panel narrows: rows wrap instead of shrinking. */
   grid-template-columns: repeat(auto-fill, minmax(26px, 1fr));
@@ -596,12 +596,12 @@
   transform: translateY(-1px);
 }
 
-.cp-root .cp-swatch.is-selected {
+.cp-root .cp-swatch.cp-is-selected {
   outline: 2px solid var(--cp-accent);
   outline-offset: 1px;
 }
 
-.cp-root .cp-swatch.is-selected::after {
+.cp-root .cp-swatch.cp-is-selected::after {
   content: "✓";
   position: absolute;
   inset: 0;
@@ -613,7 +613,7 @@
   text-shadow: 0 1px 3px #0006;
 }
 
-.cp-root .section-hint {
+.cp-root .cp-section-hint {
   margin: 7px 0 0;
   color: var(--cp-subtle);
   font-size: 10px;
@@ -621,11 +621,11 @@
 
 /* ── Contrast suggestions ───────────────────────────────── */
 
-.cp-root .suggestions {
+.cp-root .cp-suggestions-band {
   padding: 0 18px;
 }
 
-.cp-root .suggestions[hidden] {
+.cp-root .cp-suggestions-band[hidden] {
   display: none;
 }
 
@@ -772,7 +772,7 @@
 
 /* The message region is announced, not shown: the visible line repeated the
    HEX field, and a rejected HEX is marked on the field itself. */
-.cp-root .status {
+.cp-root .cp-status {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -786,7 +786,7 @@
 
 /* A footer exists only where there is something to decide: the modal's
    Cancel/OK. A popover has no transaction, so it renders no bottom strip. */
-.cp-root .footer {
+.cp-root .cp-footer {
   border-top: 1px solid var(--cp-line);
   display: flex;
   align-items: center;
@@ -797,14 +797,14 @@
   margin-top: auto;
 }
 
-.cp-root .header-actions {
+.cp-root .cp-header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 /* Icon button, same metrics as the close button beside it. */
-.cp-root .reset-btn {
+.cp-root .cp-reset-btn {
   width: 28px;
   height: 28px;
   border: 0;
@@ -818,13 +818,13 @@
   padding: 0;
 }
 
-.cp-root .reset-btn:hover {
+.cp-root .cp-reset-btn:hover {
   background: var(--cp-hover);
   color: var(--cp-ink);
 }
 
 /* Same metrics as `↺` and `×`; the glyph is drawn, so it needs its own box. */
-.cp-root .maximize-btn {
+.cp-root .cp-maximize-btn {
   width: 28px;
   height: 28px;
   border: 0;
@@ -836,34 +836,34 @@
   padding: 0;
 }
 
-.cp-root .maximize-btn:hover {
+.cp-root .cp-maximize-btn:hover {
   background: var(--cp-hover);
   color: var(--cp-ink);
 }
 
-.cp-root .maximize-btn svg {
+.cp-root .cp-maximize-btn svg {
   width: 15px;
   height: 15px;
   display: block;
 }
 
 /* One button, two glyphs: maximized shows the way back. */
-.cp-root .maximize-btn .icon-collapse {
+.cp-root .cp-maximize-btn .cp-icon-collapse {
   display: none;
 }
 
-.cp-root .picker.is-maximized .maximize-btn .icon-expand {
+.cp-root .cp-picker.cp-is-maximized .cp-maximize-btn .cp-icon-expand {
   display: none;
 }
 
-.cp-root .picker.is-maximized .maximize-btn .icon-collapse {
+.cp-root .cp-picker.cp-is-maximized .cp-maximize-btn .cp-icon-collapse {
   display: block;
 }
 
 /* ── Resize grip ────────────────────────────────────────── */
 
 /* Sits in the panel's own corner, not in the scrolling body. */
-.cp-root .resize-grip {
+.cp-root .cp-resize-grip {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -877,7 +877,7 @@
 
 /* Three diagonal grooves in the corner: the shape the platform uses for
    "drag me", readable on both themes without a second glyph. */
-.cp-root .resize-grip::after {
+.cp-root .cp-resize-grip::after {
   content: '';
   position: absolute;
   right: 3px;
@@ -889,25 +889,25 @@
   opacity: 0.8;
 }
 
-.cp-root .resize-grip:hover {
+.cp-root .cp-resize-grip:hover {
   background: var(--cp-hover);
 }
 
-.cp-root .resize-grip:hover::after {
+.cp-root .cp-resize-grip:hover::after {
   opacity: 1;
   background-image: repeating-linear-gradient(135deg, var(--cp-ink) 0 1px, transparent 1px 3.5px);
 }
 
-.cp-root .picker.is-resizing {
+.cp-root .cp-picker.cp-is-resizing {
   user-select: none;
 }
 
-.cp-root .actions {
+.cp-root .cp-actions {
   display: flex;
   gap: 7px;
 }
 
-.cp-root .secondary-btn {
+.cp-root .cp-secondary-btn {
   background: var(--cp-surface);
   border: 1px solid var(--cp-btn-line);
   color: var(--cp-btn-ink);
@@ -916,7 +916,7 @@
   font-weight: 600;
 }
 
-.cp-root .primary-btn {
+.cp-root .cp-primary-btn {
   border: 0;
   border-radius: 9px;
   padding: 8px 17px;
@@ -933,12 +933,12 @@
   outline-offset: 2px;
 }
 
-.cp-root .close-btn:focus-visible,
-.cp-root .reset-btn:focus-visible,
-.cp-root .maximize-btn:focus-visible,
-.cp-root .secondary-btn:focus-visible,
-.cp-root .primary-btn:focus-visible,
-.cp-root .tab:focus-visible {
+.cp-root .cp-close-btn:focus-visible,
+.cp-root .cp-reset-btn:focus-visible,
+.cp-root .cp-maximize-btn:focus-visible,
+.cp-root .cp-secondary-btn:focus-visible,
+.cp-root .cp-primary-btn:focus-visible,
+.cp-root .cp-tab:focus-visible {
   outline-offset: 3px;
 }
 
@@ -958,7 +958,7 @@
     align-items: end;
   }
 
-  .cp-root .picker {
+  .cp-root .cp-picker {
     /* `!important` because a resized desktop box carries inline width/height. */
     width: 100% !important;
     height: auto !important;
@@ -971,87 +971,87 @@
 
   /* The sheet owns its own size: neither the grip nor the toggle has a box
      to give it. */
-  .cp-root .maximize-btn,
-  .cp-root .resize-grip {
+  .cp-root .cp-maximize-btn,
+  .cp-root .cp-resize-grip {
     display: none;
   }
 
-  .cp-root .picker-header {
+  .cp-root .cp-picker-header {
     padding: 13px 14px 11px;
   }
 
-  .cp-root .tabs {
+  .cp-root .cp-tabs {
     margin: 0 14px;
     /* Narrow screens: let three or more slot tabs wrap instead of shrinking. */
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 
-  .cp-root .tab {
+  .cp-root .cp-tab {
     padding: 8px;
     gap: 8px;
   }
 
-  .cp-root .tab-symbol {
+  .cp-root .cp-tab-symbol {
     width: 26px;
     height: 26px;
     flex: 0 0 26px;
   }
 
-  .cp-root .tab strong {
+  .cp-root .cp-tab strong {
     font-size: 12px;
   }
 
-  .cp-root .tab small {
+  .cp-root .cp-tab small {
     font-size: 10px;
   }
 
-  .cp-root .editor {
+  .cp-root .cp-editor {
     grid-template-columns: 1fr;
     padding: 12px 14px;
     gap: 12px;
   }
 
-  .cp-root .sv-wrap {
+  .cp-root .cp-sv-wrap {
     min-height: 150px;
   }
 
-  .cp-root .editor-side {
+  .cp-root .cp-editor-side {
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: center;
   }
 
-  .cp-root .hex-row {
+  .cp-root .cp-hex-row {
     grid-column: 1 / -1;
   }
 
-  .cp-root .divider {
+  .cp-root .cp-divider {
     margin: 0 14px;
   }
 
-  .cp-root .presets {
+  .cp-root .cp-presets {
     grid-template-columns: 1fr;
     gap: 14px;
     padding: 12px 14px;
   }
 
-  .cp-root .preset-section + .preset-section {
+  .cp-root .cp-preset-section + .cp-preset-section {
     border-left: 0;
     border-top: 1px solid var(--cp-line);
     padding-left: 0;
     padding-top: 14px;
   }
 
-  .cp-root .swatches {
+  .cp-root .cp-swatches {
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 6px;
   }
 
-  .cp-root .suggestions {
+  .cp-root .cp-suggestions-band {
     padding: 0 14px;
   }
 
-  .cp-root .footer {
+  .cp-root .cp-footer {
     position: sticky;
     bottom: 0;
     z-index: 2;
@@ -1073,7 +1073,7 @@
 }
 
 /* Left/top are written by `src/popover.js`; nothing here may position the box. */
-.cp-root.cp-popover .picker {
+.cp-root.cp-popover .cp-picker {
   position: fixed;
   left: 0;
   top: 0;
@@ -1084,20 +1084,20 @@
 
 /* Every edit is already painted: there is no transaction to apply or discard,
    so the modal footer — the OK/Cancel pair — is not rendered at all. */
-.cp-root.cp-popover .footer {
+.cp-root.cp-popover .cp-footer {
   display: none;
 }
 
 /* A closed popover must stay closed: `.cp-popover` above sets `display:block`,
-   which would otherwise beat `.cp-root.hidden` on source order. */
-.cp-root.cp-popover.hidden {
+   which would otherwise beat `.cp-root.cp-hidden` on source order. */
+.cp-root.cp-popover.cp-hidden {
   display: none;
 }
 
 /* Below 680px the popover becomes the same bottom sheet as the modal, but
    shorter: the page it is recolouring has to stay visible above it. */
 @media (max-width: 680px) {
-  .cp-root.cp-popover .picker {
+  .cp-root.cp-popover .cp-picker {
     inset: auto 0 0 0;
     width: 100%;
     max-height: 78vh;

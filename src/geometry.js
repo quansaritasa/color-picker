@@ -27,12 +27,12 @@ export function createGeometry({ panel, header, grip, button, mode, draggable, r
   };
 
   const drag = draggable ? createDrag({ panel, handle: header, onStart: pin }) : stillDrag;
-  if (draggable) header.classList.add('is-draggable');
+  if (draggable) header.classList.add('cp-is-draggable');
 
   const resize = resizable
     ? createResize({ panel, grip, mode, onStart: pin, onChange: () => drag.clamp() })
     : { destroy() {} };
-  panel.classList.toggle('is-resizable', Boolean(resizable));
+  panel.classList.toggle('cp-is-resizable', Boolean(resizable));
 
   const maximize = createMaximize({ panel, button, drag, pin, labels });
 

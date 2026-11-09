@@ -22,7 +22,7 @@ check('the trigger is named with its colour',
   (triggers[1].getAttribute('aria-label') || '').includes('#70B1ED'), triggers[1].getAttribute('aria-label'));
 check('triggers pick the popover by default', pop.options.mode === 'popover', pop.options.mode);
 check('a popover is movable like any other panel',
-  pop.options.draggable && pop.refs.header.classList.contains('is-draggable'));
+  pop.options.draggable && pop.refs.header.classList.contains('cp-is-draggable'));
 check('a popover carries the resize grip',
   !!pop.refs.grip && getComputedStyle(pop.refs.grip).display !== 'none');
 check('a closed popover paints nothing', getComputedStyle(pop.root).display === 'none', getComputedStyle(pop.root).display);
@@ -41,7 +41,7 @@ check('the panel follows its trigger',
 check('the panel stays inside the viewport',
   popBox.left >= 0 && popBox.top >= 0 && popBox.right <= innerWidth + 0.5 && popBox.bottom <= innerHeight + 0.5,
   `${Math.round(popBox.left)},${Math.round(popBox.top)},${Math.round(popBox.right)},${Math.round(popBox.bottom)}`);
-check('a popover renders no footer', getComputedStyle(pop.root.querySelector('.footer')).display === 'none');
+check('a popover renders no footer', getComputedStyle(pop.root.querySelector('.cp-footer')).display === 'none');
 
 /* The `All` union grid is taller than one category: the box may grow, its top
    edge may not move (`place()` is the path the ResizeObserver drives live). */
@@ -85,7 +85,7 @@ if (!sheetWidth) {
     Math.round(popPinned.left) === Math.round(popMoved.left) && Math.round(popPinned.top) === Math.round(popMoved.top),
     `${Math.round(popPinned.left)},${Math.round(popPinned.top)}`);
 
-  const popToggle = pop.root.querySelector('.maximize-btn');
+  const popToggle = pop.root.querySelector('.cp-maximize-btn');
   popToggle.click();
   const popMax = pop.refs.panel.getBoundingClientRect();
   check('maximizing a popover fills the viewport',
@@ -132,18 +132,18 @@ triggerHost.remove();
 
 // 32. header icons, the modal footer, and the HEX error on the field
 const shellPicker = mk({ initialColors: { text: '#0F766E', background: '#70B1ED' } });
-const resetBtn = shellPicker.root.querySelector('.reset-btn');
-check('reset sits in the header', !!shellPicker.root.querySelector('.picker-header .reset-btn'));
+const resetBtn = shellPicker.root.querySelector('.cp-reset-btn');
+check('reset sits in the header', !!shellPicker.root.querySelector('.cp-picker-header .cp-reset-btn'));
 check('reset is an icon button, named for screen readers',
   resetBtn.textContent.trim() === '↺' && resetBtn.getAttribute('aria-label') === 'Reset',
   `${resetBtn.textContent.trim()} / ${resetBtn.getAttribute('aria-label')}`);
 check('the status line takes no space',
-  getComputedStyle(shellPicker.root.querySelector('.status')).position === 'absolute',
-  getComputedStyle(shellPicker.root.querySelector('.status')).position);
+  getComputedStyle(shellPicker.root.querySelector('.cp-status')).position === 'absolute',
+  getComputedStyle(shellPicker.root.querySelector('.cp-status')).position);
 shellPicker.open();
-check('a modal keeps its footer', !shellPicker.root.querySelector('.footer').hidden
-  && getComputedStyle(shellPicker.root.querySelector('.footer')).display !== 'none');
-const badHex = shellPicker.root.querySelector('.hex-input');
+check('a modal keeps its footer', !shellPicker.root.querySelector('.cp-footer').hidden
+  && getComputedStyle(shellPicker.root.querySelector('.cp-footer')).display !== 'none');
+const badHex = shellPicker.root.querySelector('.cp-hex-input');
 badHex.value = '#NOPE';
 badHex.dispatchEvent(new Event('change', { bubbles: true }));
 check('a rejected HEX marks the field itself', badHex.getAttribute('aria-invalid') === 'true');

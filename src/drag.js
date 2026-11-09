@@ -45,11 +45,11 @@ export function createDrag({ panel, handle, onStart }) {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     if (window.matchMedia(SHEET).matches) return;
     // A maximized box is the screen; there is nowhere to move it to.
-    if (panel.classList.contains('is-maximized')) return;
+    if (panel.classList.contains('cp-is-maximized')) return;
     // The close button and the title stay clickable: only bare header drags.
     if (event.target.closest(CONTROLS)) return;
     start = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
-    panel.classList.add('is-dragging');
+    panel.classList.add('cp-is-dragging');
     /* A moved popover stops following its trigger: the caller takes the box
        out of the anchor's hands on the first real press, not on the first move. */
     if (onStart) onStart();
@@ -73,7 +73,7 @@ export function createDrag({ panel, handle, onStart }) {
   const onPointerUp = () => {
     if (!start) return;
     start = null;
-    panel.classList.remove('is-dragging');
+    panel.classList.remove('cp-is-dragging');
   };
 
   /** Double-clicking the header puts the panel back where the layout wants it. */

@@ -9,13 +9,13 @@ const movable = mk({
   onApply: () => movableEvents.push('apply'),
 });
 movable.open();
-const shellPanel = movable.root.querySelector('.picker');
-const shellHeader = movable.root.querySelector('.picker-header');
+const shellPanel = movable.root.querySelector('.cp-picker');
+const shellHeader = movable.root.querySelector('.cp-picker-header');
 const panelStart = shellPanel.getBoundingClientRect();
 const ptr = (type, x, y) => shellHeader.dispatchEvent(new PointerEvent(type, {
   bubbles: true, pointerId: 11, pointerType: 'mouse', button: 0, clientX: x, clientY: y,
 }));
-check('the header is a drag handle', shellHeader.classList.contains('is-draggable'));
+check('the header is a drag handle', shellHeader.classList.contains('cp-is-draggable'));
 ptr('pointerdown', panelStart.left + 100, panelStart.top + 20);
 ptr('pointermove', panelStart.left - 20, panelStart.top + 60);
 ptr('pointerup', panelStart.left - 20, panelStart.top + 60);
@@ -43,7 +43,7 @@ if (sheetWidth) {
     `${Math.round(panelHome.left)}, ${Math.round(panelHome.top)}`);
 }
 // The close button must keep working: a press on it never starts a drag.
-movable.root.querySelector('.close-btn').dispatchEvent(new PointerEvent('pointerdown', {
+movable.root.querySelector('.cp-close-btn').dispatchEvent(new PointerEvent('pointerdown', {
   bubbles: true, pointerId: 12, pointerType: 'mouse', button: 0, clientX: 5, clientY: 5,
 }));
 shellHeader.dispatchEvent(new PointerEvent('pointermove', {
@@ -53,16 +53,16 @@ check('a press on the close button does not drag the panel',
   Math.round(shellPanel.getBoundingClientRect().left) === Math.round(panelStart.left));
 
 // 30b. the box itself: resize grip, maximize toggle, and the shell keys
-const grip = movable.root.querySelector('.resize-grip');
-const maximizeBtn = movable.root.querySelector('.maximize-btn');
+const grip = movable.root.querySelector('.cp-resize-grip');
+const maximizeBtn = movable.root.querySelector('.cp-maximize-btn');
 check('the panel carries a resize grip',
   !!grip && getComputedStyle(grip).cursor === 'nwse-resize', grip && getComputedStyle(grip).cursor);
 check('the maximize toggle sits left of the close button',
-  maximizeBtn.nextElementSibling === movable.root.querySelector('.close-btn'));
+  maximizeBtn.nextElementSibling === movable.root.querySelector('.cp-close-btn'));
 check('the toggle is named and shows the expand glyph',
   maximizeBtn.getAttribute('aria-label') === 'Maximize'
-    && getComputedStyle(maximizeBtn.querySelector('.icon-expand')).display !== 'none'
-    && getComputedStyle(maximizeBtn.querySelector('.icon-collapse')).display === 'none',
+    && getComputedStyle(maximizeBtn.querySelector('.cp-icon-expand')).display !== 'none'
+    && getComputedStyle(maximizeBtn.querySelector('.cp-icon-collapse')).display === 'none',
   maximizeBtn.getAttribute('aria-label'));
 
 if (!sheetWidth) {
@@ -105,8 +105,8 @@ if (!sheetWidth) {
       && Math.round(boxMax.width) === innerWidth - 16 && Math.round(boxMax.height) === innerHeight - 16,
     `${Math.round(boxMax.left)},${Math.round(boxMax.top)} ${Math.round(boxMax.width)}x${Math.round(boxMax.height)}`);
   check('the toggle flips to the way back',
-    shellPanel.classList.contains('is-maximized') && maximizeBtn.getAttribute('aria-label') === 'Restore'
-      && getComputedStyle(maximizeBtn.querySelector('.icon-collapse')).display !== 'none',
+    shellPanel.classList.contains('cp-is-maximized') && maximizeBtn.getAttribute('aria-label') === 'Restore'
+      && getComputedStyle(maximizeBtn.querySelector('.cp-icon-collapse')).display !== 'none',
     maximizeBtn.getAttribute('aria-label'));
   check('the grip is hidden while maximized', getComputedStyle(grip).display === 'none');
 
@@ -119,10 +119,10 @@ if (!sheetWidth) {
   check('the toggle is named again', maximizeBtn.getAttribute('aria-label') === 'Maximize');
 
   // The HEX field owns its letters: `m` there is typing, not a shortcut.
-  const hexField = movable.root.querySelector('.hex-input');
+  const hexField = movable.root.querySelector('.cp-hex-input');
   hexField.focus();
   hexField.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
-  check('m typed into the HEX field is not a shortcut', !shellPanel.classList.contains('is-maximized'));
+  check('m typed into the HEX field is not a shortcut', !shellPanel.classList.contains('cp-is-maximized'));
   hexField.blur();
 }
 
@@ -153,8 +153,8 @@ movable.destroy();
 
 const fixedShell = mk({ draggable: false });
 fixedShell.open();
-const fixedPanel = fixedShell.root.querySelector('.picker');
-const fixedHeader = fixedShell.root.querySelector('.picker-header');
+const fixedPanel = fixedShell.root.querySelector('.cp-picker');
+const fixedHeader = fixedShell.root.querySelector('.cp-picker-header');
 const fixedStart = fixedPanel.getBoundingClientRect().left;
 const fixedPt = (type, x, y) => fixedHeader.dispatchEvent(new PointerEvent(type, {
   bubbles: true, pointerId: 13, pointerType: 'mouse', button: 0, clientX: x, clientY: y,
@@ -163,19 +163,19 @@ fixedPt('pointerdown', fixedStart + 100, 100);
 fixedPt('pointermove', fixedStart + 300, 300);
 fixedPt('pointerup', fixedStart + 300, 300);
 check('draggable:false keeps the shell fixed',
-  Math.round(fixedPanel.getBoundingClientRect().left) === Math.round(fixedStart) && !fixedHeader.classList.contains('is-draggable'));
-check('draggable:false keeps the resize grip', !!fixedShell.root.querySelector('.resize-grip')
-  && getComputedStyle(fixedShell.root.querySelector('.resize-grip')).display !== 'none');
+  Math.round(fixedPanel.getBoundingClientRect().left) === Math.round(fixedStart) && !fixedHeader.classList.contains('cp-is-draggable'));
+check('draggable:false keeps the resize grip', !!fixedShell.root.querySelector('.cp-resize-grip')
+  && getComputedStyle(fixedShell.root.querySelector('.cp-resize-grip')).display !== 'none');
 fixedShell.destroy();
 
 const noResize = mk({ resizable: false, draggable: false });
 noResize.open();
 check('resizable:false drops the grip',
-  getComputedStyle(noResize.root.querySelector('.resize-grip')).display === 'none',
-  getComputedStyle(noResize.root.querySelector('.resize-grip')).display);
-noResize.root.querySelector('.maximize-btn').click();
+  getComputedStyle(noResize.root.querySelector('.cp-resize-grip')).display === 'none',
+  getComputedStyle(noResize.root.querySelector('.cp-resize-grip')).display);
+noResize.root.querySelector('.cp-maximize-btn').click();
 check('the maximize toggle survives a fixed, unresizable panel',
-  noResize.refs.panel.classList.contains('is-maximized'));
+  noResize.refs.panel.classList.contains('cp-is-maximized'));
 noResize.destroy();
 
 dark.destroy();

@@ -53,7 +53,7 @@ export function bindShell(picker) {
   const isTopmostOpen = (root) => {
     const roots = [...document.querySelectorAll('.cp-root')];
     for (let i = roots.indexOf(root) + 1; i < roots.length; i += 1) {
-      if (!roots[i].classList.contains('hidden')) return false;
+      if (!roots[i].classList.contains('cp-hidden')) return false;
     }
     return true;
   };

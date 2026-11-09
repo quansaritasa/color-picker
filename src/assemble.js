@@ -30,7 +30,7 @@ export function assemble(picker) {
     if (!found) console.warn(`ColorPicker: container "${options.container}" matches nothing — mounting on document.body.`);
     return found || document.body;
   })();
-  /* Both palettes are always offered; `labels.presets` renames a section. */
+  /* Both palettes are always offered; `labels.cp-presets` renames a section. */
   const groupLabels = options.labels.presets || {};
   const groups = GROUP_KEYS.map((key) => ({ key, ...PRESET_GROUPS[key], label: groupLabels[key] || PRESET_GROUPS[key].label }));
   const built = buildTemplate({ slots, groups, showAlpha: options.showAlpha, labels: options.labels });
