@@ -579,7 +579,6 @@ Create the complete working library. The implementation is split into ES modules
 ```text
 color-picker/
 ├── index.html
-├── demo.html            (optional full-page demo)
 ├── color-picker.css
 ├── README.md
 └── src/

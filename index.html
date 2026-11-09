@@ -101,6 +101,11 @@
   }
   .sheet-link { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 650; color: var(--sheet-accent); }
 
+  .ghost {
+    border: 0; border-radius: 10px; padding: 9px 14px; font: inherit; font-weight: 650; cursor: pointer;
+    background: #fff; color: var(--page-ink); box-shadow: inset 0 0 0 1px var(--page-line);
+  }
+
   .field-row {
     display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 8px 10px; align-items: center; font-size: 12.5px;
@@ -115,8 +120,29 @@
     padding: 15px; border-radius: 10px; font-weight: 650; font-size: 13.5px;
   }
 
+  /* 06 — a whole page painted by two custom properties. */
+  .pp-surface {
+    --pp-fg: #0F766E; --pp-bg: #CCFBF1;
+    color: var(--pp-fg); background: #fff; border: 1px solid var(--page-line);
+    border-radius: 14px; padding: 22px; display: grid; gap: 14px;
+  }
+  .pp-surface h3 { margin: 0; font-size: 28px; line-height: 1.15; letter-spacing: -.03em; color: var(--pp-fg); }
+  .pp-surface p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--pp-fg); }
+  .pp-card { background: var(--pp-bg); border-radius: 12px; padding: 16px; color: var(--pp-fg); display: grid; gap: 6px; }
+  .pp-readout { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--page-muted); }
+  .pp-pill {
+    display: inline-flex; padding: 5px 10px; border-radius: 999px; font-weight: 700; font-size: 12px;
+    background: #eef2f7; color: #334155; font-variant-numeric: tabular-nums;
+  }
+  .pp-pill[data-level="AAA"] { background: #dcfce7; color: #14532d; }
+  .pp-pill[data-level="AA"] { background: #dbeafe; color: #1e3a8a; }
+  .pp-pill[data-level="AA-large"] { background: #fef3c7; color: #78350f; }
+  .pp-pill[data-level="fail"] { background: #fee2e2; color: #7f1d1d; }
+
   @media (max-width: 680px) {
     body { padding: 14px 12px 40px; }
+    .pp-surface { padding: 16px; }
+    .pp-surface h3 { font-size: 22px; }
     .panel { padding: 14px; }
     .snippet { font-size: 11px; padding: 13px; }
     .stage { padding: 13px; }
@@ -371,6 +397,55 @@ fieldPreview.style.background = fieldPicker.getColors().wash;</code></pre>
       <div class="field-preview" id="fieldPreview">The two fields, painted</div>
     </div>
   </section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="panel-no">06</span>A whole page — live contrast</h2>
+      <p>The text color and the panel background are written to two custom properties, and everything
+        below reads them. A pill reports the pair's WCAG level, measured with the library's own
+        <code>contrastRatio</code>.</p>
+    </div>
+    <p class="label">Setup</p>
+    <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
+import { parseHex } from './src/color.js';
+import { contrastRatio, wcagLevel, formatRatio } from './src/contrast.js';
+
+const picker = new ColorPicker({
+  triggers: '#pageTriggers',
+  slots: [
+    { id: 'text', label: 'Text color', symbol: 'Aa', presetSet: 'text' },
+    { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
+  ],
+  initialColors: { text: '#0F766E', background: '#CCFBF1' },
+  showContrastSuggestions: true,
+  contrastPair: ['text', 'background'],
+  onChange: (colors) => {
+    surface.style.setProperty('--pp-fg', colors.text);
+    surface.style.setProperty('--pp-bg', colors.background);
+    const ratio = contrastRatio(parseHex(colors.text), parseHex(colors.background));
+    pill.textContent = wcagLevel(ratio);   // AAA | AA | AA-large | fail
+  },
+});</code></pre>
+    <p class="label">Live</p>
+    <div class="stage">
+      <div class="stage-bar">
+        <div id="pageTriggers"></div>
+        <button type="button" class="ghost" id="pageReset">Reset</button>
+      </div>
+      <div class="pp-surface" id="ppSurface">
+        <h3>Read this headline</h3>
+        <p>Body copy uses the same color as the headline. Nothing here hard-codes a hex: both surfaces
+          read the two custom properties the picker writes.</p>
+        <div class="pp-card">
+          <strong>Panel background</strong>
+          <span>Pick something quiet — the readout below tells you when the pair stops being readable.</span>
+        </div>
+        <div class="pp-readout">
+          <span class="pp-pill" id="ppPill" data-level="AA">…</span>
+          <span id="ppRatio">measuring…</span>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <div id="brandRoot"></div>
@@ -378,6 +453,8 @@ fieldPreview.style.background = fieldPicker.getColors().wash;</code></pre>
 
 <script type="module">
   import ColorPicker from './src/color-picker.js';
+  import { parseHex } from './src/color.js';
+  import { contrastRatio, wcagLevel, formatRatio } from './src/contrast.js';
 
   /* Each block below is the <pre> above it, run for real — keep them in sync. */
 
@@ -480,6 +557,39 @@ fieldPreview.style.background = fieldPicker.getColors().wash;</code></pre>
   fieldPreview.style.color = fieldPicker.getColors().ink;
   fieldPreview.style.background = fieldPicker.getColors().wash;
   window.fieldPicker = fieldPicker;
+  // 06 — a whole page, with a live WCAG readout.
+  const ppSurface = document.getElementById('ppSurface');
+  const ppPill = document.getElementById('ppPill');
+  const ppRatio = document.getElementById('ppRatio');
+  const paintPage = (colors) => {
+    ppSurface.style.setProperty('--pp-fg', colors.text);
+    ppSurface.style.setProperty('--pp-bg', colors.background);
+    const fg = parseHex(colors.text);
+    const bg = parseHex(colors.background);
+    if (!fg || !bg) { ppRatio.textContent = 'ratio unavailable'; return; }
+    const ratio = contrastRatio(fg, bg);
+    const level = wcagLevel(ratio);
+    ppPill.dataset.level = level;
+    ppPill.textContent = level === 'fail' ? '⚠ fail below AA' : `✓ ${level}`;
+    ppRatio.textContent = `${formatRatio(ratio)} — normal text ${level === 'fail' ? 'fails AA' : 'passes AA'}`;
+  };
+  const pagePicker = new ColorPicker({
+    triggers: '#pageTriggers',
+    slots: [
+      { id: 'text', label: 'Text color', symbol: 'Aa', presetSet: 'text' },
+      { id: 'background', label: 'Panel background', symbol: '▰', presetSet: 'background' },
+    ],
+    initialColors: { text: '#0F766E', background: '#CCFBF1' },
+    showContrastSuggestions: true,
+    contrastPair: ['text', 'background'],
+    onChange: paintPage,
+  });
+  paintPage(pagePicker.getColors());
+  document.getElementById('pageReset').addEventListener('click', () => {
+    pagePicker.setColors({ text: '#0F766E', background: '#CCFBF1' });
+    paintPage(pagePicker.getColors());
+  });
+  window.pagePicker = pagePicker;
 </script>
 </body>
 </html>

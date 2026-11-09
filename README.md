@@ -11,7 +11,7 @@ Out of the box it is a **single-color picker**: one slot, `color`, no tab row.
 A host that paints two things declares two slots (`text` + `background`,
 `accent`, …) and gets a tab per slot. No build step.
 
-**Live demo:** [demo page](https://quansaritasa.github.io/color-picker/demo.html) —
+**Live demo:** [demo page](https://quansaritasa.github.io/color-picker/) —
 a page painted by the picker, with a live WCAG contrast pill ·
 [API showcase](https://quansaritasa.github.io/color-picker/) — every setup in this
 README, each running next to its code.
@@ -98,7 +98,7 @@ you need from here.
 | a centred dialog with `OK`/`Cancel` | nothing, or `mode: 'modal'` | [Basic usage — modal](#basic-usage--modal) |
 | a panel docked in your own layout | `mode: 'inline', container: '#slot'` | [Inline](#inline--docked-in-your-layout) |
 
-`index.html` and `demo.html` in this repo are that same install, so diffing them
+`index.html` in this repo is that same install, so diffing it
 against the page above is the fastest way to see a shape wired end to end.
 
 ## Triggers — the default shape
@@ -470,7 +470,7 @@ listeners, so two pickers on one page never share colors.
 ## Development
 
 ```bash
-python3.12 -m http.server 8000   # then open /index.html or /demo.html
+python3.12 -m http.server 8000   # then open /index.html
 node --test                      # color math, preset merging, slot resolution
 npm install && npm run build     # bundle and minify into dist/
 ```
@@ -487,17 +487,16 @@ npm install && npm run build     # bundle and minify into dist/
 The bundles carry `ColorPicker` only; the contrast helpers stay importable from
 `src/contrast.js`.
 
-`index.html` is five panels, each one setup call printed above the instance it
+`index.html` is six panels, each one setup call printed above the instance it
 builds: the default single color, the text/panel pair with contrast
 suggestions, a dark-theme three-slot brand picker with its own `Brand`
 category, a four-slot light-theme section that repaints heading, two surfaces
 and accent from one popup, and a `fields` instance whose controls are the host's
-own inputs. Each snippet is the call its panel runs, so the page doubles as the
-API reference. `demo.html` paints an
-entire page — the headline and body copy take the `text` color, the panel takes
-`background`, and a live ratio pill (the library's own WCAG code) says whether
-the pair still passes AA. Both drive the picker from its trigger bar, so there is
-no "open" button anywhere.
+own inputs, and a whole-page panel where the headline and body copy take the
+`text` color, the card takes `background`, and a live ratio pill (the library's
+own WCAG code) says whether the pair still passes AA. Each snippet is the call
+its panel runs, so the page doubles as the API reference. The pickers run from
+their trigger bars, so there is no "open" button anywhere.
 
 `smoke/index.html` is a browser harness for the component itself — open it through
 the local server and it prints PASS/FAIL per behaviour (tabs, HEX, drag, resize
