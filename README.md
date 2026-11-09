@@ -428,7 +428,20 @@ listeners, so two pickers on one page never share colors.
 ```bash
 python3.12 -m http.server 8000   # then open /index.html or /demo.html
 node --test                      # colour math, preset merging, slot resolution
+npm install && npm run build     # bundle and minify into dist/
 ```
+
+`npm run build` (esbuild, `build.mjs`) writes four files; the JS ones get a source map:
+
+| File | Use |
+|---|---|
+| `dist/color-picker.esm.js` | ES module bundle, readable |
+| `dist/color-picker.esm.min.js` | ES module bundle, minified — `import ColorPicker from './dist/color-picker.esm.min.js'` |
+| `dist/color-picker.min.js` | Minified classic script — `<script src>` sets `window.ColorPicker` to the class |
+| `dist/color-picker.min.css` | Minified stylesheet |
+
+The bundles carry `ColorPicker` only; the contrast helpers stay importable from
+`src/contrast.js`.
 
 `index.html` is five panels, each one setup call printed above the instance it
 builds: the default single colour, the text/panel pair with contrast
