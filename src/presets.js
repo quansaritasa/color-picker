@@ -28,9 +28,10 @@
  * ends with its greys (chroma below .011), lightest first.
  *
  * `Pale` is the pale washes this group shipped before, merged into one
- * de-duplicated category, plus five more. The contrast suggestions rank partners
- * out of this palette, and chip inks are the wrong shape for that — see the note
- * on the category itself.
+ * de-duplicated category, plus nine more — five in the old hue gaps and four
+ * across red and orange, where the washes were thinnest. The contrast
+ * suggestions rank partners out of this palette, and chip inks are the wrong
+ * shape for that — see the note on the category itself.
  *
  * A set is only a *hint*: both sets are always on screen and a swatch writes the
  * slot the editor is showing, so any colour is valid for any slot.
@@ -42,28 +43,28 @@ export const PRESET_SETS = {
   text: {
     /* Ordered so neighbours look alike: one tint family at a time, dark to light
        within it. `Normal` runs gray, slate, stone, neutral, then its light tail for
-       dark surfaces; `#111827` stays first because the first entry is the default
-       text colour. The two coloured tabs walk the hue wheel; `Highlight` ends with
-       its dark-surface row in the same hue order. */
+       dark surfaces; `#000000` leads it, and the first entry is what `options.js`
+       hands a text slot with no colour of its own. The two coloured tabs walk the
+       hue wheel; `Highlight` ends with its dark-surface row in the same hue order. */
     Normal: [
-      '#111827', '#1F2937', '#374151', '#4B5563', '#6B7280',
-      '#0F172A', '#1E293B', '#334155', '#475569', '#64748B',
+      '#000000', '#111827', '#1F2937', '#374151', '#4B5563', '#6B7280',
+      '#020617', '#0F172A', '#1E293B', '#334155', '#475569', '#64748B', '#94A3B8',
       '#1C1917', '#292524', '#44403C', '#57534E',
-      '#000000', '#171717', '#262626', '#404040', '#525252', '#737373',
-      '#A3A3A3', '#D1D5DB', '#F3F4F6', '#FFFFFF',
+      '#171717', '#262626', '#404040', '#525252', '#737373',
+      '#A3A3A3', '#D1D5DB', '#E5E7EB', '#F3F4F6', '#FFFFFF',
     ],
     Heading: [
-      '#581C87', '#312E81', '#3730A3', '#172554', '#1E3A8A', '#1E40AF', '#1D4ED8', '#2563EB',
-      '#0C4A6E', '#075985', '#0369A1', '#164E63', '#155E75', '#0E7490',
+      '#4C1D95', '#581C87', '#312E81', '#3730A3', '#172554', '#1E3A8A', '#1E40AF', '#1D4ED8',
+      '#2563EB', '#0C4A6E', '#075985', '#0369A1', '#164E63', '#155E75', '#0E7490',
       '#134E4A', '#115E59', '#0F766E', '#064E3B', '#065F46', '#047857',
       '#052E16', '#14532D', '#166534', '#15803D', '#365314', '#3F6212',
     ],
     Highlight: [
       '#991B1B', '#B91C1C', '#DC2626', '#9A3412', '#C2410C', '#EA580C', '#B45309', '#A16207',
-      '#4D7C0F', '#0D9488', '#4F46E5', '#5B21B6', '#6D28D9', '#7C3AED', '#6B21A8', '#7E22CE',
-      '#9333EA', '#A21CAF', '#C026D3', '#BE185D', '#DB2777', '#BE123C', '#E11D48',
-      '#F87171', '#FB923C', '#FBBF24', '#FACC15', '#A3E635', '#34D399', '#22D3EE', '#60A5FA',
-      '#A78BFA', '#F472B6',
+      '#CA8A04', '#4D7C0F', '#0D9488', '#0891B2', '#4F46E5', '#5B21B6', '#6D28D9', '#7C3AED',
+      '#6B21A8', '#7E22CE', '#9333EA', '#A21CAF', '#C026D3', '#BE185D', '#DB2777', '#BE123C',
+      '#E11D48', '#FDA4AF', '#F87171', '#FB923C', '#FBBF24', '#FACC15', '#A3E635', '#34D399',
+      '#22D3EE', '#60A5FA', '#A78BFA', '#F472B6',
     ],
   },
   background: {
@@ -83,15 +84,19 @@ export const PRESET_SETS = {
        badge inks clears 4.5:1 against a mid-tone text like #0F766E, so without a
        pale set the suggestions panel has nothing to offer for such a pair. The
        old six categories are merged and de-duplicated here, with five more washes
-       in the hue gaps — 39 colours. The 4.5:1 bar against #0F766E is what caps
-       it: a wash light enough to clear it has little chroma left to spend, and
-       more additions than these five land within dE00 2.6 of one already here. */
+       in the hue gaps and four across red and orange — 43 colours, then 17 more across every hue so it matches
+       `Vivid` at 60. Contrast against #0F766E is what caps the set: a wash light enough to stay useful
+       there has little chroma left to spend, so the red/orange four sit at
+       3.78-5.00:1, inside the range the merged washes already covered. */
     Pale: [
-      '#BFDBFE', '#EFF6FF', '#DBEAFE', '#EDE9FE', '#F3E8FF', '#FCE7F3', '#FBCFE8',
-      '#FFE4E6', '#FED7AA', '#FFF7ED', '#FFEDD5', '#FFFBEB', '#FEF3C7', '#FDE68A',
-      '#FBF6AE', '#F7FEE7', '#ECFCCB', '#E6F0D3', '#D5F9BA', '#F0FDF4', '#BBF7D0',
-      '#DCFCE7', '#D1FAE5', '#ECFDF5', '#99F6E4', '#F0FDFA', '#CCFBF1', '#E6FFFB',
-      '#A8FAFF', '#CDF5FF', '#BAE6FD', '#F0F9FF', '#E0F2FE', '#FAFAFA', '#F9FAFB',
+      '#BFDBFE', '#EFF6FF', '#DBEAFE', '#D3DFF3', '#EDE9FE', '#E0D8FD', '#F3E8FF',
+      '#F0D1FF', '#EAD7E8', '#FCE7F3', '#FBCFE8', '#FFE4E6', '#FEF2F2', '#FECACA',
+      '#F1D7D2', '#FDE4CF', '#FFDAB9', '#FED7AA', '#FFF7ED', '#FFEDD5', '#F0DDA9',
+      '#FDEAB6', '#FFFBEB', '#FEF3C7', '#FDE68A', '#E2DFC9', '#FBF6AE', '#EDF0BA',
+      '#DCE4AF', '#F7FEE7', '#ECFCCB', '#E6F0D3', '#D5F9BA', '#CDE7C7', '#F0FDF4',
+      '#BBF7D0', '#DCFCE7', '#B6EDCE', '#D1FAE5', '#ECFDF5', '#BAFBE8', '#D8F2EA',
+      '#BCE9DC', '#99F6E4', '#F0FDFA', '#CCFBF1', '#E6FFFB', '#A6EDF0', '#A8FAFF',
+      '#C8E4E7', '#CDF5FF', '#BAE6FD', '#F0F9FF', '#E0F2FE', '#FAFAFA', '#F9FAFB',
       '#F5F5F5', '#F3F4F6', '#E5E7EB', '#D1D5DB',
     ],
   },

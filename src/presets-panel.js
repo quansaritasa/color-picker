@@ -107,6 +107,46 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
       const pill = event.target.closest('.cp-category');
       if (pill) selectCategory(key, pill.dataset.category);
     });
+    /* Keyboard: arrows on a pill switch palette; on a swatch they walk the grid,
+       and leave it through the top row to the pills. */
+    listen(ref.categories, 'keydown', (event) => {
+      const pill = event.target.closest('.cp-category');
+      if (!pill || event.altKey || event.ctrlKey || event.metaKey) return;
+      const names = categoriesWithAll(palettes[key] || {});
+      const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+      if (step) {
+        const next = names[(names.indexOf(pill.dataset.category) + step + names.length) % names.length];
+        selectCategory(key, next);
+        ref.categories.querySelector(`[data-category="${CSS.escape(next)}"]`)?.focus();
+      } else if (event.key === 'ArrowDown') {
+        (ref.swatches.querySelector('.cp-is-selected') || ref.swatches.firstElementChild)?.focus();
+      } else return;
+      event.preventDefault();
+    });
+    listen(ref.swatches, 'keydown', (event) => {
+      const node = event.target.closest('.cp-swatch');
+      if (!node || event.altKey || event.ctrlKey || event.metaKey) return;
+      const items = [...ref.swatches.children];
+      const index = items.indexOf(node);
+      /* Columns are whatever the grid currently wraps to: count the first row. */
+      const columns = items.filter((item) => item.offsetTop === items[0].offsetTop).length || 1;
+      const to = {
+        ArrowLeft: index - 1,
+        ArrowRight: index + 1,
+        ArrowUp: index - columns,
+        ArrowDown: index + columns,
+      }[event.key];
+      if (to === undefined) return;
+      event.preventDefault();
+      if (to < 0 && event.key === 'ArrowUp') {
+        const pills = ref.categories;
+        (pills.querySelector('.cp-is-active') || pills.firstElementChild)?.focus();
+      } else if (items[to]) {
+        /* Moving previews: the colour is written as focus lands on it. */
+        items[to].focus();
+        if (typeof onSelect === 'function') onSelect(items[to].dataset.hex);
+      }
+    });
     listen(ref.swatches, 'click', (event) => {
       const node = event.target.closest('.cp-swatch');
       if (node && typeof onSelect === 'function') onSelect(node.dataset.hex);

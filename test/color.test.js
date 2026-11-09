@@ -115,20 +115,20 @@ test('background preset tables', () => {
      entries above, so it was washed copies in the grid. */
   assert.ok(!('Dusty' in background));
   /* The pale washes, merged into one category and de-duplicated, so the contrast
-     suggestions still have partners for a mid-tone text colour; the last five are
+     suggestions still have partners for a mid-tone text colour; five of them are
      the additions in the hue gaps the merged set left empty. */
-  assert.equal(background.Pale.length, 39);
+  assert.equal(background.Pale.length, 60);
   for (const hex of ['#FBF6AE', '#E6F0D3', '#D5F9BA', '#A8FAFF', '#CDF5FF']) assert.ok(background.Pale.includes(hex), hex);
   assert.deepEqual(background.Pale.slice(-6), ['#FAFAFA', '#F9FAFB', '#F5F5F5', '#F3F4F6', '#E5E7EB', '#D1D5DB'], 'greys last');
-  assert.equal(new Set(background.Pale).size, 39, 'no colour twice in Pale');
+  assert.equal(new Set(background.Pale).size, 60, 'no colour twice in Pale');
 });
 
 test('the badge palette is 60 distinct colours across its two categories', () => {
   const { Vivid, Pale } = PRESET_SETS.background;
   assert.equal(new Set(Vivid).size, 60, 'Vivid repeats no colour');
   assert.deepEqual(allColors(PRESET_SETS.background).slice(0, 60), Vivid, 'All starts with Vivid');
-  assert.equal(allColors(PRESET_SETS.background).length, 99, 'All is the 60 vivid plus the 39 pale washes');
-  assert.equal(new Set([...Vivid, ...Pale]).size, 99, 'the two categories share no colour');
+  assert.equal(allColors(PRESET_SETS.background).length, 120, 'All is the 60 vivid plus the 60 pale washes');
+  assert.equal(new Set([...Vivid, ...Pale]).size, 120, 'the two categories share no colour');
 });
 
 test('mergePalette replaces a named category and adds new ones', () => {
@@ -145,10 +145,10 @@ test('mergePalette replaces a named category and adds new ones', () => {
   // every other shipped category survives
   assert.deepEqual(merged.Heading, PRESET_SETS.text.Heading);
   // the shipped tables are never mutated
-  assert.equal(PRESET_SETS.text.Normal.length, 24);
+  assert.equal(PRESET_SETS.text.Normal.length, 27);
   assert.ok(!('Brand' in PRESET_SETS.text));
   merged.Heading.push('#000000');
-  assert.equal(PRESET_SETS.text.Heading.length, 26);
+  assert.equal(PRESET_SETS.text.Heading.length, 27);
 });
 
 test('palette merging keeps shipped categories and adds new ones', () => {

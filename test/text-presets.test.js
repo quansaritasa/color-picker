@@ -19,9 +19,9 @@ const SPEC_TEXT = [
 
 test('the text set is grouped by role', () => {
   assert.deepEqual(Object.keys(text), ['Normal', 'Heading', 'Highlight']);
-  assert.equal(text.Normal.length, 24);
-  assert.equal(text.Heading.length, 26);
-  assert.equal(text.Highlight.length, 33);
+  assert.equal(text.Normal.length, 27);
+  assert.equal(text.Heading.length, 27);
+  assert.equal(text.Highlight.length, 36);
 });
 
 test('the text set keeps every colour the spec shipped, once', () => {
@@ -31,7 +31,9 @@ test('the text set keeps every colour the spec shipped, once', () => {
 });
 
 test('the text set carries pure black and pure white for body copy', () => {
-  assert.ok(text.Normal.includes('#000000'));
+  /* Black leads: `options.js` hands the first entry to a text slot with no
+     colour of its own, so the order is a default, not only a layout. */
+  assert.equal(text.Normal[0], '#000000');
   assert.ok(text.Normal.includes('#FFFFFF'));
 });
 

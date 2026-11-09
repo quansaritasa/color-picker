@@ -51,7 +51,7 @@ test('a field list is both the slot list and the trigger', () => {
   assert.deepEqual(options.startColors, { brand: '#0F766E', accent: 'nope' });
   // the field's own value seeds the colour; an invalid one falls back per slot
   const slots = resolveSlots(options.slots, options.labels);
-  assert.deepEqual(resolveColors(options.startColors, slots), { brand: '#0F766E', accent: '#111827' });
+  assert.deepEqual(resolveColors(options.startColors, slots), { brand: '#0F766E', accent: '#000000' });
   assert.throws(() => resolveOptions({ fields: '#x', slots: ['a'] }, fields), /drop `slots`/);
 });
 
@@ -85,7 +85,7 @@ test('a slot that names no preset set borrows the background palette', () => {
   // the palette's first colour is the fallback, not text's — and the background
   // palette now opens on the badge inks, so its first entry is a mid blue
   assert.equal(accent.color, '#70B1ED');
-  assert.equal(resolveSlots([{ id: 'ink', presetSet: 'text' }])[0].color, '#111827');
+  assert.equal(resolveSlots([{ id: 'ink', presetSet: 'text' }])[0].color, '#000000');
 });
 
 test('a slot keeps its own label, symbol and hint', () => {

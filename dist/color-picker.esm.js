@@ -157,8 +157,10 @@ function buildTemplate({ slots = [], groups = [], showAlpha = true, labels = {} 
   const preview = el("div", "cp-color-preview");
   const copy = button("cp-copy-btn", void 0, { "aria-label": L.copy, title: L.copy });
   copy.dataset.copied = "false";
+  const hexField = el("div", "cp-hex-field");
+  hexField.append(hex, copy);
   const hexRow = el("div", "cp-hex-row");
-  hexRow.append(preview, hex, copy);
+  hexRow.append(preview, hexField);
   const range = (name, max) => {
     const label = el("div", "cp-range-label");
     const value = el("span");
@@ -461,25 +463,27 @@ var PRESET_SETS = {
   text: {
     /* Ordered so neighbours look alike: one tint family at a time, dark to light
        within it. `Normal` runs gray, slate, stone, neutral, then its light tail for
-       dark surfaces; `#111827` stays first because the first entry is the default
-       text colour. The two coloured tabs walk the hue wheel; `Highlight` ends with
-       its dark-surface row in the same hue order. */
+       dark surfaces; `#000000` leads it, and the first entry is what `options.js`
+       hands a text slot with no colour of its own. The two coloured tabs walk the
+       hue wheel; `Highlight` ends with its dark-surface row in the same hue order. */
     Normal: [
+      "#000000",
       "#111827",
       "#1F2937",
       "#374151",
       "#4B5563",
       "#6B7280",
+      "#020617",
       "#0F172A",
       "#1E293B",
       "#334155",
       "#475569",
       "#64748B",
+      "#94A3B8",
       "#1C1917",
       "#292524",
       "#44403C",
       "#57534E",
-      "#000000",
       "#171717",
       "#262626",
       "#404040",
@@ -487,10 +491,12 @@ var PRESET_SETS = {
       "#737373",
       "#A3A3A3",
       "#D1D5DB",
+      "#E5E7EB",
       "#F3F4F6",
       "#FFFFFF"
     ],
     Heading: [
+      "#4C1D95",
       "#581C87",
       "#312E81",
       "#3730A3",
@@ -527,8 +533,10 @@ var PRESET_SETS = {
       "#EA580C",
       "#B45309",
       "#A16207",
+      "#CA8A04",
       "#4D7C0F",
       "#0D9488",
+      "#0891B2",
       "#4F46E5",
       "#5B21B6",
       "#6D28D9",
@@ -542,6 +550,7 @@ var PRESET_SETS = {
       "#DB2777",
       "#BE123C",
       "#E11D48",
+      "#FDA4AF",
       "#F87171",
       "#FB923C",
       "#FBBF24",
@@ -622,39 +631,61 @@ var PRESET_SETS = {
        badge inks clears 4.5:1 against a mid-tone text like #0F766E, so without a
        pale set the suggestions panel has nothing to offer for such a pair. The
        old six categories are merged and de-duplicated here, with five more washes
-       in the hue gaps — 39 colours. The 4.5:1 bar against #0F766E is what caps
-       it: a wash light enough to clear it has little chroma left to spend, and
-       more additions than these five land within dE00 2.6 of one already here. */
+       in the hue gaps and four across red and orange — 43 colours, then 17 more across every hue so it matches
+       `Vivid` at 60. Contrast against #0F766E is what caps the set: a wash light enough to stay useful
+       there has little chroma left to spend, so the red/orange four sit at
+       3.78-5.00:1, inside the range the merged washes already covered. */
     Pale: [
       "#BFDBFE",
       "#EFF6FF",
       "#DBEAFE",
+      "#D3DFF3",
       "#EDE9FE",
+      "#E0D8FD",
       "#F3E8FF",
+      "#F0D1FF",
+      "#EAD7E8",
       "#FCE7F3",
       "#FBCFE8",
       "#FFE4E6",
+      "#FEF2F2",
+      "#FECACA",
+      "#F1D7D2",
+      "#FDE4CF",
+      "#FFDAB9",
       "#FED7AA",
       "#FFF7ED",
       "#FFEDD5",
+      "#F0DDA9",
+      "#FDEAB6",
       "#FFFBEB",
       "#FEF3C7",
       "#FDE68A",
+      "#E2DFC9",
       "#FBF6AE",
+      "#EDF0BA",
+      "#DCE4AF",
       "#F7FEE7",
       "#ECFCCB",
       "#E6F0D3",
       "#D5F9BA",
+      "#CDE7C7",
       "#F0FDF4",
       "#BBF7D0",
       "#DCFCE7",
+      "#B6EDCE",
       "#D1FAE5",
       "#ECFDF5",
+      "#BAFBE8",
+      "#D8F2EA",
+      "#BCE9DC",
       "#99F6E4",
       "#F0FDFA",
       "#CCFBF1",
       "#E6FFFB",
+      "#A6EDF0",
       "#A8FAFF",
+      "#C8E4E7",
       "#CDF5FF",
       "#BAE6FD",
       "#F0F9FF",
@@ -793,6 +824,42 @@ function createPresetPanel({ refs, groups, palettes, onSelect }) {
     listen(ref.categories, "click", (event) => {
       const pill = event.target.closest(".cp-category");
       if (pill) selectCategory(key, pill.dataset.category);
+    });
+    listen(ref.categories, "keydown", (event) => {
+      const pill = event.target.closest(".cp-category");
+      if (!pill || event.altKey || event.ctrlKey || event.metaKey) return;
+      const names = categoriesWithAll(palettes[key] || {});
+      const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+      if (step) {
+        const next = names[(names.indexOf(pill.dataset.category) + step + names.length) % names.length];
+        selectCategory(key, next);
+        ref.categories.querySelector(`[data-category="${CSS.escape(next)}"]`)?.focus();
+      } else if (event.key === "ArrowDown") {
+        (ref.swatches.querySelector(".cp-is-selected") || ref.swatches.firstElementChild)?.focus();
+      } else return;
+      event.preventDefault();
+    });
+    listen(ref.swatches, "keydown", (event) => {
+      const node = event.target.closest(".cp-swatch");
+      if (!node || event.altKey || event.ctrlKey || event.metaKey) return;
+      const items = [...ref.swatches.children];
+      const index = items.indexOf(node);
+      const columns = items.filter((item) => item.offsetTop === items[0].offsetTop).length || 1;
+      const to = {
+        ArrowLeft: index - 1,
+        ArrowRight: index + 1,
+        ArrowUp: index - columns,
+        ArrowDown: index + columns
+      }[event.key];
+      if (to === void 0) return;
+      event.preventDefault();
+      if (to < 0 && event.key === "ArrowUp") {
+        const pills = ref.categories;
+        (pills.querySelector(".cp-is-active") || pills.firstElementChild)?.focus();
+      } else if (items[to]) {
+        items[to].focus();
+        if (typeof onSelect === "function") onSelect(items[to].dataset.hex);
+      }
     });
     listen(ref.swatches, "click", (event) => {
       const node = event.target.closest(".cp-swatch");
@@ -1534,6 +1601,7 @@ var MARGIN4 = 8;
 var SHEET4 = "(max-width: 680px)";
 function createMaximize({ panel, button: button2, drag, pin, labels }) {
   let saved = null;
+  const suggestions = () => panel.querySelector(".cp-suggestions");
   const setLabel = (name) => {
     button2.setAttribute("aria-label", name);
     button2.title = name;
@@ -1549,6 +1617,7 @@ function createMaximize({ panel, button: button2, drag, pin, labels }) {
   const maximize = () => {
     if (saved) return;
     if (window.matchMedia(SHEET4).matches) return;
+    const details = suggestions();
     saved = {
       width: panel.style.width,
       height: panel.style.height,
@@ -1556,8 +1625,11 @@ function createMaximize({ panel, button: button2, drag, pin, labels }) {
       left: panel.style.left,
       top: panel.style.top,
       maxHeight: panel.style.maxHeight,
-      offset: drag.getOffset()
+      offset: drag.getOffset(),
+      /* `null` means there was no panel to open, so there is none to put back. */
+      suggestionsOpen: details ? details.open : null
     };
+    if (details) details.open = true;
     if (pin) pin();
     drag.setOffset(0, 0);
     fill();
@@ -1576,6 +1648,8 @@ function createMaximize({ panel, button: button2, drag, pin, labels }) {
     panel.style.left = previous.left;
     panel.style.top = previous.top;
     drag.setOffset(previous.offset.x, previous.offset.y);
+    const details = suggestions();
+    if (details && previous.suggestionsOpen !== null) details.open = previous.suggestionsOpen;
     setLabel(labels.maximize);
   };
   const toggle = () => saved ? restore() : maximize();
@@ -1645,6 +1719,8 @@ function createGeometry({ panel, header, grip, button: button2, mode, draggable,
 }
 
 // src/bindings.js
+var COMPACT_BOX = { width: 380, height: 270 };
+var SHEET5 = "(max-width: 680px)";
 var isTextEntry = (node) => !!node && (node.isContentEditable || node.tagName === "TEXTAREA" || node.tagName === "INPUT" && node.type !== "range");
 function bindShell(picker) {
   const { refs, slotIds } = picker;
@@ -1669,10 +1745,23 @@ function bindShell(picker) {
   refs.cancel.addEventListener("click", () => picker.dismiss());
   refs.apply.addEventListener("click", () => picker.apply());
   refs.reset.addEventListener("click", () => picker.reset());
-  refs.compact.addEventListener("click", () => {
+  let restoreBox = null;
+  const toggleCompact = () => {
     const on = refs.panel.classList.toggle("cp-is-compact");
     refs.compact.setAttribute("aria-pressed", String(on));
-  });
+    if (window.matchMedia(SHEET5).matches) return;
+    const style = refs.panel.style;
+    if (on) {
+      restoreBox = { width: style.width, height: style.height };
+      style.width = `${COMPACT_BOX.width}px`;
+      style.height = `${COMPACT_BOX.height}px`;
+    } else if (restoreBox) {
+      style.width = restoreBox.width;
+      style.height = restoreBox.height;
+      restoreBox = null;
+    }
+  };
+  refs.compact.addEventListener("click", toggleCompact);
   const isTopmostOpen = (root) => {
     const roots = [...document.querySelectorAll(".cp-root")];
     for (let i = roots.indexOf(root) + 1; i < roots.length; i += 1) {
@@ -1693,9 +1782,22 @@ function bindShell(picker) {
       else picker.apply();
       return;
     }
+    if ((event.key === "PageUp" || event.key === "PageDown") && tabs.length && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && !(event.target.tagName === "INPUT" && event.target.type === "range")) {
+      event.preventDefault();
+      const step = event.key === "PageDown" ? 1 : slotIds.length - 1;
+      const next = slotIds[(slotIds.indexOf(picker.activeSlot) + step) % slotIds.length];
+      if (tabs.includes(document.activeElement)) focusSlot(next);
+      else picker.setActiveSlot(next);
+      return;
+    }
     if ((event.key === "m" || event.key === "M") && !event.metaKey && !event.ctrlKey && !event.altKey && !event.repeat && !isTextEntry(event.target)) {
       event.preventDefault();
       picker.geometry.toggleMaximize();
+      return;
+    }
+    if ((event.key === "c" || event.key === "C") && !event.metaKey && !event.ctrlKey && !event.altKey && !event.repeat && !isTextEntry(event.target)) {
+      event.preventDefault();
+      toggleCompact();
     }
   };
   document.addEventListener("keydown", picker.onDocumentKey);

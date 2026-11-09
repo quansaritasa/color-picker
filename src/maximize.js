@@ -13,6 +13,10 @@ export function createMaximize({ panel, button, drag, pin, labels }) {
   /* Non-null only while maximized; holds what to put back. */
   let saved = null;
 
+  /* Queried on each use, never cached: `suggestions.js` removes the panel when
+     the slot has no contrast pair and builds a fresh one when it gains one. */
+  const suggestions = () => panel.querySelector('.cp-suggestions');
+
   const setLabel = (name) => {
     button.setAttribute('aria-label', name);
     button.title = name;
@@ -35,6 +39,7 @@ export function createMaximize({ panel, button, drag, pin, labels }) {
   const maximize = () => {
     if (saved) return;
     if (window.matchMedia(SHEET).matches) return;
+    const details = suggestions();
     saved = {
       width: panel.style.width,
       height: panel.style.height,
@@ -43,7 +48,12 @@ export function createMaximize({ panel, button, drag, pin, labels }) {
       top: panel.style.top,
       maxHeight: panel.style.maxHeight,
       offset: drag.getOffset(),
+      /* `null` means there was no panel to open, so there is none to put back. */
+      suggestionsOpen: details ? details.open : null,
     };
+    /* Collapsed is a concession to a small box. A maximized one has the room,
+       so the contrast reading is on screen instead of one click away. */
+    if (details) details.open = true;
     /* A maximized popover is no longer anchored to its trigger. */
     if (pin) pin();
     drag.setOffset(0, 0);
@@ -64,6 +74,8 @@ export function createMaximize({ panel, button, drag, pin, labels }) {
     panel.style.left = previous.left;
     panel.style.top = previous.top;
     drag.setOffset(previous.offset.x, previous.offset.y);
+    const details = suggestions();
+    if (details && previous.suggestionsOpen !== null) details.open = previous.suggestionsOpen;
     setLabel(labels.maximize);
   };
 

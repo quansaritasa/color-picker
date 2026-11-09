@@ -96,11 +96,14 @@ export function buildTemplate({ slots = [], groups = [], showAlpha = true, label
 
   const hex = attr(el('input', 'cp-hex-input'), { 'aria-label': L.hex, spellcheck: 'false' });
   const preview = el('div', 'cp-color-preview');
-  /* Copy sits after the field; `copy.js` fills its glyph, template only places it. */
+  /* Copy overlays the field's right edge instead of taking a slot beside it, so
+     the input keeps the whole row. `copy.js` fills its glyph; template places it. */
   const copy = button('cp-copy-btn', undefined, { 'aria-label': L.copy, title: L.copy });
   copy.dataset.copied = 'false';
+  const hexField = el('div', 'cp-hex-field');
+  hexField.append(hex, copy);
   const hexRow = el('div', 'cp-hex-row');
-  hexRow.append(preview, hex, copy);
+  hexRow.append(preview, hexField);
 
   const range = (name, max) => {
     const label = el('div', 'cp-range-label');

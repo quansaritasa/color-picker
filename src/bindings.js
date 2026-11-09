@@ -9,6 +9,12 @@ import { createFocusTrap } from './focus.js';
 import { createGeometry } from './geometry.js';
 import { LABELS } from './template.js';
 
+/** The box compact puts the panel in. Narrower than 360 and the slot tabs wrap
+    onto a third line; the width above it goes to the saturation square, which is
+    the surface the view exists to show. */
+const COMPACT_BOX = { width: 380, height: 270 };
+const SHEET = '(max-width: 680px)';
+
 /** A keystroke that belongs to the field, not to the shell. */
 const isTextEntry = (node) => !!node && (
   node.isContentEditable
@@ -43,11 +49,31 @@ export function bindShell(picker) {
   refs.cancel.addEventListener('click', () => picker.dismiss());
   refs.apply.addEventListener('click', () => picker.apply());
   refs.reset.addEventListener('click', () => picker.reset());
-  /* Compact keeps the editor and drops the palettes: a view, so reset leaves it. */
-  refs.compact.addEventListener('click', () => {
+  /* Compact keeps the editor and drops the palettes: a view, so reset leaves it.
+     The button and the `c` key run the same toggle, so `aria-pressed` cannot
+     drift out of step with the class the stylesheet reads.
+
+     The palettes were what needed a wide box, so the view also puts the panel in
+     a small box of its own and restores the previous one on the way out — a box
+     the user dragged out of, resized, or maximized comes back exactly. Below
+     680px the shell is a bottom sheet that owns its size: only the class flips. */
+  let restoreBox = null;
+  const toggleCompact = () => {
     const on = refs.panel.classList.toggle('cp-is-compact');
     refs.compact.setAttribute('aria-pressed', String(on));
-  });
+    if (window.matchMedia(SHEET).matches) return;
+    const style = refs.panel.style;
+    if (on) {
+      restoreBox = { width: style.width, height: style.height };
+      style.width = `${COMPACT_BOX.width}px`;
+      style.height = `${COMPACT_BOX.height}px`;
+    } else if (restoreBox) {
+      style.width = restoreBox.width;
+      style.height = restoreBox.height;
+      restoreBox = null;
+    }
+  };
+  refs.compact.addEventListener('click', toggleCompact);
 
   /**
    * Escape belongs to the picker on top. Every instance listens on `document`,
@@ -78,12 +104,32 @@ export function bindShell(picker) {
       else picker.apply();
       return;
     }
+    /* Page Up/Down step through the slot tabs. A range input keeps its own
+       Page keys, and the focus follows only when it was already on a tab. */
+    if ((event.key === 'PageUp' || event.key === 'PageDown') && tabs.length
+      && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey
+      && !(event.target.tagName === 'INPUT' && event.target.type === 'range')) {
+      event.preventDefault();
+      const step = event.key === 'PageDown' ? 1 : slotIds.length - 1;
+      const next = slotIds[(slotIds.indexOf(picker.activeSlot) + step) % slotIds.length];
+      if (tabs.includes(document.activeElement)) focusSlot(next);
+      else picker.setActiveSlot(next);
+      return;
+    }
     /* `m` toggles the box. Typing a colour keeps its own letters, and a
        modified `m` belongs to the browser (`⌘M` minimises the window). */
     if ((event.key === 'm' || event.key === 'M') && !event.metaKey && !event.ctrlKey
       && !event.altKey && !event.repeat && !isTextEntry(event.target)) {
       event.preventDefault();
       picker.geometry.toggleMaximize();
+      return;
+    }
+    /* `c` toggles compact, under the same guards: a hex field owns its letters,
+       and `⌘C`/`Ctrl`+`C` is copy. */
+    if ((event.key === 'c' || event.key === 'C') && !event.metaKey && !event.ctrlKey
+      && !event.altKey && !event.repeat && !isTextEntry(event.target)) {
+      event.preventDefault();
+      toggleCompact();
     }
   };
   document.addEventListener('keydown', picker.onDocumentKey);

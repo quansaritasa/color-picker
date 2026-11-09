@@ -263,6 +263,10 @@ is the `OK` button. It keeps its position across open/close. Below 680px it
 becomes a bottom sheet: moving, resizing and the toggle are off, because the
 sheet owns the box.
 
+Keyboard: `Page Up`/`Page Down` switch the color-type tab; on a palette tab
+`←`/`→` switch palette and `↓` enters its swatches; on a swatch `↑`/`↓` move by
+row (`↑` from the top row goes back to the tabs) and `←`/`→` by one; each move also applies the color.
+
 ## Options
 
 | Option | Type | Default | Notes |

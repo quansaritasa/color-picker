@@ -289,7 +289,10 @@
 
 .cp-root .cp-editor {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(148px, 1fr);
+  /* The side column's floor holds the HEX value: below 176px a nine-character
+     value (#RRGGBBAA) is clipped by the copy button laid over the field's right edge. Only
+     a narrow box reaches the floor; a full-width panel is sized by the ratio. */
+  grid-template-columns: minmax(0, 1.35fr) minmax(176px, 1fr);
   gap: 12px;
   padding: 11px 14px;
 }
@@ -344,13 +347,23 @@
   background-size: 10px 10px;
 }
 
+/* The positioning context for the copy button, which sits inside the field. */
+.cp-root .cp-hex-field {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+
 .cp-root .cp-hex-input {
   width: 100%;
   min-width: 0;
   height: 38px;
   border: 1px solid var(--cp-field);
   border-radius: 9px;
-  padding: 0 10px;
+  /* Right padding is the button's slot: the value would run under the glyph
+     otherwise, and at the compact width a long value reaches that far. */
+  padding: 0 38px 0 10px;
   font-weight: 650;
   letter-spacing: 0.02em;
   outline: none;
@@ -374,10 +387,13 @@
   box-shadow: 0 0 0 3px #b4231824;
 }
 
-/* Copy: same box as the header icon buttons, but it must not steal width from
-   the HEX field, so it keeps a fixed slot at the end of the row. */
+/* Copy: same box as the header icon buttons, laid over the field's right edge
+   rather than beside it — a slot of its own was width the HEX value could use. */
 .cp-root .cp-copy-btn {
-  flex: 0 0 30px;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 30px;
   height: 30px;
   border: 0;
@@ -860,6 +876,7 @@
   display: none;
 }
 
+
 /* One button, two glyphs: maximized shows the way back. */
 .cp-root .cp-maximize-btn .cp-icon-collapse {
   display: none;
@@ -1095,6 +1112,7 @@
   max-height: calc(100vh - 16px);
   pointer-events: auto;
 }
+
 
 /* Every edit is already painted: there is no transaction to apply or discard,
    so the modal footer — the OK/Cancel pair — is not rendered at all. */
