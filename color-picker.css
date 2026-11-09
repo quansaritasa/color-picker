@@ -86,9 +86,36 @@
 }
 
 .cp-root button,
-.cp-root input {
+.cp-root input,
+.cp-root select {
   font: inherit;
   color: inherit;
+}
+
+/* Host pages size bare controls — `button, select { height: 36px }` and a
+   `min-width` / `min-height` floor beside it is a common house style — and a
+   0,0,1 element rule beats every control here that takes its size from its
+   own content rather than declaring one. Those are the controls with nothing
+   to defend themselves with: the swatches, the category pills, the tabs, the
+   partner chips.
+   A swatch is the loudest case and the reason this rule exists. Its grid
+   tracks are a fixed 26px and it states an `aspect-ratio` instead of a
+   height, so a host's 36px makes it a 36px square sitting in a 31px pitch —
+   every swatch then covers its own gap and 5px of the next one, and the grid
+   reads as one smeared bar.
+   0,2,0, which clears a host's element rules and still loses to every
+   `.cp-root .cp-*` below that sizes a control on purpose: the 26px header
+   icons, the 38px hex field, the 10px hue track. Sizing only — padding,
+   radius and colour are already declared on each control.
+   Not proof against everything: a host rule that outranks 0,2,0 still lands,
+   and `input:not([type="checkbox"]):not([type="radio"]):not([type="range"])`
+   is 0,3,1 while reading like a bare element selector. */
+.cp-root button,
+.cp-root input,
+.cp-root select {
+  height: auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 .cp-root button {
