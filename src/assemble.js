@@ -21,7 +21,11 @@ export function assemble(picker) {
      back — the picker still works, just where the caller did not ask. */
   const host = (() => {
     if (!options.container) return document.body;
-    if (typeof options.container !== 'string') return options.container;
+    if (options.container instanceof Element) return options.container;
+    if (typeof options.container !== 'string') {
+      console.warn('ColorPicker: `container` must be an element or a selector — mounting on document.body.');
+      return document.body;
+    }
     const found = document.querySelector(options.container);
     if (!found) console.warn(`ColorPicker: container "${options.container}" matches nothing — mounting on document.body.`);
     return found || document.body;

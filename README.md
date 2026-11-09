@@ -168,8 +168,8 @@ new ColorPicker({
 | `type` | `string` | Small line under the tab name — the kind of colour it is. Defaults to the preset group's short name (`Text` / `Background`); override it when the palette hint does not describe the slot (`Accent`, `Border`, …) |
 | `symbol` | `string` | The glyph in the tab; defaults to the id's first letter |
 | `hint` | `string` | Tooltip on the tab; not a visible line, so a long sentence never costs tab height |
-| `presetSet` | `'text' \| 'background'` | Which palette group is **emphasised** while this slot is active. Anything else — or nothing — emphasises `background`; both groups stay on screen either way |
-| `color` | `string` | Fallback colour when `initialColors` has none for this id |
+| `presetSet` | `'text' \| 'background'` | Which palette group is **emphasised** while this slot is active. Nothing emphasises `background`; anything else warns and does the same. Both groups stay on screen either way |
+| `color` | `string` | Fallback colour when `initialColors` has none for this id. Must be a hex string — anything else throws a `TypeError` |
 
 Palettes are not per slot: `presets` is keyed by group (`text`, `background`) and both
 groups are always rendered. Clicking a swatch writes the slot the editor is
@@ -259,7 +259,7 @@ sheet owns the box.
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `container` | `HTMLElement \| string` | `document.body` | Where the root element is mounted; a selector is resolved once, at construction |
+| `container` | `HTMLElement \| string` | `document.body` | Where the root element is mounted; a selector is resolved once, at construction. A selector that matches nothing, or a value that is neither, warns and mounts on `document.body` |
 | `slots` | `Array<object \| string>` | one slot, `color` | The named colours to edit; see the Slot table above |
 | `initialColors` | `{ [slotId]: string }` | `#0F766E` for `color` | Normalized on construction; also the target of Reset. A missing or invalid value falls back per slot |
 | `activeSlot` | `string` | first slot | Tab shown first |
@@ -269,10 +269,10 @@ sheet owns the box.
 | `draggable` | `boolean` | `true` | Drag the panel by its header to move it aside; double-click the header to re-centre. `false` pins a fixed, centered modal. Works in both modes — a dragged popover stops following its trigger until the next open |
 | `resizable` | `boolean` | `true` | Corner grip writes an explicit width/height, clamped to the viewport. `false` drops the grip; the maximize toggle stays |
 | `theme` | `'light' \| 'dark'` | `'light'` | Written to `data-theme` on the root; the dark theme only swaps tokens |
-| `presets` | `{ text?: object, background?: object }` | built-in palettes | Per palette group, the shipped palette with your categories merged in: a name that already exists (`Cool`, `Blue`, …) **replaces** that palette, a new name is added after the shipped ones |
+| `presets` | `{ text?: object, background?: object }` | built-in palettes | Per palette group, the shipped palette with your categories merged in: a name that already exists (`Cool`, `Blue`, …) **replaces** that palette, a new name is added after the shipped ones. Each category must be an array of hex strings — anything else throws a `TypeError` |
 | `triggers` | `HTMLElement \| string` | `null` | Host element (or selector) for the trigger bar, one trigger per slot. Setting it switches `mode` to `popover` |
 | `fields` | `string \| HTMLElement \| NodeList` | `null` | Inputs that **are** the controls — one slot each, named by `data-slot`, then the `id`, then `color`/`color2`. Setting it switches `mode` to `popover` and rules out `slots` |
-| `mode` | `'auto' \| 'modal' \| 'popover'` | `'auto'` | `'auto'` = `popover` when a trigger is rendered, `modal` otherwise. A popover hides `OK`/`Cancel`, and `⌘`/`Ctrl`+`Enter` closes it instead of committing |
+| `mode` | `'auto' \| 'modal' \| 'popover'` | `'auto'` | `'auto'` = `popover` when a trigger is rendered, `modal` otherwise; an unknown value warns and is treated as `'auto'`. A popover hides `OK`/`Cancel`, and `⌘`/`Ctrl`+`Enter` closes it instead of committing |
 | `classNames` | `string` | `''` | Extra classes on the root element |
 | `labels` | `object` | English | Override `title`, `close`, `reset`, `copy`, `maximize`, `restore`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `svHint`, `slotsLabel` (the tablist name), `tabs[id]` (`{ title, type, hint }`), and the trigger bar — `triggersLabel` plus `triggers[id]` for a trigger's name (the same names label a bound field) |
 
@@ -285,7 +285,7 @@ sheet owns the box.
 | `dismiss()` | `void` | The path the shell uses for `×`, `Escape` and (in a popover) `⌘`/`Ctrl`+`Enter`: a popover closes and keeps its edits, a modal restores the snapshot (`cancel()`) |
 | `destroy()` | `void` | Removes listeners, the root element and the trigger bar |
 | `getColors()` | `{ [slotId]: string }` | Fresh copy of normalized HEX strings; alpha is appended only when `a < 1` |
-| `setColors(partial)` | `void` | Applies any subset of slots, fires `onChange` when something changed |
+| `setColors(partial)` | `void` | Applies any subset of slots, fires `onChange` when something changed. An invalid value is ignored and the slot keeps its current colour |
 | `setActiveSlot(id)` | `void` | Switches the editor to a slot; each slot keeps its own color |
 
 `getColors()` always returns a copy, so mutating the result never touches the
@@ -442,16 +442,18 @@ entire page — the headline and body copy take the `text` colour, the panel tak
 the pair still passes AA. Both drive the picker from its trigger bar, so there is
 no "open" button anywhere.
 
-`test/smoke.html` is a browser harness for the component itself — open it through
+`smoke/index.html` is a browser harness for the component itself — open it through
 the local server and it prints PASS/FAIL per behaviour (tabs, HEX, drag, resize
 grip, maximize toggle and its keys, footer actions, presets, the `All` union
 grid, suggestions, dark theme, focus trap, two instances, trigger bars, popover
-placement, three-slot pickers, two tabs of one group, borrowed palettes). Headless
+placement, three-slot pickers, two tabs of one group, borrowed palettes, input
+validation). The checks live in `smoke/part1.js`–`part7.js`, run in order; they sit outside
+`test/` so `node --test` does not pick them up. Headless
 needs a pinned window, otherwise the default viewport is too short for the drag
 and anchoring checks:
 
 ```bash
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
   --headless=new --window-size=1200,900 --virtual-time-budget=5000 \
-  --dump-dom http://127.0.0.1:8000/test/smoke.html   # <title> carries PASS / FAIL n
+  --dump-dom http://127.0.0.1:8000/smoke/   # <title> carries PASS / FAIL n
 ```

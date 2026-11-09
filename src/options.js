@@ -12,6 +12,10 @@ import { fieldSlots } from './fields.js';
 import { PRESET_GROUPS, PRESET_SETS } from './presets.js';
 
 const ID_PATTERN = /^[A-Za-z][\w-]*$/;
+const MODES = ['auto', 'popover', 'modal'];
+
+/** `obj[key]` only when `obj` owns it: a slot id like `toString` must not read `Object.prototype`. */
+const own = (obj, key) => (obj && Object.hasOwn(obj, key) ? obj[key] : undefined);
 
 /**
  * One colour by default. A host that wants the text/panel pair declares it,
@@ -70,6 +74,12 @@ export const DEFAULTS = {
  * own inputs are the colours, named after themselves.
  */
 export function resolveOptions(options = {}, fieldEntries = null) {
+  if (!options || typeof options !== 'object') {
+    throw new TypeError(`ColorPicker: options must be an object, got ${options === null ? 'null' : typeof options}.`);
+  }
+  if (options.mode !== undefined && !MODES.includes(options.mode)) {
+    console.warn(`ColorPicker: unknown mode ${JSON.stringify(options.mode)} — using 'auto'.`);
+  }
   const fields = Array.isArray(fieldEntries) ? fieldEntries : [];
   if (fields.length && Array.isArray(options.slots) && options.slots.length) {
     throw new TypeError('ColorPicker: `fields` names its own slots — drop `slots`.');
@@ -130,9 +140,18 @@ export function resolveSlots(slots, labels = {}) {
     if (out.some((slot) => slot.id === id)) {
       throw new TypeError(`ColorPicker: duplicate slot id "${id}"`);
     }
+    if (spec.presetSet !== undefined && !PRESET_GROUPS[spec.presetSet]) {
+      console.warn(`ColorPicker: slot "${id}" has unknown presetSet ${JSON.stringify(spec.presetSet)} — using 'background'.`);
+    }
     const presetSet = spec.presetSet === 'text' ? 'text' : 'background';
     const shipped = DEFAULT_SLOTS.find((slot) => slot.id === id) || {};
-    const overrides = tabLabels[id] || {};
+    const overrides = own(tabLabels, id) || {};
+    /* A declared colour is the slot's fallback forever after, so it is checked
+       here, like the id: a bad one would otherwise leak out of `getColors()`. */
+    const color = explicit.color == null ? shipped.color || firstPresetHex(presetSet) : normalizeHex(explicit.color);
+    if (!color) {
+      throw new TypeError(`ColorPicker: slot "${id}" color must be a hex string, got ${JSON.stringify(explicit.color)}`);
+    }
     out.push({
       id,
       label: explicit.label || overrides.title || shipped.label || id,
@@ -140,7 +159,7 @@ export function resolveSlots(slots, labels = {}) {
       hint: explicit.hint || overrides.hint || shipped.hint || '',
       symbol: explicit.symbol || shipped.symbol || id.charAt(0).toUpperCase(),
       presetSet,
-      color: explicit.color || shipped.color || firstPresetHex(presetSet),
+      color,
     });
   }
   return out;
@@ -165,12 +184,16 @@ export function clampAlpha(hex, showAlpha) {
   return rgba ? formatHex({ ...rgba, a: 1 }) : hex;
 }
 
-/** One valid colour per slot, falling back per slot rather than wholesale. */
-export function resolveColors(values, slots, showAlpha = true) {
+/**
+ * One valid colour per slot, falling back per slot rather than wholesale.
+ * `fallback` is what an invalid value leaves in place — `setColors` passes the
+ * current colours, so a bad write is ignored instead of resetting the slot.
+ */
+export function resolveColors(values, slots, showAlpha = true, fallback = {}) {
   const resolved = {};
   for (const slot of slots) {
-    const raw = values && values[slot.id];
-    const valid = (typeof raw === 'string' && normalizeHex(raw)) || slot.color;
+    const raw = own(values, slot.id);
+    const valid = (typeof raw === 'string' && normalizeHex(raw)) || own(fallback, slot.id) || slot.color;
     resolved[slot.id] = clampAlpha(valid, showAlpha);
   }
   return resolved;

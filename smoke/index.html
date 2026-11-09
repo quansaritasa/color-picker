@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>smoke</title>
+<link rel="stylesheet" href="../color-picker.css">
+</head>
+<body>
+<button id="host">host</button>
+<pre id="results">running…</pre>
+<script type="module">
+  /* One file per run of sections, imported in order: a dynamic import waits
+     for any top-level await before the next part starts. */
+  import { finish } from './harness.js';
+
+  for (let part = 1; part <= 7; part += 1) {
+    await import(`./part${part}.js`);
+  }
+  finish();
+</script>
+</body>
+</html>

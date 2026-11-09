@@ -34,6 +34,8 @@
  * slot the editor is showing, so any colour is valid for any slot.
  */
 
+import { normalizeHex } from './color.js';
+
 export const PRESET_SETS = {
   text: {
     Cool: ['#111827', '#1F2937', '#334155', '#475569', '#64748B', '#0F766E', '#115E59'],
@@ -84,12 +86,23 @@ export const PRESET_SETS = {
  * A category the override names **replaces** the shipped one and keeps its
  * position; a new name is appended. Every array is copied, so neither the
  * shipped tables nor the caller's config is mutated.
+ *
+ * Every entry is normalized to uppercase hex, and anything else throws: a
+ * swatch paints its value into `style.background`, so a non-colour would
+ * render a dead button at best and fetch a `url(...)` at worst.
  */
 export function mergePalette(base = {}, override = {}) {
   const merged = { ...base, ...override };
-  return Object.fromEntries(
-    Object.entries(merged).map(([name, colors]) => [name, [...colors]]),
-  );
+  return Object.fromEntries(Object.entries(merged).map(([name, colors]) => {
+    if (!Array.isArray(colors)) {
+      throw new TypeError(`ColorPicker: preset category "${name}" must be an array of hex colours.`);
+    }
+    return [name, colors.map((hex) => {
+      const valid = normalizeHex(hex);
+      if (!valid) throw new TypeError(`ColorPicker: preset category "${name}" has an invalid colour ${JSON.stringify(hex)}.`);
+      return valid;
+    })];
+  }));
 }
 
 /**

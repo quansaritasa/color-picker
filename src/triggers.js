@@ -5,13 +5,15 @@
  */
 
 export function createTriggers({ picker, target, slots, labels = {} }) {
-  const host = typeof target === 'string' ? document.querySelector(target) : target;
+  const host = typeof target === 'string'
+    ? document.querySelector(target)
+    : (target instanceof Element ? target : null);
   if (!host) {
     console.warn('ColorPicker: `triggers` target not found — no trigger controls rendered.');
     return null;
   }
   const names = labels.triggers || {};
-  const nameOf = (slot) => names[slot.id] || slot.label;
+  const nameOf = (slot) => (Object.hasOwn(names, slot.id) && names[slot.id]) || slot.label;
 
   const bar = document.createElement('div');
   bar.className = 'cp-triggers';
