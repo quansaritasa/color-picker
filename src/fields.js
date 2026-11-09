@@ -9,6 +9,14 @@
 
 import { normalizeHex } from './color.js';
 
+/** Attributes a bound field carries while the picker owns it. */
+const OWNED = {
+  'aria-haspopup': 'dialog',
+  'aria-expanded': 'false',
+  autocomplete: 'off',
+  spellcheck: 'false',
+};
+
 /**
  * Slots named after the fields themselves: `data-slot`, then the input's `id`,
  * then `color`/`color2` for an anonymous list. Inputs only — anything else the
@@ -39,7 +47,7 @@ export function fieldSlots(entries) {
 
 export function createFields({ picker, entries, labels = {} }) {
   const names = labels.triggers || {};
-  const nameOf = (entry) => names[entry.id] || entry.label;
+  const nameOf = (entry) => (Object.hasOwn(names, entry.id) && names[entry.id]) || entry.label;
   const byId = Object.fromEntries(entries.map((entry) => [entry.id, entry]));
   const undo = [];
   const on = (node, type, handler) => {
@@ -61,10 +69,10 @@ export function createFields({ picker, entries, labels = {} }) {
 
   for (const entry of entries) {
     const { input, id } = entry;
-    input.setAttribute('aria-haspopup', 'dialog');
-    input.setAttribute('aria-expanded', 'false');
-    input.setAttribute('autocomplete', 'off');
-    input.setAttribute('spellcheck', 'false');
+    /* Remember what the host had, so `destroy()` puts it back rather than
+       leaving a bare attribute or deleting one the host set itself. */
+    entry.saved = Object.keys(OWNED).map((name) => [name, input.getAttribute(name)]);
+    for (const [name, value] of Object.entries(OWNED)) input.setAttribute(name, value);
     /* Never overwrite a name the host already gave the field. */
     if (!input.getAttribute('aria-label') && !(input.labels && input.labels.length)) {
       input.setAttribute('aria-label', `Edit ${nameOf(entry)}`);
@@ -112,9 +120,11 @@ export function createFields({ picker, entries, labels = {} }) {
     },
     destroy() {
       for (const off of undo) off();
-      for (const { input, ownedLabel } of entries) {
-        input.removeAttribute('aria-haspopup');
-        input.removeAttribute('aria-expanded');
+      for (const { input, ownedLabel, saved } of entries) {
+        for (const [name, value] of saved) {
+          if (value === null) input.removeAttribute(name);
+          else input.setAttribute(name, value);
+        }
         if (ownedLabel) input.removeAttribute('aria-label');
       }
     },

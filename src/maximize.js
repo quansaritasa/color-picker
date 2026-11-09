@@ -48,7 +48,7 @@ export function createMaximize({ panel, button, drag, pin, labels }) {
     if (pin) pin();
     drag.setOffset(0, 0);
     fill();
-    panel.classList.add('is-maximized');
+    panel.classList.add('cp-is-maximized');
     setLabel(labels.restore);
   };
 
@@ -56,7 +56,7 @@ export function createMaximize({ panel, button, drag, pin, labels }) {
     if (!saved) return;
     const previous = saved;
     saved = null;
-    panel.classList.remove('is-maximized');
+    panel.classList.remove('cp-is-maximized');
     panel.style.width = previous.width;
     panel.style.height = previous.height;
     panel.style.maxHeight = previous.maxHeight;

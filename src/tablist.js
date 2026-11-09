@@ -1,12 +1,12 @@
 /**
  * Roving tablist behaviour for the `role="tab"` buttons in the template.
- * Slot order comes from `refs.tabs`, so nothing here duplicates the list.
+ * Slot order comes from `refs.cp-tabs`, so nothing here duplicates the list.
  */
 
 export function syncTabs(refs, activeSlot) {
   for (const button of refs.tabs) {
     const active = button.dataset.slot === activeSlot;
-    button.classList.toggle('active', active);
+    button.classList.toggle('cp-active', active);
     button.setAttribute('aria-selected', String(active));
     button.tabIndex = active ? 0 : -1;
   }

@@ -14,14 +14,14 @@ import { syncTabs } from './tablist.js';
 
 export default class ColorPicker {
   constructor(options = {}) {
-    this.options = resolveOptions(options, options.fields ? readFields(options.fields) : null);
+    this.options = resolveOptions(options, options && options.fields ? readFields(options.fields) : null);
     this.slots = resolveSlots(this.options.slots, this.options.labels);
     this.slotIds = this.slots.map((slot) => slot.id);
     this.pair = resolvePair(this.options.contrastPair, this.slotIds);
     this.initialColors = resolveColors(this.options.startColors, this.slots, this.options.showAlpha);
     this.colors = { ...this.initialColors };
     this.snapshot = { ...this.colors };
-    this.activeSlot = this.slotIds.includes(options.activeSlot) ? options.activeSlot : this.slotIds[0];
+    this.activeSlot = this.slotIds.includes(this.options.activeSlot) ? this.options.activeSlot : this.slotIds[0];
     this.isOpen = false;
     /** The element a popover hangs off; null means "no anchor". */
     this.anchor = null;
@@ -29,7 +29,7 @@ export default class ColorPicker {
     this.root = document.createElement('div');
     this.root.className = `cp-root${this.options.classNames ? ` ${this.options.classNames}` : ''}`;
     this.root.dataset.theme = this.options.theme;
-    this.root.classList.add('hidden');
+    this.root.classList.add('cp-hidden');
 
     assemble(this);
     bindShell(this);
@@ -110,7 +110,7 @@ export default class ColorPicker {
   }
 
   setColors(partial) {
-    const next = resolveColors({ ...this.colors, ...(partial || {}) }, this.slots, this.options.showAlpha);
+    const next = resolveColors({ ...this.colors, ...(partial || {}) }, this.slots, this.options.showAlpha, this.colors);
     let changed = false;
     for (const id of this.slotIds) {
       if (next[id] !== this.colors[id]) {
@@ -129,7 +129,7 @@ export default class ColorPicker {
     this.anchor = anchor || (this.triggers ? this.triggers.anchorFor(this.activeSlot) : null);
     this.snapshot = { ...this.colors };
     this.isOpen = true;
-    this.root.classList.remove('hidden');
+    this.root.classList.remove('cp-hidden');
     this.refresh();
     this.geometry.reset();
     if (this.popover) this.popover.place();
@@ -146,7 +146,7 @@ export default class ColorPicker {
     if (!this.isOpen) return;
     this.isOpen = false;
     this.anchor = null;
-    this.root.classList.add('hidden');
+    this.root.classList.add('cp-hidden');
     this.focusTrap.deactivate();
     if (this.triggers) this.triggers.sync(false);
     this.emit('onClose');

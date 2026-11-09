@@ -1,5 +1,50 @@
 # PRs for 261108-color-picker-lib
 
+## PR #2 — Add picker input validation
+
+- URL: https://github.com/quansaritasa/color-picker/pull/2
+- Date: 2026-11-09
+- Branch: `feature/color-picker-lib` → `main`
+- Diff: 3 commits, +2091/−1330 across 31 files
+
+**Type:** ✨ Feature
+
+### ➕ Added
+**[1] - Validation - Malformed options throw, doubtful ones warn.**
+- Details: non-object options, non-hex slot `color`, bad preset entries throw `TypeError`; unknown `mode`, `presetSet`, `container` warn and fall back.
+
+**[2] - Build - `npm run build` bundles and minifies into `dist/`.**
+- Details: esbuild emits ESM, minified ESM, minified IIFE (`window.ColorPicker`) and minified CSS.
+
+### ✏️ Changed
+**[1] - Styling - Every inner class carries the `cp-` prefix.**
+- Reason: unprefixed `.picker`, `.tab`, `.actions` picked up host rules; `demo.html`'s `.actions` styled the picker footer.
+
+**[2] - Accessibility - Dialog title id unique across module copies.**
+- Reason: `src/` and `dist/` on one page both minted `cp-title-1`.
+
+### 🧭 Key decisions
+| Decision | Why |
+|---|---|
+| Class prefix for isolation | Hosts still theme via `--cp-*` tokens; rejected: Shadow DOM |
+| `dist/` left untracked | Build output; `npm run build` regenerates it |
+
+### 🛡️ Risks
+| Level | Risk | Mitigation |
+|---|---|---|
+| 🟡 **Medium** | Host CSS/JS targeting old inner class names stops matching | Rename is mechanical: `cp-` + old name |
+| 🟡 **Medium** | Config that loaded before now throws | Only malformed values throw; soft cases warn |
+
+### 🧪 Testing
+- ✅ `node --test` 48/48
+- ✅ Smoke suite PASS in headless Chrome
+- ✅ `index.html` and `demo.html` render the picker
+- ⬜ `dist/` load re-check after the rename (passed before it)
+- ⬜ Visual and mobile review after the rename
+
+### 🔗 Related areas
+- Option resolution, picker template and stylesheet, build and distribution, smoke harness
+
 ## PR #1 — Add vanilla JS color picker
 
 - URL: https://github.com/quansaritasa/color-picker/pull/1

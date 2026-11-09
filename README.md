@@ -5,11 +5,16 @@ slots** and always offers **both preset palettes** — text colours and backgrou
 colours — because a dimmed background tone is a legitimate text colour. A swatch
 writes the slot the editor is showing; the palette is a suggestion, never an
 owner. Each palette leads with an **`All`** pill that puts its whole union in one
-grid, so you can scan 40 text colours without clicking through six categories.
+grid, so you can scan all 83 text colours without clicking through three categories.
 
 Out of the box it is a **single-colour picker**: one slot, `color`, no tab row.
 A host that paints two things declares two slots (`text` + `background`,
 `accent`, …) and gets a tab per slot. No build step.
+
+**Live demo:** [demo page](https://quansaritasa.github.io/color-picker/demo.html) —
+a page painted by the picker, with a live WCAG contrast pill ·
+[API showcase](https://quansaritasa.github.io/color-picker/) — every setup in this
+README, each running next to its code.
 
 ## Setup
 
@@ -21,6 +26,7 @@ src/color.js
 src/presets.js
 src/options.js
 src/tablist.js
+src/dom.js
 src/template.js
 src/editor.js
 src/copy.js
@@ -168,8 +174,8 @@ new ColorPicker({
 | `type` | `string` | Small line under the tab name — the kind of colour it is. Defaults to the preset group's short name (`Text` / `Background`); override it when the palette hint does not describe the slot (`Accent`, `Border`, …) |
 | `symbol` | `string` | The glyph in the tab; defaults to the id's first letter |
 | `hint` | `string` | Tooltip on the tab; not a visible line, so a long sentence never costs tab height |
-| `presetSet` | `'text' \| 'background'` | Which palette group is **emphasised** while this slot is active. Anything else — or nothing — emphasises `background`; both groups stay on screen either way |
-| `color` | `string` | Fallback colour when `initialColors` has none for this id |
+| `presetSet` | `'text' \| 'background'` | Which palette group is **emphasised** while this slot is active. Nothing emphasises `background`; anything else warns and does the same. Both groups stay on screen either way |
+| `color` | `string` | Fallback colour when `initialColors` has none for this id. Must be a hex string — anything else throws a `TypeError` |
 
 Palettes are not per slot: `presets` is keyed by group (`text`, `background`) and both
 groups are always rendered. Clicking a swatch writes the slot the editor is
@@ -259,7 +265,7 @@ sheet owns the box.
 
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `container` | `HTMLElement \| string` | `document.body` | Where the root element is mounted; a selector is resolved once, at construction |
+| `container` | `HTMLElement \| string` | `document.body` | Where the root element is mounted; a selector is resolved once, at construction. A selector that matches nothing, or a value that is neither, warns and mounts on `document.body` |
 | `slots` | `Array<object \| string>` | one slot, `color` | The named colours to edit; see the Slot table above |
 | `initialColors` | `{ [slotId]: string }` | `#0F766E` for `color` | Normalized on construction; also the target of Reset. A missing or invalid value falls back per slot |
 | `activeSlot` | `string` | first slot | Tab shown first |
@@ -269,10 +275,10 @@ sheet owns the box.
 | `draggable` | `boolean` | `true` | Drag the panel by its header to move it aside; double-click the header to re-centre. `false` pins a fixed, centered modal. Works in both modes — a dragged popover stops following its trigger until the next open |
 | `resizable` | `boolean` | `true` | Corner grip writes an explicit width/height, clamped to the viewport. `false` drops the grip; the maximize toggle stays |
 | `theme` | `'light' \| 'dark'` | `'light'` | Written to `data-theme` on the root; the dark theme only swaps tokens |
-| `presets` | `{ text?: object, background?: object }` | built-in palettes | Per palette group, the shipped palette with your categories merged in: a name that already exists (`Cool`, `Blue`, …) **replaces** that palette, a new name is added after the shipped ones |
+| `presets` | `{ text?: object, background?: object }` | built-in palettes | Per palette group, the shipped palette with your categories merged in: a name that already exists (`Normal`, `Heading`, …) **replaces** that palette, a new name is added after the shipped ones. Each category must be an array of hex strings — anything else throws a `TypeError` |
 | `triggers` | `HTMLElement \| string` | `null` | Host element (or selector) for the trigger bar, one trigger per slot. Setting it switches `mode` to `popover` |
 | `fields` | `string \| HTMLElement \| NodeList` | `null` | Inputs that **are** the controls — one slot each, named by `data-slot`, then the `id`, then `color`/`color2`. Setting it switches `mode` to `popover` and rules out `slots` |
-| `mode` | `'auto' \| 'modal' \| 'popover'` | `'auto'` | `'auto'` = `popover` when a trigger is rendered, `modal` otherwise. A popover hides `OK`/`Cancel`, and `⌘`/`Ctrl`+`Enter` closes it instead of committing |
+| `mode` | `'auto' \| 'modal' \| 'popover'` | `'auto'` | `'auto'` = `popover` when a trigger is rendered, `modal` otherwise; an unknown value warns and is treated as `'auto'`. A popover hides `OK`/`Cancel`, and `⌘`/`Ctrl`+`Enter` closes it instead of committing |
 | `classNames` | `string` | `''` | Extra classes on the root element |
 | `labels` | `object` | English | Override `title`, `close`, `reset`, `copy`, `maximize`, `restore`, `cancel`, `apply`, `hex`, `hue`, `opacity`, `sv`, `svHint`, `slotsLabel` (the tablist name), `tabs[id]` (`{ title, type, hint }`), and the trigger bar — `triggersLabel` plus `triggers[id]` for a trigger's name (the same names label a bound field) |
 
@@ -285,7 +291,7 @@ sheet owns the box.
 | `dismiss()` | `void` | The path the shell uses for `×`, `Escape` and (in a popover) `⌘`/`Ctrl`+`Enter`: a popover closes and keeps its edits, a modal restores the snapshot (`cancel()`) |
 | `destroy()` | `void` | Removes listeners, the root element and the trigger bar |
 | `getColors()` | `{ [slotId]: string }` | Fresh copy of normalized HEX strings; alpha is appended only when `a < 1` |
-| `setColors(partial)` | `void` | Applies any subset of slots, fires `onChange` when something changed |
+| `setColors(partial)` | `void` | Applies any subset of slots, fires `onChange` when something changed. An invalid value is ignored and the slot keeps its current colour |
 | `setActiveSlot(id)` | `void` | Switches the editor to a slot; each slot keeps its own color |
 
 `getColors()` always returns a copy, so mutating the result never touches the
@@ -322,10 +328,15 @@ new ColorPicker({
 });
 ```
 
-The shipped palettes, if you want to replace one of them: `text` holds the six
-spec categories (`Cool`, `Blue`, `Hot`, `Purple`, `Green`, `Neutral`) · `background`
+The shipped palettes, if you want to replace one of them: `text` is grouped by
+role: `Normal` (24) for body copy, `Heading` (26, mostly blue and green) for
+headings and section titles, `Highlight` (33) for colourful emphasis. Every
+colour clears 4.5:1 on white or on `#111827`; the light ones at the end of
+`Normal` and `Highlight` are for dark surfaces · `background`
 holds the 46 vivid inks from sprints-planner's badge palette, their 14-colour deep
 tier, and `Pale` (39), the pale washes this group shipped before plus five more.
+Every category is ordered so similar colours sit together: one tint family
+at a time for `Normal`, hue order everywhere else.
 
 `Vivid` is two lightnesses of one idea: the app's own mid-light chips (46 entries
 at oklch L .72–.76, chroma .09–.16) and a deep tier this library adds (14 entries,
@@ -342,7 +353,7 @@ against `#0F766E` has almost no chroma left, so further additions land within
 dE00 2.6 of one already in the list.
 
 Categories replace by name: a category the config names takes the place of the
-shipped palette of that name (`Cool`, `Vivid`, …) and keeps its position in the
+shipped palette of that name (`Normal`, `Vivid`, …) and keeps its position in the
 row; a new name is appended after the shipped ones. The shipped tables are never
 mutated, so two instances with different `presets` do not affect each other.
 
@@ -428,7 +439,20 @@ listeners, so two pickers on one page never share colors.
 ```bash
 python3.12 -m http.server 8000   # then open /index.html or /demo.html
 node --test                      # colour math, preset merging, slot resolution
+npm install && npm run build     # bundle and minify into dist/
 ```
+
+`npm run build` (esbuild, `build.mjs`) writes four files; the JS ones get a source map:
+
+| File | Use |
+|---|---|
+| `dist/color-picker.esm.js` | ES module bundle, readable |
+| `dist/color-picker.esm.min.js` | ES module bundle, minified — `import ColorPicker from './dist/color-picker.esm.min.js'` |
+| `dist/color-picker.min.js` | Minified classic script — `<script src>` sets `window.ColorPicker` to the class |
+| `dist/color-picker.min.css` | Minified stylesheet |
+
+The bundles carry `ColorPicker` only; the contrast helpers stay importable from
+`src/contrast.js`.
 
 `index.html` is five panels, each one setup call printed above the instance it
 builds: the default single colour, the text/panel pair with contrast
@@ -442,16 +466,18 @@ entire page — the headline and body copy take the `text` colour, the panel tak
 the pair still passes AA. Both drive the picker from its trigger bar, so there is
 no "open" button anywhere.
 
-`test/smoke.html` is a browser harness for the component itself — open it through
+`smoke/index.html` is a browser harness for the component itself — open it through
 the local server and it prints PASS/FAIL per behaviour (tabs, HEX, drag, resize
 grip, maximize toggle and its keys, footer actions, presets, the `All` union
 grid, suggestions, dark theme, focus trap, two instances, trigger bars, popover
-placement, three-slot pickers, two tabs of one group, borrowed palettes). Headless
+placement, three-slot pickers, two tabs of one group, borrowed palettes, input
+validation). The checks live in `smoke/part1.js`–`part7.js`, run in order; they sit outside
+`test/` so `node --test` does not pick them up. Headless
 needs a pinned window, otherwise the default viewport is too short for the drag
 and anchoring checks:
 
 ```bash
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
   --headless=new --window-size=1200,900 --virtual-time-budget=5000 \
-  --dump-dom http://127.0.0.1:8000/test/smoke.html   # <title> carries PASS / FAIL n
+  --dump-dom http://127.0.0.1:8000/smoke/   # <title> carries PASS / FAIL n
 ```

@@ -46,9 +46,9 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
       pill.type = 'button';
       pill.className = 'cp-category';
       pill.textContent = name;
+      pill.dataset.category = name;
       pill.setAttribute('aria-pressed', String(state[key].category === name));
-      pill.classList.toggle('is-active', state[key].category === name);
-      listen(pill, 'click', () => selectCategory(key, name));
+      pill.classList.toggle('cp-is-active', state[key].category === name);
       ref.categories.append(pill);
     }
   }
@@ -61,7 +61,7 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
     ref.swatches.replaceChildren();
     /* The union grid is taller than any one category: CSS needs to know which
        mode it is painting before the rows are measured. */
-    ref.swatches.classList.toggle('is-all', entry.category === ALL_CATEGORY);
+    ref.swatches.classList.toggle('cp-is-all', entry.category === ALL_CATEGORY);
     entry.swatches = [];
     for (const hex of list) {
       const node = document.createElement('button');
@@ -71,9 +71,6 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
       node.title = hex;
       node.style.background = hex;
       node.setAttribute('aria-label', `${entry.category} ${hex}`);
-      listen(node, 'click', () => {
-        if (typeof onSelect === 'function') onSelect(hex);
-      });
       ref.swatches.append(node);
       entry.swatches.push({ hex, node });
     }
@@ -93,12 +90,27 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
   function paint(key, ref) {
     for (const { hex, node } of state[key].swatches) {
       const selected = sameColor(hex, activeColor);
-      node.classList.toggle('is-selected', selected);
+      node.classList.toggle('cp-is-selected', selected);
       node.setAttribute('aria-pressed', String(selected));
       if (selected) node.style.setProperty('--cp-check-color', checkColor(hex));
       else node.style.removeProperty('--cp-check-color');
     }
-    ref.section.classList.toggle('is-emphasis', key === activeGroup);
+    ref.section.classList.toggle('cp-is-emphasis', key === activeGroup);
+  }
+
+  /* One delegated listener per row: pills and swatches are rebuilt on every
+     category switch, and per-node listeners would pile up in `handlers`. */
+  for (const { key } of groups) {
+    const ref = refOf(key);
+    if (!ref) continue;
+    listen(ref.categories, 'click', (event) => {
+      const pill = event.target.closest('.cp-category');
+      if (pill) selectCategory(key, pill.dataset.category);
+    });
+    listen(ref.swatches, 'click', (event) => {
+      const node = event.target.closest('.cp-swatch');
+      if (node && typeof onSelect === 'function') onSelect(node.dataset.hex);
+    });
   }
 
   /** `group` is the active slot's hint: it only decides which side is emphasised. */
