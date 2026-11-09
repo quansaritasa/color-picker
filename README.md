@@ -5,11 +5,16 @@ slots** and always offers **both preset palettes** — text colours and backgrou
 colours — because a dimmed background tone is a legitimate text colour. A swatch
 writes the slot the editor is showing; the palette is a suggestion, never an
 owner. Each palette leads with an **`All`** pill that puts its whole union in one
-grid, so you can scan 40 text colours without clicking through six categories.
+grid, so you can scan all 83 text colours without clicking through three categories.
 
 Out of the box it is a **single-colour picker**: one slot, `color`, no tab row.
 A host that paints two things declares two slots (`text` + `background`,
 `accent`, …) and gets a tab per slot. No build step.
+
+**Live demo:** [demo page](https://quansaritasa.github.io/color-picker/demo.html) —
+a page painted by the picker, with a live WCAG contrast pill ·
+[API showcase](https://quansaritasa.github.io/color-picker/) — every setup in this
+README, each running next to its code.
 
 ## Setup
 
@@ -21,6 +26,7 @@ src/color.js
 src/presets.js
 src/options.js
 src/tablist.js
+src/dom.js
 src/template.js
 src/editor.js
 src/copy.js
