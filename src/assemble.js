@@ -7,7 +7,7 @@
 import { buildTemplate } from './template.js';
 import { createEditor } from './editor.js';
 import { createCopy } from './copy.js';
-import { GROUP_KEYS, PRESET_GROUPS, PRESET_SETS, mergePalette } from './presets.js';
+import { GROUP_KEYS, PRESET_GROUPS, PRESET_SETS, mergePalette, shippedPalette } from './presets.js';
 import { createPresetPanel } from './presets-panel.js';
 import { createSuggestions } from './suggestions.js';
 import { createTriggers } from './triggers.js';
@@ -57,7 +57,8 @@ export function assemble(picker) {
   /* Each palette group gets its own categories; `presets` is keyed by group. */
   picker.palettes = {};
   for (const key of GROUP_KEYS) {
-    picker.palettes[key] = mergePalette(PRESET_SETS[key], (options.presets || {})[key]);
+    const override = (options.presets || {})[key];
+    picker.palettes[key] = override ? mergePalette(PRESET_SETS[key], override) : shippedPalette(key);
   }
   picker.groups = groups;
 

@@ -243,6 +243,8 @@ function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}) {
   const state = { h: 174, s: 87, v: 46, a: 1 };
   let current = { r: 15, g: 118, b: 110, a: 1 };
   let dragging = false;
+  let box = null;
+  let paintedOpaque = null;
   const rgbaFromHsv = () => {
     const rgb = hsvToRgb(state.h, state.s, state.v);
     return { r: round(rgb.r), g: round(rgb.g), b: round(rgb.b), a: showAlpha ? clamp01(state.a) : 1 };
@@ -260,7 +262,10 @@ function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}) {
     if (showAlpha) {
       refs.alpha.value = String(Math.round(state.a * 100));
       refs.alphaValue.textContent = `${Math.round(state.a * 100)}%`;
-      refs.alpha.style.background = `linear-gradient(90deg, transparent, ${opaque}), repeating-conic-gradient(#d9dee7 0 25%, white 0 50%) 0/12px 12px`;
+      if (opaque !== paintedOpaque) {
+        paintedOpaque = opaque;
+        refs.alpha.style.background = `linear-gradient(90deg, transparent, ${opaque}), repeating-conic-gradient(#d9dee7 0 25%, white 0 50%) 0/12px 12px`;
+      }
     }
     refs.sv.setAttribute("aria-valuenow", String(Math.round(state.s)));
     refs.sv.setAttribute("aria-valuetext", formatHex(current));
@@ -285,7 +290,7 @@ function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}) {
     if (!silent && onChange) onChange({ ...current });
   }
   const pointTo = (event) => {
-    const rect = refs.sv.getBoundingClientRect();
+    const rect = box || refs.sv.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     state.s = clamp01((event.clientX - rect.left) / rect.width) * 100;
     state.v = (1 - clamp01((event.clientY - rect.top) / rect.height)) * 100;
@@ -293,6 +298,7 @@ function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}) {
   };
   const onPointerDown = (event) => {
     dragging = true;
+    box = refs.sv.getBoundingClientRect();
     try {
       if (refs.sv.setPointerCapture) refs.sv.setPointerCapture(event.pointerId);
     } catch (error) {
@@ -305,6 +311,7 @@ function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}) {
   };
   const onPointerUp = () => {
     dragging = false;
+    box = null;
   };
   const onSvKey = (event) => {
     const step = event.shiftKey ? 10 : 1;
@@ -712,6 +719,15 @@ function mergePalette(base = {}, override = {}) {
     })];
   }));
 }
+var shipped = {};
+function shippedPalette(group) {
+  if (!shipped[group]) {
+    const merged = mergePalette(PRESET_SETS[group]);
+    for (const list of Object.values(merged)) Object.freeze(list);
+    shipped[group] = Object.freeze(merged);
+  }
+  return shipped[group];
+}
 var PRESET_GROUPS = {
   text: {
     label: "Text colour presets",
@@ -757,7 +773,6 @@ function checkColor(hex) {
   const luma = rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114;
   return luma > 150 ? CHECK_DARK : CHECK_LIGHT;
 }
-var sameColor = (a, b) => String(a).toUpperCase() === String(b).toUpperCase();
 function createPresetPanel({ refs, groups, palettes, onSelect }) {
   const state = {};
   const handlers = [];
@@ -786,7 +801,10 @@ function createPresetPanel({ refs, groups, palettes, onSelect }) {
     const list = entry.category === ALL_CATEGORY ? allColors(palettes[key]) : (palettes[key] || {})[entry.category] || [];
     ref.swatches.replaceChildren();
     ref.swatches.classList.toggle("cp-is-all", entry.category === ALL_CATEGORY);
-    entry.swatches = [];
+    entry.byHex = /* @__PURE__ */ new Map();
+    entry.selected = [];
+    entry.paintedColor = null;
+    const frag = document.createDocumentFragment();
     for (const hex of list) {
       const node = document.createElement("button");
       node.type = "button";
@@ -794,10 +812,15 @@ function createPresetPanel({ refs, groups, palettes, onSelect }) {
       node.dataset.hex = hex;
       node.title = hex;
       node.style.background = hex;
+      node.setAttribute("aria-pressed", "false");
       node.setAttribute("aria-label", `${entry.category} ${hex}`);
-      ref.swatches.append(node);
-      entry.swatches.push({ hex, node });
+      frag.append(node);
+      const key2 = hex.toUpperCase();
+      const nodes = entry.byHex.get(key2);
+      if (nodes) nodes.push(node);
+      else entry.byHex.set(key2, [node]);
     }
+    ref.swatches.append(frag);
     entry.built = entry.category;
   }
   function selectCategory(key, name) {
@@ -809,12 +832,21 @@ function createPresetPanel({ refs, groups, palettes, onSelect }) {
     paint(key, ref);
   }
   function paint(key, ref) {
-    for (const { hex, node } of state[key].swatches) {
-      const selected = sameColor(hex, activeColor);
-      node.classList.toggle("cp-is-selected", selected);
-      node.setAttribute("aria-pressed", String(selected));
-      if (selected) node.style.setProperty("--cp-check-color", checkColor(hex));
-      else node.style.removeProperty("--cp-check-color");
+    const entry = state[key];
+    const target = String(activeColor).toUpperCase();
+    if (entry.paintedColor !== target) {
+      for (const node of entry.selected) {
+        node.classList.remove("cp-is-selected");
+        node.setAttribute("aria-pressed", "false");
+        node.style.removeProperty("--cp-check-color");
+      }
+      entry.selected = entry.byHex.get(target) || [];
+      for (const node of entry.selected) {
+        node.classList.add("cp-is-selected");
+        node.setAttribute("aria-pressed", "true");
+        node.style.setProperty("--cp-check-color", checkColor(node.dataset.hex));
+      }
+      entry.paintedColor = target;
     }
     ref.section.classList.toggle("cp-is-emphasis", key === activeGroup);
   }
@@ -883,7 +915,7 @@ function createPresetPanel({ refs, groups, palettes, onSelect }) {
       const current = state[key];
       const signature = names.join("|");
       if (!current || current.signature !== signature) {
-        state[key] = { category: own2[0], signature, built: null, swatches: [] };
+        state[key] = { category: own2[0], signature, built: null, byHex: /* @__PURE__ */ new Map(), selected: [], paintedColor: null };
         buildPills(key, ref, names);
       } else if (!names.includes(current.category)) {
         current.category = own2[0];
@@ -915,8 +947,10 @@ var linear = (value) => {
   const c = value / 255;
   return c <= CHANNEL_MIN ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 };
+var LINEAR = Array.from({ length: 256 }, (_, value) => linear(value));
+var channel = (value) => LINEAR[value] ?? linear(value);
 function relativeLuminance({ r, g, b }) {
-  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 function compositeOver(color, surface) {
   const a = Math.min(1, Math.max(0, color.a ?? 1));
@@ -948,7 +982,7 @@ function suggestPartners(color, candidates = [], { limit = 3, minRatio = 4.5 } =
   for (const candidate of candidates) {
     const rgba = typeof candidate === "string" ? parseHex(candidate) : candidate;
     if (!rgba) continue;
-    const hex = formatHex(rgba);
+    const hex = candidate.hex || formatHex(rgba);
     if (seen.has(hex)) continue;
     seen.add(hex);
     const ratio = contrastRatio(color, rgba);
@@ -961,9 +995,17 @@ function suggestPartners(color, candidates = [], { limit = 3, minRatio = 4.5 } =
 // src/suggestions.js
 var CAPACITY = 3;
 function candidatesOf(palette) {
+  const seen = /* @__PURE__ */ new Set();
   const out = [];
-  for (const list of Object.values(palette || {})) out.push(...list);
-  return [...new Set(out)];
+  for (const list of Object.values(palette || {})) {
+    for (const hex of list) {
+      const rgba = parseHex(hex);
+      if (!rgba || seen.has(hex)) continue;
+      seen.add(hex);
+      out.push({ ...rgba, hex });
+    }
+  }
+  return out;
 }
 function createSuggestions({ mount, slots = [], pair = null, palettes = {}, enabled = false, onPick }) {
   const labelOf = (id) => (slots.find((slot) => slot.id === id) || {}).label || id;
@@ -973,6 +1015,14 @@ function createSuggestions({ mount, slots = [], pair = null, palettes = {}, enab
     if (pair[1] === activeSlot) return pair[0];
     return null;
   };
+  const candidates = {};
+  const candidatesFor = (group) => candidates[group] ||= candidatesOf(palettes[group]);
+  if (!enabled) {
+    mount.hidden = true;
+    return { render() {
+    }, destroy() {
+    } };
+  }
   const details = document.createElement("details");
   details.className = "cp-suggestions";
   const summary = document.createElement("summary");
@@ -1058,7 +1108,7 @@ function createSuggestions({ mount, slots = [], pair = null, palettes = {}, enab
       badge.textContent = level === "fail" ? "Fail" : level;
       largeBadge.hidden = !(level === "fail" && ratio >= 3);
       ratioOut.textContent = formatRatio(ratio);
-      const ranked = suggestPartners(base, candidatesOf(palettes[OTHER_GROUP[group]]), { limit: CAPACITY });
+      const ranked = suggestPartners(base, candidatesFor(OTHER_GROUP[group]), { limit: CAPACITY });
       partners.forEach((slot, i) => paintSlot(slot, ranked[i], other));
       empty.hidden = ranked.length > 0;
       list.hidden = ranked.length === 0;
@@ -1119,6 +1169,7 @@ function createTriggers({ picker, target, slots, labels = {} }) {
     render(colors) {
       for (const slot of slots) {
         const { button: button2, chip, hex } = buttons[slot.id];
+        if (hex.textContent === colors[slot.id]) continue;
         chip.style.setProperty("--cpt-fill", colors[slot.id]);
         hex.textContent = colors[slot.id];
         button2.setAttribute("aria-label", `Edit ${nameOf(slot)}, currently ${colors[slot.id]}`);
@@ -1306,11 +1357,28 @@ function createPopover({ panel, getAnchor }) {
     });
   };
   const watcher = new ResizeObserver(schedule);
-  watcher.observe(panel);
-  window.addEventListener("resize", schedule);
-  window.addEventListener("scroll", schedule, true);
+  let watching = false;
+  const detach = () => {
+    if (!watching) return;
+    watching = false;
+    watcher.disconnect();
+    window.removeEventListener("resize", schedule);
+    window.removeEventListener("scroll", schedule, true);
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+  };
   return {
     place,
+    /** The panel is open: follow content, viewport and scroll. */
+    attach() {
+      if (watching) return;
+      watching = true;
+      watcher.observe(panel);
+      window.addEventListener("resize", schedule);
+      window.addEventListener("scroll", schedule, true);
+    },
+    /** The panel closed: stop following. */
+    detach,
     /** The user moved or resized the box: stop placing it from its anchor. */
     pin() {
       pinned = true;
@@ -1320,12 +1388,7 @@ function createPopover({ panel, getAnchor }) {
       pinned = false;
       placed = null;
     },
-    destroy() {
-      watcher.disconnect();
-      window.removeEventListener("resize", schedule);
-      window.removeEventListener("scroll", schedule, true);
-      if (frame) cancelAnimationFrame(frame);
-    }
+    destroy: detach
   };
 }
 
@@ -1364,7 +1427,8 @@ function assemble(picker) {
   });
   picker.palettes = {};
   for (const key of GROUP_KEYS) {
-    picker.palettes[key] = mergePalette(PRESET_SETS[key], (options.presets || {})[key]);
+    const override = (options.presets || {})[key];
+    picker.palettes[key] = override ? mergePalette(PRESET_SETS[key], override) : shippedPalette(key);
   }
   picker.groups = groups;
   picker.panel = createPresetPanel({
@@ -1415,17 +1479,21 @@ var FOCUSABLE = [
   "textarea:not([disabled])",
   '[tabindex]:not([tabindex="-1"])'
 ].join(",");
-function focusablesWithin(root) {
-  return [...root.querySelectorAll(FOCUSABLE)].filter((node) => node.getClientRects().length > 0);
+function edgesWithin(root) {
+  const all = root.querySelectorAll(FOCUSABLE);
+  const shown = (node) => node.getClientRects().length > 0;
+  let first = null;
+  let last = null;
+  for (let i = 0; i < all.length && !first; i += 1) if (shown(all[i])) first = all[i];
+  for (let i = all.length - 1; i >= 0 && !last; i -= 1) if (shown(all[i])) last = all[i];
+  return [first, last];
 }
 function createFocusTrap(root) {
   let previous = null;
   const onKey = (event) => {
     if (event.key !== "Tab") return;
-    const nodes = focusablesWithin(root);
-    if (!nodes.length) return;
-    const first = nodes[0];
-    const last = nodes[nodes.length - 1];
+    const [first, last] = edgesWithin(root);
+    if (!first) return;
     if (!root.contains(document.activeElement)) {
       first.focus();
       event.preventDefault();
@@ -1484,7 +1552,7 @@ function createDrag({ panel, handle, onStart }) {
     if (window.matchMedia(SHEET2).matches) return;
     if (panel.classList.contains("cp-is-maximized")) return;
     if (event.target.closest(CONTROLS)) return;
-    start = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
+    start = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y, box: frame() };
     panel.classList.add("cp-is-dragging");
     if (onStart) onStart();
     try {
@@ -1495,7 +1563,7 @@ function createDrag({ panel, handle, onStart }) {
   };
   const onPointerMove = (event) => {
     if (!start) return;
-    const box = frame();
+    const box = start.box;
     offset.x = start.ox + (event.clientX - start.x);
     offset.y = start.oy + (event.clientY - start.y);
     clampTo(box);
@@ -1763,11 +1831,8 @@ function bindShell(picker) {
   };
   refs.compact.addEventListener("click", toggleCompact);
   const isTopmostOpen = (root) => {
-    const roots = [...document.querySelectorAll(".cp-root")];
-    for (let i = roots.indexOf(root) + 1; i < roots.length; i += 1) {
-      if (!roots[i].classList.contains("cp-hidden")) return false;
-    }
-    return true;
+    const open = document.querySelectorAll(".cp-root:not(.cp-hidden)");
+    return open[open.length - 1] === root;
   };
   picker.onDocumentKey = (event) => {
     if (!picker.isOpen) return;
@@ -1924,18 +1989,18 @@ function resolveSlots(slots, labels = {}) {
       console.warn(`ColorPicker: slot "${id}" has unknown presetSet ${JSON.stringify(spec.presetSet)} \u2014 using 'background'.`);
     }
     const presetSet = spec.presetSet === "text" ? "text" : "background";
-    const shipped = DEFAULT_SLOTS.find((slot) => slot.id === id) || {};
+    const shipped2 = DEFAULT_SLOTS.find((slot) => slot.id === id) || {};
     const overrides = own(tabLabels, id) || {};
-    const color = explicit.color == null ? shipped.color || firstPresetHex(presetSet) : normalizeHex(explicit.color);
+    const color = explicit.color == null ? shipped2.color || firstPresetHex(presetSet) : normalizeHex(explicit.color);
     if (!color) {
       throw new TypeError(`ColorPicker: slot "${id}" color must be a hex string, got ${JSON.stringify(explicit.color)}`);
     }
     out.push({
       id,
-      label: explicit.label || overrides.title || shipped.label || id,
-      type: explicit.type || overrides.type || shipped.type || PRESET_GROUPS[presetSet].type,
-      hint: explicit.hint || overrides.hint || shipped.hint || "",
-      symbol: explicit.symbol || shipped.symbol || id.charAt(0).toUpperCase(),
+      label: explicit.label || overrides.title || shipped2.label || id,
+      type: explicit.type || overrides.type || shipped2.type || PRESET_GROUPS[presetSet].type,
+      hint: explicit.hint || overrides.hint || shipped2.hint || "",
+      symbol: explicit.symbol || shipped2.symbol || id.charAt(0).toUpperCase(),
       presetSet,
       color
     });
@@ -2003,7 +2068,7 @@ var ColorPicker = class {
   /** Repaint the read-only surfaces; the editor is left alone mid-drag. */
   renderPanels() {
     const slot = this.slots.find((entry) => entry.id === this.activeSlot) || this.slots[0];
-    this.panel.render(slot.presetSet, this.colors[this.activeSlot]);
+    if (this.isOpen) this.panel.render(slot.presetSet, this.colors[this.activeSlot]);
     this.suggestions.render(this.activeSlot, slot.presetSet, this.colors);
     if (this.triggers) this.triggers.render(this.colors);
   }
@@ -2067,7 +2132,10 @@ var ColorPicker = class {
     this.root.classList.remove("cp-hidden");
     this.refresh();
     this.geometry.reset();
-    if (this.popover) this.popover.place();
+    if (this.popover) {
+      this.popover.attach();
+      this.popover.place();
+    }
     this.setStatus("");
     this.focusTrap.activate(this.anchor);
     const activeTab = this.refs.tabs[this.slotIds.indexOf(this.activeSlot)];
@@ -2081,6 +2149,7 @@ var ColorPicker = class {
     this.anchor = null;
     this.root.classList.add("cp-hidden");
     this.focusTrap.deactivate();
+    if (this.popover) this.popover.detach();
     if (this.triggers) this.triggers.sync(false);
     this.emit("onClose");
   }

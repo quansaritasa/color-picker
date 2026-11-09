@@ -59,7 +59,9 @@ export default class ColorPicker {
   /** Repaint the read-only surfaces; the editor is left alone mid-drag. */
   renderPanels() {
     const slot = this.slots.find((entry) => entry.id === this.activeSlot) || this.slots[0];
-    this.panel.render(slot.presetSet, this.colors[this.activeSlot]);
+    /* A closed panel has no one looking at its swatches: `open()` refreshes first,
+       so they are built the first time they can be seen. */
+    if (this.isOpen) this.panel.render(slot.presetSet, this.colors[this.activeSlot]);
     this.suggestions.render(this.activeSlot, slot.presetSet, this.colors);
     if (this.triggers) this.triggers.render(this.colors);
   }
@@ -132,7 +134,10 @@ export default class ColorPicker {
     this.root.classList.remove('cp-hidden');
     this.refresh();
     this.geometry.reset();
-    if (this.popover) this.popover.place();
+    if (this.popover) {
+      this.popover.attach();
+      this.popover.place();
+    }
     this.setStatus('');
     this.focusTrap.activate(this.anchor);
     const activeTab = this.refs.tabs[this.slotIds.indexOf(this.activeSlot)];
@@ -148,6 +153,7 @@ export default class ColorPicker {
     this.anchor = null;
     this.root.classList.add('cp-hidden');
     this.focusTrap.deactivate();
+    if (this.popover) this.popover.detach();
     if (this.triggers) this.triggers.sync(false);
     this.emit('onClose');
   }

@@ -13,6 +13,10 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
   const state = { h: 174, s: 87, v: 46, a: 1 };
   let current = { r: 15, g: 118, b: 110, a: 1 };
   let dragging = false;
+  /* The SV box, measured once per drag: reading it on every move would force a
+     layout right after `render()` dirtied the styles. */
+  let box = null;
+  let paintedOpaque = null;
 
   const rgbaFromHsv = () => {
     const rgb = hsvToRgb(state.h, state.s, state.v);
@@ -32,9 +36,13 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
     if (showAlpha) {
       refs.alpha.value = String(Math.round(state.a * 100));
       refs.alphaValue.textContent = `${Math.round(state.a * 100)}%`;
-      refs.alpha.style.background =
-        `linear-gradient(90deg, transparent, ${opaque}), ` +
-        'repeating-conic-gradient(#d9dee7 0 25%, white 0 50%) 0/12px 12px';
+      /* Only the opaque colour shows in the track, so an alpha drag leaves it alone. */
+      if (opaque !== paintedOpaque) {
+        paintedOpaque = opaque;
+        refs.alpha.style.background =
+          `linear-gradient(90deg, transparent, ${opaque}), ` +
+          'repeating-conic-gradient(#d9dee7 0 25%, white 0 50%) 0/12px 12px';
+      }
     }
     refs.sv.setAttribute('aria-valuenow', String(Math.round(state.s)));
     refs.sv.setAttribute('aria-valuetext', formatHex(current));
@@ -65,7 +73,7 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
   }
 
   const pointTo = (event) => {
-    const rect = refs.sv.getBoundingClientRect();
+    const rect = box || refs.sv.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     state.s = clamp01((event.clientX - rect.left) / rect.width) * 100;
     state.v = (1 - clamp01((event.clientY - rect.top) / rect.height)) * 100;
@@ -74,6 +82,7 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
 
   const onPointerDown = (event) => {
     dragging = true;
+    box = refs.sv.getBoundingClientRect();
     try {
       if (refs.sv.setPointerCapture) refs.sv.setPointerCapture(event.pointerId);
     } catch (error) {
@@ -87,6 +96,7 @@ export function createEditor(refs, { showAlpha = true, onChange, onStatus } = {}
   };
   const onPointerUp = () => {
     dragging = false;
+    box = null;
   };
   const onSvKey = (event) => {
     const step = event.shiftKey ? 10 : 1;

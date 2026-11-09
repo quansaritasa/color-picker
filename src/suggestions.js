@@ -14,11 +14,19 @@ import { OTHER_GROUP } from './presets.js';
 
 const CAPACITY = 3;
 
-/** Every hex in one palette, deduplicated, in preset order. */
+/** Every colour of one palette, deduplicated, parsed once: `{ r, g, b, a, hex }`. */
 function candidatesOf(palette) {
+  const seen = new Set();
   const out = [];
-  for (const list of Object.values(palette || {})) out.push(...list);
-  return [...new Set(out)];
+  for (const list of Object.values(palette || {})) {
+    for (const hex of list) {
+      const rgba = parseHex(hex);
+      if (!rgba || seen.has(hex)) continue;
+      seen.add(hex);
+      out.push({ ...rgba, hex });
+    }
+  }
+  return out;
 }
 
 export function createSuggestions({ mount, slots = [], pair = null, palettes = {}, enabled = false, onPick }) {
@@ -29,6 +37,15 @@ export function createSuggestions({ mount, slots = [], pair = null, palettes = {
     if (pair[1] === activeSlot) return pair[0];
     return null;
   };
+
+  /* A palette is fixed after construction, so each group is parsed once. */
+  const candidates = {};
+  const candidatesFor = (group) => (candidates[group] ||= candidatesOf(palettes[group]));
+
+  if (!enabled) {
+    mount.hidden = true;
+    return { render() {}, destroy() {} };
+  }
 
   const details = document.createElement('details');
   details.className = 'cp-suggestions';
@@ -127,7 +144,7 @@ export function createSuggestions({ mount, slots = [], pair = null, palettes = {
 
       /* Partners come from the opposite palette group: the quiet one when the
          edited slot is a text colour, the strong one when it is a surface. */
-      const ranked = suggestPartners(base, candidatesOf(palettes[OTHER_GROUP[group]]), { limit: CAPACITY });
+      const ranked = suggestPartners(base, candidatesFor(OTHER_GROUP[group]), { limit: CAPACITY });
       partners.forEach((slot, i) => paintSlot(slot, ranked[i], other));
       empty.hidden = ranked.length > 0;
       list.hidden = ranked.length === 0;

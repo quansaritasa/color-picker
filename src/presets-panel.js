@@ -24,10 +24,8 @@ function checkColor(hex) {
   return luma > 150 ? CHECK_DARK : CHECK_LIGHT;
 }
 
-const sameColor = (a, b) => String(a).toUpperCase() === String(b).toUpperCase();
-
 export function createPresetPanel({ refs, groups, palettes, onSelect }) {
-  const state = {}; // group key -> { category, signature, built, swatches }
+  const state = {}; // group key -> { category, signature, built, byHex, selected, paintedColor }
   const handlers = []; // { node, type, fn } — removed by destroy()
   let activeGroup = null;
   let activeColor = null;
@@ -62,7 +60,12 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
     /* The union grid is taller than any one category: CSS needs to know which
        mode it is painting before the rows are measured. */
     ref.swatches.classList.toggle('cp-is-all', entry.category === ALL_CATEGORY);
-    entry.swatches = [];
+    /* `byHex` (upper-cased) lets `paint()` find the selected nodes without a scan;
+       `selected` is what is currently marked, so a repaint touches only the diff. */
+    entry.byHex = new Map();
+    entry.selected = [];
+    entry.paintedColor = null;
+    const frag = document.createDocumentFragment();
     for (const hex of list) {
       const node = document.createElement('button');
       node.type = 'button';
@@ -70,10 +73,15 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
       node.dataset.hex = hex;
       node.title = hex;
       node.style.background = hex;
+      node.setAttribute('aria-pressed', 'false');
       node.setAttribute('aria-label', `${entry.category} ${hex}`);
-      ref.swatches.append(node);
-      entry.swatches.push({ hex, node });
+      frag.append(node);
+      const key = hex.toUpperCase();
+      const nodes = entry.byHex.get(key);
+      if (nodes) nodes.push(node);
+      else entry.byHex.set(key, [node]);
     }
+    ref.swatches.append(frag);
     entry.built = entry.category;
   }
 
@@ -88,12 +96,21 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
 
   /** Repaint checkmarks + emphasis only — the cheap path used on every change. */
   function paint(key, ref) {
-    for (const { hex, node } of state[key].swatches) {
-      const selected = sameColor(hex, activeColor);
-      node.classList.toggle('cp-is-selected', selected);
-      node.setAttribute('aria-pressed', String(selected));
-      if (selected) node.style.setProperty('--cp-check-color', checkColor(hex));
-      else node.style.removeProperty('--cp-check-color');
+    const entry = state[key];
+    const target = String(activeColor).toUpperCase();
+    if (entry.paintedColor !== target) {
+      for (const node of entry.selected) {
+        node.classList.remove('cp-is-selected');
+        node.setAttribute('aria-pressed', 'false');
+        node.style.removeProperty('--cp-check-color');
+      }
+      entry.selected = entry.byHex.get(target) || [];
+      for (const node of entry.selected) {
+        node.classList.add('cp-is-selected');
+        node.setAttribute('aria-pressed', 'true');
+        node.style.setProperty('--cp-check-color', checkColor(node.dataset.hex));
+      }
+      entry.paintedColor = target;
     }
     ref.section.classList.toggle('cp-is-emphasis', key === activeGroup);
   }
@@ -173,7 +190,7 @@ export function createPresetPanel({ refs, groups, palettes, onSelect }) {
       /* `All` is an offer, not the opening view: a section still starts on its
          first shipped category, so the panel opens the size it always did. */
       if (!current || current.signature !== signature) {
-        state[key] = { category: own[0], signature, built: null, swatches: [] };
+        state[key] = { category: own[0], signature, built: null, byHex: new Map(), selected: [], paintedColor: null };
         buildPills(key, ref, names);
       } else if (!names.includes(current.category)) {
         current.category = own[0];

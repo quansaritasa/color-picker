@@ -105,8 +105,8 @@ check('each field is a slot named after the field',
 check('fields switch the picker to a popover', fieldPicker.options.mode === 'popover', fieldPicker.options.mode);
 check('the field value seeds its slot', fieldPicker.getColors().smokeInk === '#0F766E', fieldPicker.getColors().smokeInk);
 check('an invalid field value falls back, never leaks',
-  fieldPicker.getColors().wash === '#111827', fieldPicker.getColors().wash);
-check('the fallback is written back into the field', wash.value === '#111827', wash.value);
+  fieldPicker.getColors().wash === '#000000', fieldPicker.getColors().wash);
+check('the fallback is written back into the field', wash.value === '#000000', wash.value);
 check('a bound field is a popup button',
   ink.getAttribute('aria-haspopup') === 'dialog' && ink.getAttribute('aria-expanded') === 'false');
 

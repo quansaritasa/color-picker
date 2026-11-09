@@ -82,11 +82,8 @@ export function bindShell(picker) {
    * take the same guard: a keystroke acts on the panel the user is in.
    */
   const isTopmostOpen = (root) => {
-    const roots = [...document.querySelectorAll('.cp-root')];
-    for (let i = roots.indexOf(root) + 1; i < roots.length; i += 1) {
-      if (!roots[i].classList.contains('cp-hidden')) return false;
-    }
-    return true;
+    const open = document.querySelectorAll('.cp-root:not(.cp-hidden)');
+    return open[open.length - 1] === root;
   };
 
   picker.onDocumentKey = (event) => {

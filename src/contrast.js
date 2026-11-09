@@ -15,9 +15,14 @@ const linear = (value) => {
   return c <= CHANNEL_MIN ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 };
 
+/* Channels are whole numbers 0-255, so the `**` is paid once for the 256 values
+   instead of three times per colour on every drag move. */
+const LINEAR = Array.from({ length: 256 }, (_, value) => linear(value));
+const channel = (value) => LINEAR[value] ?? linear(value);
+
 /** WCAG relative luminance, 0 (black) to 1 (white). Alpha is ignored. */
 export function relativeLuminance({ r, g, b }) {
-  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 
 /** The opaque color seen when `color` is painted over `surface`. */
@@ -66,7 +71,7 @@ export function suggestPartners(color, candidates = [], { limit = 3, minRatio = 
   for (const candidate of candidates) {
     const rgba = typeof candidate === 'string' ? parseHex(candidate) : candidate;
     if (!rgba) continue;
-    const hex = formatHex(rgba);
+    const hex = candidate.hex || formatHex(rgba);
     if (seen.has(hex)) continue;
     seen.add(hex);
     const ratio = contrastRatio(color, rgba);

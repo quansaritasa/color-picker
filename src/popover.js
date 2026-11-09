@@ -120,12 +120,32 @@ export function createPopover({ panel, getAnchor }) {
   // box has to follow in height, but never by moving its top, so `place()`
   // only re-decides when the trigger or the viewport moved.
   const watcher = new ResizeObserver(schedule);
-  watcher.observe(panel);
-  window.addEventListener('resize', schedule);
-  window.addEventListener('scroll', schedule, true);
+  /* Watched only while the panel is open: a closed popover has no box to fit, and
+     a capture-phase scroll listener would otherwise wake it for every scroll on
+     the page. */
+  let watching = false;
+  const detach = () => {
+    if (!watching) return;
+    watching = false;
+    watcher.disconnect();
+    window.removeEventListener('resize', schedule);
+    window.removeEventListener('scroll', schedule, true);
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+  };
 
   return {
     place,
+    /** The panel is open: follow content, viewport and scroll. */
+    attach() {
+      if (watching) return;
+      watching = true;
+      watcher.observe(panel);
+      window.addEventListener('resize', schedule);
+      window.addEventListener('scroll', schedule, true);
+    },
+    /** The panel closed: stop following. */
+    detach,
     /** The user moved or resized the box: stop placing it from its anchor. */
     pin() {
       pinned = true;
@@ -135,11 +155,6 @@ export function createPopover({ panel, getAnchor }) {
       pinned = false;
       placed = null;
     },
-    destroy() {
-      watcher.disconnect();
-      window.removeEventListener('resize', schedule);
-      window.removeEventListener('scroll', schedule, true);
-      if (frame) cancelAnimationFrame(frame);
-    },
+    destroy: detach,
   };
 }

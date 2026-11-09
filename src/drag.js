@@ -48,7 +48,8 @@ export function createDrag({ panel, handle, onStart }) {
     if (panel.classList.contains('cp-is-maximized')) return;
     // The close button and the title stay clickable: only bare header drags.
     if (event.target.closest(CONTROLS)) return;
-    start = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y };
+    /* The layout frame does not move while the box is dragged, so it is read once. */
+    start = { x: event.clientX, y: event.clientY, ox: offset.x, oy: offset.y, box: frame() };
     panel.classList.add('cp-is-dragging');
     /* A moved popover stops following its trigger: the caller takes the box
        out of the anchor's hands on the first real press, not on the first move. */
@@ -63,7 +64,7 @@ export function createDrag({ panel, handle, onStart }) {
 
   const onPointerMove = (event) => {
     if (!start) return;
-    const box = frame();
+    const box = start.box;
     offset.x = start.ox + (event.clientX - start.x);
     offset.y = start.oy + (event.clientY - start.y);
     clampTo(box);

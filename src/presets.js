@@ -126,6 +126,18 @@ export function mergePalette(base = {}, override = {}) {
   }));
 }
 
+/* Instances without a `presets` override all share one validated, frozen copy
+   of the shipped palette instead of each parsing and copying ~210 colours. */
+const shipped = {};
+export function shippedPalette(group) {
+  if (!shipped[group]) {
+    const merged = mergePalette(PRESET_SETS[group]);
+    for (const list of Object.values(merged)) Object.freeze(list);
+    shipped[group] = Object.freeze(merged);
+  }
+  return shipped[group];
+}
+
 /**
  * The two palettes the panel always offers. They are suggestions, not owners:
  * a swatch click writes whichever slot the editor is showing, so a pale panel

@@ -124,6 +124,33 @@
   flex-direction: column;
 }
 
+/* Thin themed scrollbar: Firefox/Chrome 121+ read the standard pair, older
+   WebKit/Blink the pseudo-elements. Colours come from tokens, so dark follows. */
+.cp-root .cp-picker-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cp-field) transparent;
+}
+
+.cp-root .cp-picker-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.cp-root .cp-picker-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cp-root .cp-picker-body::-webkit-scrollbar-thumb {
+  background: var(--cp-field);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+.cp-root .cp-picker-body::-webkit-scrollbar-thumb:hover {
+  background: var(--cp-muted);
+  background-clip: content-box;
+}
+
 /* Children keep their natural height: the box scrolls instead of squeezing. */
 .cp-root .cp-picker-body > * {
   flex-shrink: 0;

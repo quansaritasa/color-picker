@@ -12,9 +12,15 @@ const FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-/** Rendered, focusable descendants of `root`, in DOM order. */
-export function focusablesWithin(root) {
-  return [...root.querySelectorAll(FOCUSABLE)].filter((node) => node.getClientRects().length > 0);
+/** First and last rendered focusable in `root`; stops scanning at each end. */
+function edgesWithin(root) {
+  const all = root.querySelectorAll(FOCUSABLE);
+  const shown = (node) => node.getClientRects().length > 0;
+  let first = null;
+  let last = null;
+  for (let i = 0; i < all.length && !first; i += 1) if (shown(all[i])) first = all[i];
+  for (let i = all.length - 1; i >= 0 && !last; i -= 1) if (shown(all[i])) last = all[i];
+  return [first, last];
 }
 
 export function createFocusTrap(root) {
@@ -22,10 +28,9 @@ export function createFocusTrap(root) {
 
   const onKey = (event) => {
     if (event.key !== 'Tab') return;
-    const nodes = focusablesWithin(root);
-    if (!nodes.length) return;
-    const first = nodes[0];
-    const last = nodes[nodes.length - 1];
+    /* Only the two ends matter: measuring every swatch on each Tab is wasted. */
+    const [first, last] = edgesWithin(root);
+    if (!first) return;
     if (!root.contains(document.activeElement)) {
       first.focus();
       event.preventDefault();

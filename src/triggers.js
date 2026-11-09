@@ -61,6 +61,8 @@ export function createTriggers({ picker, target, slots, labels = {} }) {
     render(colors) {
       for (const slot of slots) {
         const { button, chip, hex } = buttons[slot.id];
+        /* A drag repaints on every move; most slots did not change. */
+        if (hex.textContent === colors[slot.id]) continue;
         chip.style.setProperty('--cpt-fill', colors[slot.id]);
         hex.textContent = colors[slot.id];
         button.setAttribute('aria-label', `Edit ${nameOf(slot)}, currently ${colors[slot.id]}`);
