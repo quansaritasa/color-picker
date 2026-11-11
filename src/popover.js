@@ -13,6 +13,13 @@
  * panel flipped above its trigger keeps the opening height it was fitted with —
  * growing downwards there would cover the anchor.
  *
+ * `placement` picks the side and edge of the trigger the panel hangs off
+ * (`bottom-start` by default); `offset` nudges it from there. A side without
+ * room flips to the opposite one.
+ *
+ * `position: { x, y }` skips the trigger altogether: viewport pixels, still
+ * clamped to the screen.
+ *
  * No anchor (a programmatic `open()` with no triggers) centres the panel.
  *
  * The user can take the box away from the anchor: the first drag or resize
@@ -23,6 +30,7 @@
 
 const MARGIN = 8;
 const GAP = 10;
+export const PLACEMENTS = ['bottom-start', 'bottom-end', 'top-start', 'top-end', 'right-start', 'right-end', 'left-start', 'left-end'];
 const SHEET = '(max-width: 680px)';
 /* Shorter than this a scrolling panel is unusable, so the box stays on screen. */
 const MIN_ROOM = 160;
@@ -30,7 +38,12 @@ const MIN_ROOM = 160;
 /** Clamp that survives a panel bigger than the viewport (pin instead of flip). */
 const within = (value, min, max) => (max < min ? min : Math.min(Math.max(value, min), max));
 
-export function createPopover({ panel, getAnchor }) {
+export function createPopover({ panel, getAnchor, placement: wanted = 'bottom-start', offset: nudge, position: fixed }) {
+  if (!PLACEMENTS.includes(wanted)) console.warn(`ColorPicker: unknown placement ${JSON.stringify(wanted)} — using 'bottom-start'.`);
+  const placement = PLACEMENTS.includes(wanted) ? wanted : 'bottom-start';
+  /* Absolute viewport coordinates: the trigger no longer decides where the panel goes. */
+  const at0 = fixed && Number.isFinite(fixed.x) && Number.isFinite(fixed.y) ? fixed : null;
+  const offset = { x: Number(nudge && nudge.x) || 0, y: Number(nudge && nudge.y) || 0 };
   let frame = 0;
   /* The left/top the current box was measured against. A content resize comes
      back through `place()`; an unchanged key is what keeps the top still. */
@@ -50,14 +63,33 @@ export function createPopover({ panel, getAnchor }) {
   const coordinates = (box, anchorBox) => {
     let left = anchorBox ? anchorBox.left : (innerWidth - box.width) / 2;
     let top = anchorBox ? anchorBox.bottom + GAP : (innerHeight - box.height) / 2;
-    let flipped = false;
+    let above = false;
     if (anchorBox) {
-      if (left + box.width > innerWidth - MARGIN) left = anchorBox.right - box.width;
-      if (top + box.height > innerHeight - MARGIN) {
-        const above = anchorBox.top - GAP - box.height;
-        flipped = above >= MARGIN;
-        top = flipped ? above : innerHeight - MARGIN - box.height;
+      const [side, align] = placement.split('-');
+      const end = align === 'end';
+      if (side === 'left' || side === 'right') {
+        const before = anchorBox.left - GAP - box.width;
+        const after = anchorBox.right + GAP;
+        left = side === 'left' ? before : after;
+        if (side === 'left' ? left < MARGIN && after + box.width <= innerWidth - MARGIN : left + box.width > innerWidth - MARGIN && before >= MARGIN) {
+          left = side === 'left' ? after : before;
+        }
+        top = end ? anchorBox.bottom - box.height : anchorBox.top;
+      } else {
+        left = end ? anchorBox.right - box.width : anchorBox.left;
+        if (!end && left + box.width > innerWidth - MARGIN) left = anchorBox.right - box.width;
+        const under = anchorBox.bottom + GAP;
+        const over = anchorBox.top - GAP - box.height;
+        above = side === 'top' ? !(over < MARGIN && under + box.height <= innerHeight - MARGIN)
+          : under + box.height > innerHeight - MARGIN && over >= MARGIN;
+        top = above ? over : under;
       }
+      left += offset.x;
+      top += offset.y;
+    }
+    if (at0) {
+      left = at0.x;
+      top = at0.y;
     }
     const at = {
       left: Math.round(within(left, MARGIN, innerWidth - MARGIN - box.width)),
@@ -67,7 +99,7 @@ export function createPopover({ panel, getAnchor }) {
       ...at,
       /* A panel hung above its trigger stops at the trigger, not at the screen
          edge: growth downwards would cover the anchor it hangs off. */
-      room: flipped ? Math.round(box.height) : Math.round(innerHeight - MARGIN - at.top),
+      room: above ? Math.round(box.height) : Math.round(innerHeight - MARGIN - at.top),
     };
   };
 

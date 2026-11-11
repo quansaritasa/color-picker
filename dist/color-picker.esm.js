@@ -1585,10 +1585,15 @@ function createFields({ picker, entries, labels = {} }) {
 // src/popover.js
 var MARGIN = 8;
 var GAP = 10;
+var PLACEMENTS = ["bottom-start", "bottom-end", "top-start", "top-end", "right-start", "right-end", "left-start", "left-end"];
 var SHEET = "(max-width: 680px)";
 var MIN_ROOM = 160;
 var within = (value, min, max) => max < min ? min : Math.min(Math.max(value, min), max);
-function createPopover({ panel, getAnchor }) {
+function createPopover({ panel, getAnchor, placement: wanted = "bottom-start", offset: nudge, position: fixed }) {
+  if (!PLACEMENTS.includes(wanted)) console.warn(`ColorPicker: unknown placement ${JSON.stringify(wanted)} \u2014 using 'bottom-start'.`);
+  const placement = PLACEMENTS.includes(wanted) ? wanted : "bottom-start";
+  const at0 = fixed && Number.isFinite(fixed.x) && Number.isFinite(fixed.y) ? fixed : null;
+  const offset = { x: Number(nudge && nudge.x) || 0, y: Number(nudge && nudge.y) || 0 };
   let frame = 0;
   let placed = null;
   let pinned = false;
@@ -1599,14 +1604,32 @@ function createPopover({ panel, getAnchor }) {
   const coordinates = (box, anchorBox) => {
     let left = anchorBox ? anchorBox.left : (innerWidth - box.width) / 2;
     let top = anchorBox ? anchorBox.bottom + GAP : (innerHeight - box.height) / 2;
-    let flipped = false;
+    let above = false;
     if (anchorBox) {
-      if (left + box.width > innerWidth - MARGIN) left = anchorBox.right - box.width;
-      if (top + box.height > innerHeight - MARGIN) {
-        const above = anchorBox.top - GAP - box.height;
-        flipped = above >= MARGIN;
-        top = flipped ? above : innerHeight - MARGIN - box.height;
+      const [side, align] = placement.split("-");
+      const end = align === "end";
+      if (side === "left" || side === "right") {
+        const before = anchorBox.left - GAP - box.width;
+        const after = anchorBox.right + GAP;
+        left = side === "left" ? before : after;
+        if (side === "left" ? left < MARGIN && after + box.width <= innerWidth - MARGIN : left + box.width > innerWidth - MARGIN && before >= MARGIN) {
+          left = side === "left" ? after : before;
+        }
+        top = end ? anchorBox.bottom - box.height : anchorBox.top;
+      } else {
+        left = end ? anchorBox.right - box.width : anchorBox.left;
+        if (!end && left + box.width > innerWidth - MARGIN) left = anchorBox.right - box.width;
+        const under = anchorBox.bottom + GAP;
+        const over = anchorBox.top - GAP - box.height;
+        above = side === "top" ? !(over < MARGIN && under + box.height <= innerHeight - MARGIN) : under + box.height > innerHeight - MARGIN && over >= MARGIN;
+        top = above ? over : under;
       }
+      left += offset.x;
+      top += offset.y;
+    }
+    if (at0) {
+      left = at0.x;
+      top = at0.y;
     }
     const at = {
       left: Math.round(within(left, MARGIN, innerWidth - MARGIN - box.width)),
@@ -1616,7 +1639,7 @@ function createPopover({ panel, getAnchor }) {
       ...at,
       /* A panel hung above its trigger stops at the trigger, not at the screen
          edge: growth downwards would cover the anchor it hangs off. */
-      room: flipped ? Math.round(box.height) : Math.round(innerHeight - MARGIN - at.top)
+      room: above ? Math.round(box.height) : Math.round(innerHeight - MARGIN - at.top)
     };
   };
   const paint = () => {
@@ -1711,6 +1734,11 @@ function assemble(picker) {
   picker.refs = built.refs;
   picker.root.append(built.root);
   picker.root.style.setProperty("--cp-slots", String(slots.length));
+  for (const key of ["width", "height"]) {
+    const size = options[key];
+    if (typeof size === "number" && size > 0) picker.root.style.setProperty(`--cp-${key}`, `${size}px`);
+    else if (typeof size === "string" && size) picker.root.style.setProperty(`--cp-${key}`, size);
+  }
   if (options.mode === "popover") picker.root.classList.add("cp-popover");
   if (options.mode === "inline") picker.root.classList.add("cp-inline");
   host.append(picker.root);
@@ -1752,7 +1780,7 @@ function assemble(picker) {
   } else if (options.triggers) {
     picker.triggers = createTriggers({ picker, target: options.triggers, slots, labels: options.labels });
   }
-  picker.popover = options.mode === "popover" ? createPopover({ panel: picker.refs.panel, getAnchor: () => picker.anchor }) : null;
+  picker.popover = options.mode === "popover" ? createPopover({ panel: picker.refs.panel, getAnchor: () => picker.anchor, placement: options.placement, offset: options.offset, position: options.position }) : null;
 }
 
 // src/tablist.js
@@ -1825,7 +1853,7 @@ function createFocusTrap(root) {
 }
 
 // src/drag.js
-var MARGIN2 = 8;
+var GRAB = 80;
 var SHEET2 = "(max-width: 680px)";
 var CONTROLS = 'button, input, select, textarea, a[href], [role="slider"]';
 var within2 = (value, min, max) => max < min ? min : Math.min(Math.max(value, min), max);
@@ -1840,8 +1868,8 @@ function createDrag({ panel, handle, onStart }) {
     panel.style.transform = offset.x || offset.y ? `translate(${offset.x}px, ${offset.y}px)` : "";
   };
   const clampTo = (box) => {
-    offset.x = within2(offset.x, MARGIN2 - box.left, innerWidth - MARGIN2 - box.left - box.width);
-    offset.y = within2(offset.y, MARGIN2 - box.top, innerHeight - MARGIN2 - box.top - box.height);
+    offset.x = within2(offset.x, GRAB - box.left - box.width, innerWidth - GRAB - box.left);
+    offset.y = within2(offset.y, -box.top, innerHeight - GRAB - box.top);
   };
   const clamp2 = () => {
     if (!offset.x && !offset.y) return;
@@ -1914,7 +1942,7 @@ function createDrag({ panel, handle, onStart }) {
 }
 
 // src/resize.js
-var MARGIN3 = 8;
+var MARGIN2 = 8;
 var MIN_WIDTH = 400;
 var MIN_HEIGHT = 320;
 var SHEET3 = "(max-width: 680px)";
@@ -1938,8 +1966,8 @@ function createResize({ panel, grip, mode, onStart, onChange }) {
   const onPointerMove = (event) => {
     if (!start) return;
     const { rect } = start;
-    const roomWidth = mode === "popover" ? innerWidth - MARGIN3 - rect.left : innerWidth - 2 * MARGIN3;
-    const roomHeight = mode === "popover" ? innerHeight - MARGIN3 - rect.top : innerHeight - 2 * MARGIN3;
+    const roomWidth = mode === "popover" ? innerWidth - MARGIN2 - rect.left : innerWidth - 2 * MARGIN2;
+    const roomHeight = mode === "popover" ? innerHeight - MARGIN2 - rect.top : innerHeight - 2 * MARGIN2;
     const width = within3(start.width + (event.clientX - start.x), MIN_WIDTH, roomWidth);
     const height = within3(start.height + (event.clientY - start.y), MIN_HEIGHT, roomHeight);
     panel.style.width = `${Math.round(width)}px`;
@@ -1966,7 +1994,7 @@ function createResize({ panel, grip, mode, onStart, onChange }) {
 }
 
 // src/maximize.js
-var MARGIN4 = 8;
+var MARGIN3 = 8;
 var SHEET4 = "(max-width: 680px)";
 function createMaximize({ panel, button: button2, drag, pin, labels }) {
   let saved = null;
@@ -1976,12 +2004,12 @@ function createMaximize({ panel, button: button2, drag, pin, labels }) {
     button2.title = name;
   };
   const fill = () => {
-    panel.style.width = `${Math.max(0, innerWidth - 2 * MARGIN4)}px`;
-    panel.style.height = `${Math.max(0, innerHeight - 2 * MARGIN4)}px`;
+    panel.style.width = `${Math.max(0, innerWidth - 2 * MARGIN3)}px`;
+    panel.style.height = `${Math.max(0, innerHeight - 2 * MARGIN3)}px`;
     panel.style.maxHeight = "none";
     panel.style.position = "fixed";
-    panel.style.left = `${MARGIN4}px`;
-    panel.style.top = `${MARGIN4}px`;
+    panel.style.left = `${MARGIN3}px`;
+    panel.style.top = `${MARGIN3}px`;
   };
   const maximize = () => {
     if (saved) return;
@@ -2222,6 +2250,14 @@ var DEFAULTS = {
   showContrastSuggestions: false,
   /* Suggestions measure a pair: `['text', 'background']`. Without one they stay off. */
   contrastPair: null,
+  /* Panel size: a number is px, a string is any CSS length. null = the stylesheet's default. */
+  width: null,
+  height: null,
+  /* Popover only: which side/edge of the trigger the panel hangs off (see PLACEMENTS in popover.js), nudged by `offset: { x, y }` px. */
+  placement: "bottom-start",
+  offset: null,
+  /* Popover only: `{ x, y }` viewport px. Overrides the trigger-relative placement. */
+  position: null,
   draggable: true,
   resizable: true,
   theme: "light",

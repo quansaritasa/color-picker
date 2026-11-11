@@ -42,6 +42,14 @@ export const DEFAULTS = {
   showContrastSuggestions: false,
   /* Suggestions measure a pair: `['text', 'background']`. Without one they stay off. */
   contrastPair: null,
+  /* Panel size: a number is px, a string is any CSS length. null = the stylesheet's default. */
+  width: null,
+  height: null,
+  /* Popover only: which side/edge of the trigger the panel hangs off (see PLACEMENTS in popover.js), nudged by `offset: { x, y }` px. */
+  placement: 'bottom-start',
+  offset: null,
+  /* Popover only: `{ x, y }` viewport px. Overrides the trigger-relative placement. */
+  position: null,
   draggable: true,
   resizable: true,
   theme: 'light',

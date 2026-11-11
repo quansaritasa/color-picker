@@ -39,6 +39,11 @@ export function assemble(picker) {
   picker.root.append(built.root);
   /* One column per slot: the CSS cannot count them, so the template tells it. */
   picker.root.style.setProperty('--cp-slots', String(slots.length));
+  for (const key of ['width', 'height']) {
+    const size = options[key];
+    if (typeof size === 'number' && size > 0) picker.root.style.setProperty(`--cp-${key}`, `${size}px`);
+    else if (typeof size === 'string' && size) picker.root.style.setProperty(`--cp-${key}`, size);
+  }
   if (options.mode === 'popover') picker.root.classList.add('cp-popover');
   if (options.mode === 'inline') picker.root.classList.add('cp-inline');
   host.append(picker.root);
@@ -90,6 +95,6 @@ export function assemble(picker) {
     picker.triggers = createTriggers({ picker, target: options.triggers, slots, labels: options.labels });
   }
   picker.popover = options.mode === 'popover'
-    ? createPopover({ panel: picker.refs.panel, getAnchor: () => picker.anchor })
+    ? createPopover({ panel: picker.refs.panel, getAnchor: () => picker.anchor, placement: options.placement, offset: options.offset, position: options.position })
     : null;
 }

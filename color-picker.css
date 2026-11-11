@@ -124,7 +124,9 @@
 
 .cp-root .cp-picker {
   /* Small on purpose: the surface being recolored must stay visible around it. */
-  width: min(100%, 500px);
+  /* 540 leaves room for a scrollbar without pushing the last category pill to a new line. */
+  width: min(100%, var(--cp-width, 540px));
+  height: var(--cp-height, auto);
   max-height: calc(100vh - 32px);
   /* The panel does not scroll — `.cp-picker-body` does — so the resize grip can
      sit in the corner of the box instead of travelling with the content. */

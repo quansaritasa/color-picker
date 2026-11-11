@@ -306,6 +306,9 @@ row (`↑` from the top row goes back to the tabs) and `←`/`→` by one; each 
 | `showAlpha` | `boolean` | `true` | Opacity slider. When `false` the slider is hidden and alpha is forced to `1`, so an 8-digit HEX cannot leave a translucent color behind |
 | `showContrastSuggestions` | `boolean` | `false` | Show the collapsible contrast panel under the presets |
 | `draggable` | `boolean` | `true` | Drag the panel by its header to move it aside; double-click the header to re-centre. `false` pins a fixed, centered modal. Works in both modes — a dragged popover stops following its trigger until the next open |
+| `width` / `height` | `number \| string` | `540` / auto | Starting panel size. A number is px, a string any CSS length (`'32rem'`). Still capped to the viewport; the user can resize unless `resizable: false` |
+| `placement` / `offset` | `string` / `{x, y}` | `'bottom-start'` / none | Popover only. Side and edge of the trigger the panel hangs off: `bottom`, `top`, `left` or `right` + `-start` or `-end`. `offset` nudges it in px. A side without room flips to the opposite one |
+| `position` | `{x, y}` | none | Popover only. Absolute viewport px for the panel's top-left; overrides `placement`/`offset`. Still clamped to the screen |
 | `resizable` | `boolean` | `true` | Corner grip writes an explicit width/height, clamped to the viewport. `false` drops the grip; the maximize toggle stays |
 | `theme` | `'light' \| 'dark'` | `'light'` | Written to `data-theme` on the root; the dark theme only swaps tokens |
 | `presets` | `{ text?: object, background?: object }` | built-in palettes | Per palette group, the shipped palette with your categories merged in: a name that already exists (`Normal`, `Heading`, …) **replaces** that palette, a new name is added after the shipped ones. Each category must be an array of hex strings — anything else throws a `TypeError` |

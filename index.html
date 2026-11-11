@@ -166,7 +166,8 @@
     <div class="panel-head">
       <h2><span class="panel-no">01</span>One color — the default</h2>
       <p>No <code>slots</code>: one slot named <code>color</code>, one trigger, one preset grid and no tab
-        row. <code>colors.color</code> is the only value to paint.</p>
+        row. <code>colors.color</code> is the only value to paint. <code>width</code> / <code>height</code>
+        set the panel size (here 560px; default 540).</p>
     </div>
     <p class="label">Setup</p>
     <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
@@ -175,6 +176,7 @@ const oneHeadline = document.getElementById('oneHeadline');
 
 const onePicker = new ColorPicker({
   triggers: '#oneTriggers',
+  width: 560, // px, or any CSS length: '36rem'. Optional `height` works the same.
   initialColors: { color: '#0F766E' },
   onChange: (colors) => { oneHeadline.style.color = colors.color; },
 });
@@ -446,6 +448,41 @@ const picker = new ColorPicker({
       </div>
     </div>
   </section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="panel-no">07</span>Where the popup opens — placement, offset, position</h2>
+      <p><code>placement</code> picks the side and edge of the trigger (<code>top</code>, <code>bottom</code>,
+        <code>left</code> or <code>right</code> + <code>-start</code> / <code>-end</code>); <code>offset</code>
+        nudges it in px. <code>position</code> ignores the trigger and pins the panel to viewport pixels.
+        A side without room flips to the opposite one.</p>
+    </div>
+    <p class="label">Setup</p>
+    <pre class="snippet"><code>import ColorPicker from './src/color-picker.js';
+
+// Above the trigger, right edge aligned.
+new ColorPicker({ triggers: '#aboveTriggers', placement: 'top-end' });
+
+// Beside the trigger, nudged 6px down.
+new ColorPicker({ triggers: '#sideTriggers', placement: 'right-start', offset: { x: 0, y: 6 } });
+
+// Absolute: top-left corner at x 40, y 80 of the viewport, trigger ignored.
+new ColorPicker({ triggers: '#fixedTriggers', position: { x: 40, y: 80 } });</code></pre>
+    <p class="label">Live</p>
+    <div class="stage">
+      <div class="stage-bar">
+        <p class="stage-hint"><code>placement: 'top-end'</code> — opens above, right edges aligned.</p>
+        <div id="aboveTriggers"></div>
+      </div>
+      <div class="stage-bar">
+        <p class="stage-hint"><code>placement: 'right-start'</code>, <code>offset: { y: 6 }</code> — opens beside the trigger.</p>
+        <div id="sideTriggers"></div>
+      </div>
+      <div class="stage-bar">
+        <p class="stage-hint"><code>position: { x: 40, y: 80 }</code> — fixed on the screen, wherever the trigger is.</p>
+        <div id="fixedTriggers"></div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <div id="brandRoot"></div>
@@ -462,6 +499,7 @@ const picker = new ColorPicker({
   const oneHeadline = document.getElementById('oneHeadline');
   const onePicker = new ColorPicker({
     triggers: '#oneTriggers',
+    width: 560, // px, or any CSS length: '36rem'. Optional `height` works the same.
     initialColors: { color: '#0F766E' },
     onChange: (colors) => { oneHeadline.style.color = colors.color; },
   });
@@ -590,6 +628,11 @@ const picker = new ColorPicker({
     paintPage(pagePicker.getColors());
   });
   window.pagePicker = pagePicker;
+
+  // 07 — where the popup opens.
+  new ColorPicker({ triggers: '#aboveTriggers', placement: 'top-end' });
+  new ColorPicker({ triggers: '#sideTriggers', placement: 'right-start', offset: { x: 0, y: 6 } });
+  new ColorPicker({ triggers: '#fixedTriggers', position: { x: 40, y: 80 } });
 </script>
 </body>
 </html>

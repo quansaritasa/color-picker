@@ -1,13 +1,15 @@
 /**
  * Pointer drag for the picker shell. A translate offset moves the panel off
  * wherever the layout put it — the middle of the viewport for a modal, under
- * its trigger for a popover — and is clamped to the viewport, so the panel can
- * never be dragged out of reach. Below 680px the shell is a bottom sheet that
+ * its trigger for a popover. It may be dragged partly off-screen, but never so
+ * far that the header leaves the viewport, so the panel stays within reach. Below 680px the shell is a bottom sheet that
  * owns its own scroll, so dragging is off there. There is no keyboard
  * equivalent on purpose: `m` gives the keyboard user a full-size box instead.
  */
 
-const MARGIN = 8;
+/* The panel may leave the viewport, but this much of it stays on screen to grab it back:
+   the header can never rise above the top edge. */
+const GRAB = 80;
 const SHEET = '(max-width: 680px)';
 const CONTROLS = 'button, input, select, textarea, a[href], [role="slider"]';
 
@@ -29,8 +31,8 @@ export function createDrag({ panel, handle, onStart }) {
   };
 
   const clampTo = (box) => {
-    offset.x = within(offset.x, MARGIN - box.left, innerWidth - MARGIN - box.left - box.width);
-    offset.y = within(offset.y, MARGIN - box.top, innerHeight - MARGIN - box.top - box.height);
+    offset.x = within(offset.x, GRAB - box.left - box.width, innerWidth - GRAB - box.left);
+    offset.y = within(offset.y, -box.top, innerHeight - GRAB - box.top);
   };
 
   /** Re-fit after the viewport changed while the panel sits off-centre. */
