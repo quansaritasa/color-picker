@@ -1,112 +1,12 @@
 /**
- * Preset palettes.
- *
- * `text` is grouped by role, not hue: `Normal` for body copy (greys, slates,
- * stones), `Heading` for headings and section titles (mostly blue and green),
- * `Highlight` for colorful emphasis. It is a superset of the six hue categories
- * `sop.md` §4 shipped. Every entry clears 4.5:1 against `#FFFFFF` or `#111827`,
- * so each one reads as body text on a light or a dark surface; the light rows
- * at the end of `Normal` and `Highlight` are the dark-surface ones.
- *
- * `background` is not the spec's §5 set any more: it is the badge palette from
- * the sprints-planner app (`src/renderer/modules/assignee-color.js`,
- * `BADGE_COLORS`), which is why the colors are mid-light inks rather than pale
- * washes. The app stores `[L, C, H]` oklch triples and paints those strings; a
- * picker only speaks hex (`parseHex`, the editor, the contrast maths), so each
- * entry here is the exact sRGB rendering of its triple.
- *
- * `Vivid` holds the badge palette's high-chroma half (46 inks, chroma above
- * .08) and this library's own deep tier (14, one per hue at oklch L .64 with
- * chroma pushed to the sRGB ceiling: 4.53-5.66:1 against `#111827`, dE00 >= 6.3
- * from every badge ink). The app's low-chroma tail (14 label-chip inks) is not
- * shipped: those hues already appear at the same lightness, so as a category
- * they were washed copies of colors the grid already had.
- *
- * Both background categories are sorted by oklch hue so neighbours look alike,
- * starting at `#70B1ED` (the first entry is the default background color) and
- * walking blue, violet, pink, red, orange, yellow, green, teal, cyan. `Pale`
- * ends with its greys (chroma below .011), lightest first.
- *
- * `Pale` is the pale washes this group shipped before, merged into one
- * de-duplicated category, plus nine more — five in the old hue gaps and four
- * across red and orange, where the washes were thinnest. The contrast
- * suggestions rank partners out of this palette, and chip inks are the wrong
- * shape for that — see the note on the category itself.
- *
- * A set is only a *hint*: both sets are always on screen and a swatch writes the
- * slot the editor is showing, so any color is valid for any slot.
+ * Palette helpers: merging overrides onto the shipped sets, group metadata and
+ * category lists. The shipped colors themselves live in `preset-sets.js`.
  */
 
 import { normalizeHex } from './color.js';
+import { PRESET_SETS } from './preset-sets.js';
 
-export const PRESET_SETS = {
-  text: {
-    /* Ordered so neighbours look alike: one tint family at a time, dark to light
-       within it. `Normal` runs gray, slate, stone, neutral, then its light tail for
-       dark surfaces; `#000000` leads it, and the first entry is what `options.js`
-       hands a text slot with no color of its own. The two colored tabs walk the
-       hue wheel; `Highlight` ends with its dark-surface row in the same hue order. */
-    Normal: [
-      '#000000', '#111827', '#1F2937', '#374151', '#4B5563', '#6B7280',
-      '#020617', '#0F172A', '#1E293B', '#334155', '#475569', '#64748B', '#94A3B8',
-      '#050A18', '#0A1128', '#0D1B2A', '#0B1B3A', '#111B33', '#14213D', '#1B263B', '#1B2A49',
-      '#1E2A44', '#22304A', '#2B3A55', '#364A6B',
-      '#1C1917', '#292524', '#44403C', '#57534E',
-      '#171717', '#262626', '#404040', '#525252', '#737373',
-      '#A3A3A3', '#D1D5DB', '#E5E7EB', '#F3F4F6', '#FFFFFF',
-    ],
-    Heading: [
-      '#172554', '#1E3A5F', '#312E81', '#1E3A8A', '#3730A3', '#1E40AF', '#4338CA', '#1D4ED8',
-      '#2563EB', '#1E1B4B', '#2E1065', '#3B0764', '#4C1D95', '#581C87', '#052E16', '#1A2E05',
-      '#0F5132', '#14532D', '#365314', '#166534', '#3F6212', '#15803D', '#022C22', '#064E3B',
-      '#134E4A', '#065F46', '#115E59', '#047857', '#0F766E', '#042F2E', '#083344', '#0A3D62',
-      '#0C4A6E', '#164E63', '#075985', '#155E75', '#0369A1', '#0E7490',
-    ],
-    Highlight: [
-      '#4F46E5', '#818CF8', '#60A5FA', '#5B21B6', '#6B21A8', '#6D28D9', '#7E22CE', '#7C3AED',
-      '#9333EA', '#A78BFA', '#C084FC', '#701A75', '#86198F', '#A21CAF', '#C026D3', '#E879F9',
-      '#9D174D', '#BE185D', '#DB2777', '#F472B6', '#7F1D1D', '#881337', '#991B1B', '#9A3412',
-      '#B91C1C', '#BE123C', '#C2410C', '#DC2626', '#E11D48', '#EF4444', '#F87171', '#78350F',
-      '#92400E', '#854D0E', '#A16207', '#B45309', '#EA580C', '#F97316', '#FB923C', '#CA8A04',
-      '#F59E0B', '#4D7C0F', '#65A30A', '#22C55E', '#84CC16', '#0D9488', '#34D399', '#0891B2',
-      '#38BDF8', '#93C5FD', '#F9A8D4', '#FDA4AF', '#FDBA74', '#FBBF24', '#EAB308', '#FACC15',
-      '#FDE047', '#BEF264', '#A3E635', '#6EE7B7', '#2DD4BF', '#67E8F9', '#22D3EE',
-    ],
-  },
-  background: {
-    Vivid: [
-      '#70B1ED', '#3189FD', '#6BA5FB', '#90AEFE', '#8AA2E4', '#8D9BFB', '#8075FD',
-      '#B0A5F2', '#BC90FF', '#BB8FDE', '#B94BFD', '#D78FF6', '#D180E1', '#D995D9',
-      '#E70CD0', '#F186D4', '#D289BB', '#EB77B6', '#E197BC', '#FF82B2', '#FA0C86',
-      '#E183A1', '#F67591', '#F290A2', '#FE8B82', '#FE2832', '#DC8C81', '#F87868',
-      '#FE8F5D', '#F3813F', '#D76807', '#DE8F57', '#F29B1D', '#DCA65E', '#DB940E',
-      '#B88007', '#C4A040', '#D6AB1B', '#9B8F08', '#BDB55D', '#B1A92B', '#BAB818',
-      '#93B25A', '#6C9E08', '#8AC652', '#51BF68', '#78C687', '#0BA75D', '#10D095',
-      '#55BB96', '#51CAA7', '#0BA28F', '#39BAB4', '#09CBC5', '#1FB8CF', '#0A9DB2',
-      '#04C4F0', '#6DBEDC', '#0A96D6', '#0EB0FD',
-    ],
-    /* The pale washes the group used to ship, kept as one category because the
-       contrast suggestions rank partners out of this palette: none of the 60
-       badge inks clears 4.5:1 against a mid-tone text like #0F766E, so without a
-       pale set the suggestions panel has nothing to offer for such a pair. The
-       old six categories are merged and de-duplicated here, with five more washes
-       in the hue gaps and four across red and orange — 43 colors, then 17 more across every hue so it matches
-       `Vivid` at 60. Contrast against #0F766E is what caps the set: a wash light enough to stay useful
-       there has little chroma left to spend, so the red/orange four sit at
-       3.78-5.00:1, inside the range the merged washes already covered. */
-    Pale: [
-      '#BFDBFE', '#EFF6FF', '#DBEAFE', '#D3DFF3', '#EDE9FE', '#E0D8FD', '#F3E8FF',
-      '#F0D1FF', '#EAD7E8', '#FCE7F3', '#FBCFE8', '#FFE4E6', '#FEF2F2', '#FECACA',
-      '#F1D7D2', '#FDE4CF', '#FFDAB9', '#FED7AA', '#FFF7ED', '#FFEDD5', '#F0DDA9',
-      '#FDEAB6', '#FFFBEB', '#FEF3C7', '#FDE68A', '#E2DFC9', '#FBF6AE', '#EDF0BA',
-      '#DCE4AF', '#F7FEE7', '#ECFCCB', '#E6F0D3', '#D5F9BA', '#CDE7C7', '#F0FDF4',
-      '#BBF7D0', '#DCFCE7', '#B6EDCE', '#D1FAE5', '#ECFDF5', '#BAFBE8', '#D8F2EA',
-      '#BCE9DC', '#99F6E4', '#F0FDFA', '#CCFBF1', '#E6FFFB', '#A6EDF0', '#A8FAFF',
-      '#C8E4E7', '#CDF5FF', '#BAE6FD', '#F0F9FF', '#E0F2FE', '#FAFAFA', '#F9FAFB',
-      '#F5F5F5', '#F3F4F6', '#E5E7EB', '#D1D5DB',
-    ],
-  },
-};
+export { PRESET_SETS };
 
 /**
  * One palette, shipped categories first then `override`.

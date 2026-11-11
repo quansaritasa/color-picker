@@ -19,9 +19,9 @@ const SPEC_TEXT = [
 
 test('the text set is grouped by role', () => {
   assert.deepEqual(Object.keys(text), ['Normal', 'Heading', 'Highlight']);
-  assert.equal(text.Normal.length, 39);
-  assert.equal(text.Heading.length, 38);
-  assert.equal(text.Highlight.length, 63);
+  assert.equal(text.Normal.length, 69);
+  assert.equal(text.Heading.length, 68);
+  assert.equal(text.Highlight.length, 90);
 });
 
 test('the text set keeps every color the spec shipped, once', () => {

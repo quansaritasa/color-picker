@@ -362,28 +362,27 @@ new ColorPicker({
 ```
 
 The shipped palettes, if you want to replace one of them: `text` is grouped by
-role: `Normal` (24) for body copy, `Heading` (26, mostly blue and green) for
-headings and section titles, `Highlight` (33) for colorful emphasis. Every
+role: `Normal` (69) for body copy, `Heading` (68, blue, violet and green) for
+headings and section titles, `Highlight` (90) for colorful emphasis. Every
 color clears 4.5:1 on white or on `#111827`; the light ones at the end of
 `Normal` and `Highlight` are for dark surfaces · `background`
-holds the 46 vivid inks from sprints-planner's badge palette, their 14-color deep
-tier, and `Pale` (39), the pale washes this group shipped before plus five more.
-Every category is ordered so similar colors sit together: one tint family
-at a time for `Normal`, hue order everywhere else.
+holds `Vivid` (90), built on all 60 inks of sprints-planner's badge palette, and
+`Pale` (90), the pale washes this group shipped before plus later additions.
+Every category is ordered so similar colors sit together: the text tabs walk
+one tint family at a time, dark to light, with their dark-surface colors last;
+the background tabs run in hue order.
 
-`Vivid` is two lightnesses of one idea: the app's own mid-light chips (46 entries
-at oklch L .72–.76, chroma .09–.16) and a deep tier this library adds (14 entries,
-one per hue at L .64 with chroma at the sRGB ceiling, up to .28). The app's
-low-chroma tail — its 14 Jira label-chip inks — is not shipped: same hues and
-lightness as the entries above, so as a category it was washed copies in the grid.
+`Vivid` is two lightnesses of one idea: the app's own mid-light chips (all 60,
+including its 14 low-chroma Jira label-chip inks) plus 16 fill-ins at oklch
+L .70–.76, and a deep tier this library adds (14 entries, one per hue at L .64
+with chroma at the sRGB ceiling, up to .28).
 
-None of those 60 inks is a surface for mid-tone text: 60 of 60 clear 4.5:1 against
+None of those 90 inks is a surface for mid-tone text: 90 of 90 clear 4.5:1 against
 a near-black like `#111827`, none of them against `#0F766E`. That is what `Pale`
 is for — the contrast suggestions rank partners out of this palette, so without a
-pale category a mid-tone text color would get an empty suggestions panel. Pale
-stops at 39 for the same reason it exists: a wash light enough to clear 4.5:1
-against `#0F766E` has almost no chroma left, so further additions land within
-dE00 2.6 of one already in the list.
+pale category a mid-tone text color would get an empty suggestions panel. Every
+`Pale` entry clears at least 3.71:1 against `#0F766E`; a wash light enough for that
+has little chroma left, so the newest additions sit only dE00 4.1 or more apart.
 
 Categories replace by name: a category the config names takes the place of the
 shipped palette of that name (`Normal`, `Vivid`, …) and keeps its position in the

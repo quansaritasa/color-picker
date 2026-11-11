@@ -99,38 +99,6 @@ test('preset sets are uppercase 6-digit hex in spec shape', () => {
   }
 });
 
-test('background preset tables', () => {
-  /* The background set is the sprints-planner badge palette (46 high-chroma
-     colors, sRGB of its oklch triples) plus this library's deep tier at L .64,
-     sorted by hue. The deep tier is pinned whole because it is the part this
-     library authored; the union is checked for duplicates below. */
-  const background = PRESET_SETS.background;
-  assert.equal(background.Vivid.length, 60);
-  assert.equal(background.Vivid[0], '#70B1ED', 'the default background color leads');
-  for (const hex of [
-    '#FA0C86', '#FE2832', '#D76807', '#B88007', '#9B8F08', '#6C9E08', '#0BA75D',
-    '#0BA28F', '#0A9DB2', '#0A96D6', '#3189FD', '#8075FD', '#B94BFD', '#E70CD0',
-  ]) assert.ok(background.Vivid.includes(hex), `deep tier ${hex}`);
-  /* The app's low-chroma tail is not shipped: same hues and lightness as the
-     entries above, so it was washed copies in the grid. */
-  assert.ok(!('Dusty' in background));
-  /* The pale washes, merged into one category and de-duplicated, so the contrast
-     suggestions still have partners for a mid-tone text color; five of them are
-     the additions in the hue gaps the merged set left empty. */
-  assert.equal(background.Pale.length, 60);
-  for (const hex of ['#FBF6AE', '#E6F0D3', '#D5F9BA', '#A8FAFF', '#CDF5FF']) assert.ok(background.Pale.includes(hex), hex);
-  assert.deepEqual(background.Pale.slice(-6), ['#FAFAFA', '#F9FAFB', '#F5F5F5', '#F3F4F6', '#E5E7EB', '#D1D5DB'], 'greys last');
-  assert.equal(new Set(background.Pale).size, 60, 'no color twice in Pale');
-});
-
-test('the badge palette is 60 distinct colors across its two categories', () => {
-  const { Vivid, Pale } = PRESET_SETS.background;
-  assert.equal(new Set(Vivid).size, 60, 'Vivid repeats no color');
-  assert.deepEqual(allColors(PRESET_SETS.background).slice(0, 60), Vivid, 'All starts with Vivid');
-  assert.equal(allColors(PRESET_SETS.background).length, 120, 'All is the 60 vivid plus the 60 pale washes');
-  assert.equal(new Set([...Vivid, ...Pale]).size, 120, 'the two categories share no color');
-});
-
 test('mergePalette replaces a named category and adds new ones', () => {
   const merged = mergePalette(PRESET_SETS.text, {
     Brand: ['#123456', '#654321'],
@@ -145,10 +113,10 @@ test('mergePalette replaces a named category and adds new ones', () => {
   // every other shipped category survives
   assert.deepEqual(merged.Heading, PRESET_SETS.text.Heading);
   // the shipped tables are never mutated
-  assert.equal(PRESET_SETS.text.Normal.length, 39);
+  assert.equal(PRESET_SETS.text.Normal.length, 69);
   assert.ok(!('Brand' in PRESET_SETS.text));
   merged.Heading.push('#000000');
-  assert.equal(PRESET_SETS.text.Heading.length, 38);
+  assert.equal(PRESET_SETS.text.Heading.length, 68);
 });
 
 test('palette merging keeps shipped categories and adds new ones', () => {

@@ -394,15 +394,16 @@
 
 .cp-root .cp-hex-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 9px;
 }
 
+/* A full-width band above the hex: a 38px chip cannot tell a pale color from its neighbour. */
 .cp-root .cp-color-preview {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  border-radius: 9px;
+  flex: 1 0 100%;
+  height: 72px;
+  border-radius: 10px;
   border: 1px solid #00000012;
   background-image: repeating-conic-gradient(#d9dee7 0 25%, #fff 0 50%);
   background-size: 10px 10px;
